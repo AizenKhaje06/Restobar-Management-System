@@ -69,8 +69,8 @@ export async function createTableSession(input: {
   const supabase = await createClient()
 
   if (!input.customer_name.trim()) return { error: "Customer name is required" }
-  if (!/^\d{6}$/.test(input.access_code)) {
-    return { error: "Access code must be exactly 6 digits" }
+  if (!/^\d{4}$/.test(input.access_code)) {
+    return { error: "Access code must be exactly 4 digits" }
   }
 
   // Check for existing active session
@@ -114,7 +114,7 @@ export async function joinTableSession(input: {
 }) {
   const supabase = await createClient()
 
-  if (!/^\d{6}$/.test(input.access_code)) {
+  if (!/^\d{4}$/.test(input.access_code)) {
     return { error: "Invalid access code format" }
   }
 
