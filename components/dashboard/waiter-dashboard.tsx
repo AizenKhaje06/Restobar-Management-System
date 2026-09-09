@@ -72,7 +72,6 @@ const NAV_ITEMS: NavItem[] = [
 
 interface WaiterTable extends RestaurantTable {
   current_guests?: number | null
-  notes?: string | null
   orders?: {
     id: string
     order_number: number
@@ -94,7 +93,7 @@ interface WaiterOrder {
   created_at: string
   payment_status?: string | null
   payment_method?: string | null
-  tables: { label: string | null; zone: string | null } | null
+  tables: { label: string | null; zone: string | null } | { label: string | null; zone: string | null }[] | null
   order_items?: { 
     id: string
     name: string
@@ -200,7 +199,7 @@ export function WaiterDashboard({ profile }: { profile: Profile }) {
       .limit(20)
 
     setTables(tablesData ?? [])
-    setPendingOrders((ordersData ?? []) as WaiterOrder[])
+    setPendingOrders((ordersData ?? []) as any)
     setLoading(false)
   }, [profile.id, supabase])
 
@@ -345,7 +344,8 @@ export function WaiterDashboard({ profile }: { profile: Profile }) {
     return pendingOrders.filter((order) => {
       const matchesOrderNumber = String(order.order_number).includes(query)
       const matchesCustomer = order.customer_name?.toLowerCase().includes(query)
-      const matchesTable = order.tables?.label?.toLowerCase().includes(query)
+      const tableLabel = Array.isArray(order.tables) ? order.tables[0]?.label : order.tables?.label
+      const matchesTable = tableLabel?.toLowerCase().includes(query)
       return matchesOrderNumber || matchesCustomer || matchesTable
     })
   }, [pendingOrders, searchQuery])
@@ -567,7 +567,7 @@ export function WaiterDashboard({ profile }: { profile: Profile }) {
               </div>
               
               <div className="flex gap-2">
-                <Select value={zoneFilter} onValueChange={setZoneFilter}>
+                <Select value={zoneFilter} onValueChange={(v) => setZoneFilter(v || "all")}>
                   <SelectTrigger className="flex-1">
                     <SelectValue placeholder="All Zones" />
                   </SelectTrigger>
@@ -581,7 +581,7 @@ export function WaiterDashboard({ profile }: { profile: Profile }) {
                   </SelectContent>
                 </Select>
 
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v || "all")}>
                   <SelectTrigger className="flex-1">
                     <SelectValue placeholder="All Status" />
                   </SelectTrigger>
@@ -617,9 +617,10 @@ export function WaiterDashboard({ profile }: { profile: Profile }) {
               <div className="space-y-3">
                 {filteredTables.map((table) => {
                   const statusConfig = TABLE_STATUS_CONFIG[table.status as keyof typeof TABLE_STATUS_CONFIG]
-                  const tableOrders = pendingOrders.filter(
-                    (o) => o.tables?.label === table.label
-                  )
+                  const tableOrders = pendingOrders.filter((o) => {
+                    const tableLabel = Array.isArray(o.tables) ? o.tables[0]?.label : o.tables?.label
+                    return tableLabel === table.label
+                  })
                   const currentGuests = table.current_guests ?? 0
                   const maxSeats = table.seats
                   const occupancyPercent = maxSeats > 0 ? (currentGuests / maxSeats) * 100 : 0
@@ -845,12 +846,20 @@ export function WaiterDashboard({ profile }: { profile: Profile }) {
                             )}
 
                             <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
-                              {order.tables?.label && (
-                                <span className="font-medium text-foreground">
-                                  {order.tables.label}
-                                </span>
-                              )}
-                              {order.tables?.zone && <span>{order.tables.zone}</span>}
+                              {(() => {
+                                const tableLabel = Array.isArray(order.tables) ? order.tables[0]?.label : order.tables?.label
+                                const tableZone = Array.isArray(order.tables) ? order.tables[0]?.zone : order.tables?.zone
+                                return (
+                                  <>
+                                    {tableLabel && (
+                                      <span className="font-medium text-foreground">
+                                        {tableLabel}
+                                      </span>
+                                    )}
+                                    {tableZone && <span>{tableZone}</span>}
+                                  </>
+                                )
+                              })()}
                               {order.customer_name && (
                                 <>
                                   <span>•</span>

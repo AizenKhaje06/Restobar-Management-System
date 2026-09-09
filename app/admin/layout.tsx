@@ -30,8 +30,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       items={NAV}
       title="Admin Console"
       restaurantName={settings?.name}
-      restaurantTagline={settings?.tagline}
-      restaurantLogo={settings?.logo_url}
+      restaurantTagline={settings?.tagline ?? undefined}
+      restaurantLogo={settings?.logo_url ?? undefined}
     >
       {children}
     </StaffShell>

@@ -32,7 +32,7 @@ interface PendingOrder {
   order_number: number
   status: OrderStatus
   created_at: string
-  tables: { label: string | null } | null
+  tables: { label: string | null } | { label: string | null }[] | null
 }
 
 interface ActivityNotification {
@@ -178,7 +178,7 @@ export function WaiterNotificationsClient({
                           <div>
                             <span className="font-semibold">#{order.order_number}</span>
                             <span className="ml-2 text-sm text-muted-foreground">
-                              {order.tables?.label ?? "—"}
+                              {Array.isArray(order.tables) ? order.tables[0]?.label ?? "—" : order.tables?.label ?? "—"}
                             </span>
                           </div>
                         </div>

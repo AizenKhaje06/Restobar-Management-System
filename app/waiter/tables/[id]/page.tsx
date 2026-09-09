@@ -34,7 +34,7 @@ export default async function WaiterTableDetailPage({
     <WaiterTableDetailClient
       profile={profile}
       table={tableResult.table}
-      initialOrders={tableResult.orders}
+      initialOrders={tableResult.orders ?? []}
       categories={menuData.categories}
       menuItems={menuData.menuItems}
     />

@@ -226,7 +226,7 @@ export function SettingsManager({ settings }: { settings: RestaurantSettings | n
                         const reader = new FileReader()
                         reader.onload = (ev) => {
                           if (preview.tagName === "IMG") {
-                            preview.src = ev.target?.result as string
+                            (preview as HTMLImageElement).src = ev.target?.result as string
                           }
                         }
                         reader.readAsDataURL(file)

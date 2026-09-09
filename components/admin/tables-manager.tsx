@@ -355,7 +355,8 @@ function TableCard({
   const [currentStatus, setCurrentStatus] = useState<TableStatus>(table.status)
   const s = STATUS_STYLES[currentStatus]
 
-  const handleStatusChange = (newStatus: TableStatus) => {
+  const handleStatusChange = (newStatus: TableStatus | null) => {
+    if (!newStatus) return
     setCurrentStatus(newStatus)
     onStatusChange(newStatus)
   }

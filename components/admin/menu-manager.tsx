@@ -815,7 +815,7 @@ function ItemFormDialog({
               <Label htmlFor="category_id">Category</Label>
               <Select
                 value={selectedCategoryId}
-                onValueChange={(v) => setSelectedCategoryId(v)}
+                onValueChange={(v) => setSelectedCategoryId(v || "none")}
                 name="category_id"
               >
                 <SelectTrigger id="category_id" className="w-full">

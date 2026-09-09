@@ -266,7 +266,7 @@ export function PosDashboard({ profile }: { profile: Profile }) {
                 className="pl-9"
               />
             </div>
-            <Select value={tableId} onValueChange={setTableId}>
+            <Select value={tableId} onValueChange={(v) => setTableId(v || "")}>
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="Table #" />
               </SelectTrigger>

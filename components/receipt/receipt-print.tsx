@@ -51,7 +51,7 @@ export const ReceiptPrint = forwardRef<HTMLDivElement, { receipt: ReceiptDetails
   ({ receipt }, ref) => {
     const r = receipt
     const currency = r.restaurant.currency ?? "₱"
-    const fmt = (n: number) => formatCurrency(n, currency)
+    const fmt = (n: number) => formatCurrency(n)
     const paymentMethod = r.payments?.method ?? "cash"
     const amountTendered = r.payments?.amount_tendered
     const changeDue = r.payments?.change_due
@@ -226,22 +226,6 @@ export const ReceiptPrint = forwardRef<HTMLDivElement, { receipt: ReceiptDetails
             </div>
           )}
         </div>
-
-        {/* ── Order notes ── */}
-        {r.orders?.notes && (
-          <div
-            style={{
-              marginTop: "10px",
-              fontSize: "9px",
-              opacity: 0.7,
-              fontStyle: "italic",
-              borderTop: "1px dashed #ccc",
-              paddingTop: "6px",
-            }}
-          >
-            Note: {r.orders.notes}
-          </div>
-        )}
       </div>
     )
   }

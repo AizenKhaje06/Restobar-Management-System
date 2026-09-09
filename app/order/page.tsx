@@ -817,6 +817,9 @@ function CartDrawer({
   onSubmit,
   customerName,
   submitting,
+  onIncrease,
+  onDecrease,
+  onRemove,
 }: {
   isOpen: boolean
   onClose: () => void
@@ -826,6 +829,9 @@ function CartDrawer({
   onSubmit: () => void
   customerName: string
   submitting: boolean
+  onIncrease: (id: string) => void
+  onDecrease: (id: string) => void
+  onRemove: (id: string) => void
 }) {
   // Tax and total calculated
   const tax = Math.round(cartTotal * taxRate * 100) / 100

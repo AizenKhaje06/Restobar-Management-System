@@ -88,7 +88,7 @@ const STATUS_ACTION: Record<OrderStatus, { label: string; icon: React.ReactNode 
   cancelled: { label: "Cancelled",       icon: <X className="size-3.5" /> },
 }
 
-interface WaiterOrder extends OrderWithItems {
+interface WaiterOrder extends Omit<OrderWithItems, 'tables' | 'payment_status'> {
   tables?: { label: string | null; zone: string | null; assigned_waiter: string | null } | null
   payment_status?: string | null
   payment_method?: string | null
@@ -138,11 +138,11 @@ export function WaiterOrdersClient({
               const idx = prev.findIndex((o) => o.id === payload.new.id)
               if (idx >= 0) {
                 const updated = [...prev]
-                updated[idx] = { ...updated[idx], ...payload.new }
+                updated[idx] = { ...updated[idx], ...payload.new } as WaiterOrder
                 return updated
               }
               // New order — add it
-              return [{ ...payload.new, tables: prev[idx]?.tables }, ...prev]
+              return [{ ...payload.new, tables: prev[idx]?.tables } as WaiterOrder, ...prev]
             })
           }
         }
@@ -481,9 +481,9 @@ export function WaiterOrdersClient({
           }}
           onOrderUpdated={(updated) => {
             setOrders((prev) =>
-              prev.map((o) => (o.id === updated.id ? { ...o, ...updated } : o))
+              prev.map((o) => (o.id === updated.id ? { ...o, ...updated } as WaiterOrder : o))
             )
-            setAssistModalOrder(updated)
+            setAssistModalOrder(updated as any)
           }}
         />
       )}

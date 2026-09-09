@@ -41,7 +41,7 @@ import {
   Smartphone,
 } from "lucide-react"
 import { formatCurrency, formatDateTime, TAX_RATE } from "@/lib/constants"
-import type { Profile, OrderWithItems, OrderStatus } from "@/lib/types"
+import type { Profile, OrderWithItems, OrderStatus, OrderItem } from "@/lib/types"
 import {
   updatePosOrderStatus,
   cancelPosOrder,
@@ -168,13 +168,16 @@ export function PosOrdersClient({
     async (addedItem: { name: string; price: number; id: string }) => {
       if (!selectedOrder) return
       // Optimistically update the local order list
-      const newItem = {
+      const newItem: OrderItem = {
         id: `temp-${Date.now()}`,
+        order_id: selectedOrder.id,
+        menu_item_id: null,
         name: addedItem.name,
         unit_price: addedItem.price,
         quantity: 1,
         notes: null,
-        status: "pending",
+        status: "pending" as OrderStatus,
+        created_at: new Date().toISOString(),
       }
       const newSubtotal = (selectedOrder.subtotal || 0) + addedItem.price
       const tax = Math.round(newSubtotal * TAX_RATE * 100) / 100
@@ -646,7 +649,7 @@ export function PosOrdersClient({
         <MenuBrowserModal
           open={showMenuModal}
           onClose={() => setShowMenuModal(false)}
-          orderId={selectedOrder.id}
+          orderId={selectedOrder?.id ?? ""}
           onItemAdded={handleMenuItemAdded}
           getMenu={getPosMenu}
           addItem={addPosOrderItem}

@@ -155,7 +155,7 @@ export function WaiterTableDetailClient({
           if (payload.eventType === "INSERT") {
             setOrders((prev) => {
               if (prev.find((o) => o.id === payload.new.id)) return prev
-              return [{ ...payload.new, order_items: [] } as TableOrder, ...prev]
+              return [{ ...payload.new, order_items: [] } as unknown as TableOrder, ...prev]
             })
           }
         }
