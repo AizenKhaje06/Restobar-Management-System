@@ -115,10 +115,11 @@ export function SettingsManager({ settings }: { settings: RestaurantSettings | n
       const result = await updateRestaurantSettingsAction(fd)
       if (result?.error) {
         setError(result.error)
+        setTimeout(() => setError(null), 5000) // Auto-hide after 5 seconds
         return
       }
       setSuccess(true)
-      setTimeout(() => setSuccess(false), 3000)
+      setTimeout(() => setSuccess(false), 5000) // Show for 5 seconds
       router.refresh()
     })
   }
@@ -142,8 +143,38 @@ export function SettingsManager({ settings }: { settings: RestaurantSettings | n
       />
 
       {success && (
-        <div className="rounded-md border border-emerald-500/40 bg-emerald-50 p-3 text-sm text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400">
-          Settings saved successfully.
+        <div className="fixed top-20 right-6 z-50 min-w-[320px] rounded-lg border border-emerald-500/50 bg-white p-4 shadow-xl dark:bg-gray-950 dark:border-emerald-500/30 animate-in fade-in slide-in-from-right-4 duration-300">
+          <div className="flex items-start gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/10">
+              <ShieldCheck className="size-5 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <div className="flex-1 pt-0.5">
+              <p className="text-sm font-semibold" style={{ color: '#000000' }}>
+                Settings saved
+              </p>
+              <p className="mt-0.5 text-xs" style={{ color: '#333333' }}>
+                Your changes have been saved successfully.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <div className="fixed top-20 right-6 z-50 min-w-[320px] rounded-lg border border-red-500/50 bg-white p-4 shadow-xl dark:bg-gray-950 dark:border-red-500/30 animate-in fade-in slide-in-from-right-4 duration-300">
+          <div className="flex items-start gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-red-500/10">
+              <SettingsIcon className="size-5 text-red-600 dark:text-red-400" />
+            </div>
+            <div className="flex-1 pt-0.5">
+              <p className="text-sm font-semibold" style={{ color: '#000000' }}>
+                Error saving settings
+              </p>
+              <p className="mt-0.5 text-xs" style={{ color: '#333333' }}>
+                {error}
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
@@ -165,7 +196,7 @@ export function SettingsManager({ settings }: { settings: RestaurantSettings | n
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="tagline">Tagline</Label>
-                <Input id="tagline" name="tagline" defaultValue={s.tagline ?? ""} placeholder="Restaurant & Bar" />
+                <Input id="tagline" name="tagline" defaultValue={s.tagline || ""} placeholder="Restaurant & Bar" />
               </div>
             </div>
             <div className="space-y-1.5">
@@ -180,7 +211,7 @@ export function SettingsManager({ settings }: { settings: RestaurantSettings | n
                   )}
                 </div>
                 <div className="flex-1 space-y-2">
-                  <input type="hidden" name="logo_url" id="logo_url_hidden" value={s.logo_url ?? ""} />
+                  <input type="hidden" name="logo_url" id="logo_url_hidden" value={s.logo_url || ""} />
                   <input
                     type="file"
                     id="logo_file"
@@ -228,7 +259,7 @@ export function SettingsManager({ settings }: { settings: RestaurantSettings | n
                 id="address"
                 name="address"
                 rows={2}
-                defaultValue={s.address ?? ""}
+                defaultValue={s.address || ""}
                 placeholder="Street, City, ZIP"
               />
             </div>
@@ -238,21 +269,21 @@ export function SettingsManager({ settings }: { settings: RestaurantSettings | n
                   <Phone className="size-3" />
                   Phone
                 </Label>
-                <Input id="phone" name="phone" type="tel" defaultValue={s.phone ?? ""} placeholder="+63 2 1234 5678" />
+                <Input id="phone" name="phone" type="tel" defaultValue={s.phone || ""} placeholder="+63 2 1234 5678" />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="email" className="flex items-center gap-1.5">
                   <Mail className="size-3" />
                   Email
                 </Label>
-                <Input id="email" name="email" type="email" defaultValue={s.email ?? ""} placeholder="hello@restaurant.com" />
+                <Input id="email" name="email" type="email" defaultValue={s.email || ""} placeholder="hello@restaurant.com" />
               </div>
               <div className="space-y-1.5 sm:col-span-2">
                 <Label htmlFor="tin" className="flex items-center gap-1.5">
                   <ShieldCheck className="size-3" />
                   TIN / Tax ID
                 </Label>
-                <Input id="tin" name="tin" defaultValue={s.tin ?? ""} placeholder="000-000-000-000" />
+                <Input id="tin" name="tin" defaultValue={s.tin || ""} placeholder="000-000-000-000" />
               </div>
             </div>
           </CardContent>
@@ -310,7 +341,7 @@ export function SettingsManager({ settings }: { settings: RestaurantSettings | n
                 id="receipt_footer"
                 name="receipt_footer"
                 rows={2}
-                defaultValue={s.receipt_footer ?? ""}
+                defaultValue={s.receipt_footer || ""}
                 placeholder="e.g. Thank you for dining with us!"
               />
             </div>
@@ -334,7 +365,7 @@ export function SettingsManager({ settings }: { settings: RestaurantSettings | n
                   id="open_time"
                   name="open_time"
                   type="time"
-                  defaultValue={(s.open_time ?? "10:00:00").slice(0, 5)}
+                  defaultValue={(s.open_time || "10:00:00").slice(0, 5)}
                 />
               </div>
               <div className="space-y-1.5">
@@ -343,18 +374,14 @@ export function SettingsManager({ settings }: { settings: RestaurantSettings | n
                   id="close_time"
                   name="close_time"
                   type="time"
-                  defaultValue={(s.close_time ?? "23:00:00").slice(0, 5)}
+                  defaultValue={(s.close_time || "23:00:00").slice(0, 5)}
                 />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {error && (
-          <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-            {error}
-          </div>
-        )}
+        {/* Bottom duplicate error removed since we now have toast */}
 
         <div className="flex items-center justify-end gap-3">
           <Badge variant="outline" className="text-xs">

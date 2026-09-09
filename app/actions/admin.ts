@@ -370,7 +370,125 @@ export async function toggleStaffStatusAction(id: string, is_active: boolean) {
 }
 
 // ============================================================
-// STAFF INVITATIONS
+// STAFF ACCOUNT CREATION (Direct creation, no email invite)
+// ============================================================
+export async function createStaffAccountAction(formData: FormData) {
+  const supabase = await createClient()
+
+  // Verify admin permission
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "Not authenticated" }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single()
+
+  if (!profile || profile.role !== "admin") {
+    return { error: "Only administrators can create staff accounts" }
+  }
+
+  // Extract and validate form data
+  const username = ((formData.get("username") as string) || "").trim().toLowerCase()
+  const password = (formData.get("password") as string) || ""
+  const full_name = ((formData.get("full_name") as string) || "").trim() || null
+  const phone = ((formData.get("phone") as string) || "").trim() || null
+  const address = ((formData.get("address") as string) || "").trim() || null
+  const role = (formData.get("role") as string) || "waiter"
+
+  // Validation
+  if (!username) return { error: "Username is required" }
+  if (username.length < 3 || username.length > 20) {
+    return { error: "Username must be 3-20 characters" }
+  }
+  if (!/^[a-z0-9_]+$/.test(username)) {
+    return { error: "Username can only contain letters, numbers, and underscores" }
+  }
+  if (!password) return { error: "Password is required" }
+  if (password.length < 8) {
+    return { error: "Password must be at least 8 characters" }
+  }
+  if (!["admin", "pos", "waiter"].includes(role)) {
+    return { error: "Invalid role" }
+  }
+
+  // Check if username already exists
+  const { data: existingUsername } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("username", username)
+    .maybeSingle()
+
+  if (existingUsername) {
+    return { error: "Username already taken" }
+  }
+
+  // Generate internal email for staff (users never see this)
+  const internalEmail = `${username}@staff.internal`
+
+  // Check if internal email exists (shouldn't happen, but safety check)
+  const { data: existingEmail } = await supabase
+    .from("profiles")
+    .select("id")
+    .ilike("email", internalEmail)
+    .maybeSingle()
+
+  if (existingEmail) {
+    return { error: "An error occurred. Please try a different username." }
+  }
+
+  // Create auth user using signUp (this works without service role key)
+  const { data: authData, error: authError } = await supabase.auth.signUp({
+    email: internalEmail,
+    password: password,
+    options: {
+      data: {
+        full_name,
+        role,
+      },
+      emailRedirectTo: undefined, // No email confirmation needed
+    },
+  })
+
+  if (authError || !authData.user) {
+    return { error: authError?.message || "Failed to create account" }
+  }
+
+  // Update profile with username and details
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .update({
+      username,
+      full_name,
+      phone,
+      address,
+      role,
+      is_active: true,
+    })
+    .eq("id", authData.user.id)
+
+  if (profileError) {
+    // Note: Can't easily rollback auth user without admin API
+    // But profile will be created by trigger, so we just update it
+    console.error("Profile update failed:", profileError)
+    return { error: "Failed to create profile: " + profileError.message }
+  }
+
+  // Log activity
+  await supabase.rpc("log_activity", {
+    p_action: "staff.created",
+    p_entity: "profile",
+    p_entity_id: authData.user.id,
+    p_detail: { username, role },
+  })
+
+  revalidatePath("/admin/staff")
+  return { success: true, username }
+}
+
+// ============================================================
+// STAFF INVITATIONS (Legacy - kept for backward compatibility)
 // ============================================================
 export async function createStaffInviteAction(formData: FormData) {
   const supabase = await createClient()

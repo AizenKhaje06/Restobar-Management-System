@@ -9,10 +9,8 @@ export default async function LoginPage() {
   if (profile) redirect(ROLE_HOME[profile.role] ?? "/")
 
   return (
-    <main className="flex min-h-svh items-center justify-center bg-gradient-to-b from-muted/40 to-background p-6">
-      <Suspense>
-        <LoginForm />
-      </Suspense>
-    </main>
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   )
 }

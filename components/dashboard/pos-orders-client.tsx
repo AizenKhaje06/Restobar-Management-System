@@ -256,7 +256,7 @@ export function PosOrdersClient({
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as OrderStatus | "all")}>
         {/* Status summary cards — click to filter */}
-        <div className="mb-4 grid gap-2 sm:grid-cols-3 lg:grid-cols-7">
+        <div className="mb-4 grid gap-2 grid-cols-2 sm:grid-cols-4 lg:grid-cols-7">
           {(
             [
               "pending",
@@ -274,13 +274,13 @@ export function PosOrdersClient({
               <button
                 key={status}
                 onClick={() => setTab(active ? "all" : status)}
-                className={`flex items-center justify-between rounded-lg border px-3 py-2.5 text-left text-sm transition-colors ${
+                className={`flex flex-col items-center gap-1.5 rounded-lg border px-3 py-3 text-center transition-colors ${
                   active
                     ? "border-primary bg-primary/5"
                     : "hover:bg-muted/40"
                 }`}
               >
-                <span className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-2 w-full justify-center">
                   <span
                     className={`size-1.5 rounded-full shrink-0 ${
                       status === "pending"
@@ -298,9 +298,9 @@ export function PosOrdersClient({
                         : "bg-rose-500"
                     }`}
                   />
-                  <span className="font-medium truncate">{s.label}</span>
-                </span>
-                <span className="font-semibold tabular-nums text-muted-foreground shrink-0 ml-2">
+                  <span className="text-xs font-medium">{s.label}</span>
+                </div>
+                <span className="text-xl font-bold tabular-nums">
                   {counts[status] ?? 0}
                 </span>
               </button>

@@ -27,7 +27,6 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Dialog,
   DialogContent,
@@ -107,7 +106,7 @@ export function MenuManager({
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
-  const [tab, setTab] = useState<"items" | "categories">("items")
+  const [showCategoryManager, setShowCategoryManager] = useState(false)
   const [search, setSearch] = useState("")
   const [categoryFilter, setCategoryFilter] = useState<string>("all")
   const [availabilityFilter, setAvailabilityFilter] = useState<"all" | "available" | "unavailable">("all")
@@ -182,13 +181,13 @@ export function MenuManager({
         crumbs={[{ label: "Admin", href: "/admin" }, { label: "Menu" }]}
         actions={
           <>
-            {tab === "items" && (
+            {!showCategoryManager && (
               <Button size="sm" onClick={() => setItemDialog({ open: true, item: null })}>
                 <Plus className="mr-2 size-4" />
                 New Item
               </Button>
             )}
-            {tab === "categories" && (
+            {showCategoryManager && (
               <Button size="sm" onClick={() => setCategoryDialog({ open: true, category: null })}>
                 <Plus className="mr-2 size-4" />
                 New Category
@@ -198,118 +197,195 @@ export function MenuManager({
         }
       />
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as "items" | "categories")}>
-        <TabsList>
-          <TabsTrigger value="items">
-            <UtensilsCrossed className="size-4" />
-            Items ({items.length})
-          </TabsTrigger>
-          <TabsTrigger value="categories">
-            <Tag className="size-4" />
-            Categories ({categories.length})
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="items" className="space-y-4">
-          {/* Filters */}
-          <Card>
-            <CardContent className="flex flex-wrap items-center gap-3 p-4">
-              <div className="relative flex-1 min-w-[200px]">
-                <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Search items by name or description..."
-                  className="h-9 pl-8"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
-              <Select value={categoryFilter} onValueChange={(v) => v && setCategoryFilter(v)}>
-                <SelectTrigger className="h-9 w-48">
-                  <SelectValue>
-                    {categoryFilter === "all"
-                      ? "All categories"
-                      : categories.find((c) => c.id === categoryFilter)?.name ?? "Category"}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All categories</SelectItem>
-                  {categories.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select
-                value={availabilityFilter}
-                onValueChange={(v) => setAvailabilityFilter(v as "all" | "available" | "unavailable")}
+      {/* Filters */}
+      {!showCategoryManager && (
+        <Card>
+          <CardContent className="flex flex-wrap items-center gap-3 p-4">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search items by name or description..."
+                className="h-9 pl-8"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <Select
+              value={availabilityFilter}
+              onValueChange={(v) => setAvailabilityFilter(v as "all" | "available" | "unavailable")}
+            >
+              <SelectTrigger className="h-9 w-40">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All status</SelectItem>
+                <SelectItem value="available">Available</SelectItem>
+                <SelectItem value="unavailable">Unavailable</SelectItem>
+              </SelectContent>
+            </Select>
+            {(search || categoryFilter !== "all" || availabilityFilter !== "all") && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSearch("")
+                  setCategoryFilter("all")
+                  setAvailabilityFilter("all")
+                }}
               >
-                <SelectTrigger className="h-9 w-40">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All status</SelectItem>
-                  <SelectItem value="available">Available</SelectItem>
-                  <SelectItem value="unavailable">Unavailable</SelectItem>
-                </SelectContent>
-              </Select>
-              {(search || categoryFilter !== "all" || availabilityFilter !== "all") && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setSearch("")
-                    setCategoryFilter("all")
-                    setAvailabilityFilter("all")
-                  }}
-                >
-                  <Filter className="mr-1 size-3" />
-                  Clear
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+                <Filter className="mr-1 size-3" />
+                Clear
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
-          {/* Items list */}
-          {filteredItems.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                <UtensilsCrossed className="mb-3 size-10 text-muted-foreground" />
-                <p className="text-sm font-medium">No items found</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {search || categoryFilter !== "all"
-                    ? "Try adjusting your filters"
-                    : "Start by adding your first menu item"}
-                </p>
-                {!search && categoryFilter === "all" && (
-                  <Button
-                    size="sm"
-                    className="mt-4"
-                    onClick={() => setItemDialog({ open: true, item: null })}
+      {/* Main Content - No Tabs! */}
+      {!showCategoryManager ? (
+        /* TWO COLUMN LAYOUT: Menu Items (Left) + Category Sidebar (Right) */
+        <div className="flex gap-6">
+          {/* LEFT: Menu Items Grid (Full View) */}
+          <div className="flex-1 min-w-0 space-y-4">
+            {filteredItems.length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+                  <UtensilsCrossed className="mb-3 size-10 text-muted-foreground" />
+                  <p className="text-sm font-medium">No items found</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {search || categoryFilter !== "all"
+                      ? "Try adjusting your filters"
+                      : "Start by adding your first menu item"}
+                  </p>
+                  {!search && categoryFilter === "all" && (
+                    <Button
+                      size="sm"
+                      className="mt-4"
+                      onClick={() => setItemDialog({ open: true, item: null })}
+                    >
+                      <Plus className="mr-2 size-4" />
+                      Add Item
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {filteredItems.map((item) => (
+                  <ItemCard
+                    key={item.id}
+                    item={item}
+                    pending={pending}
+                    onEdit={() => setItemDialog({ open: true, item })}
+                    onDelete={() => setDeleteItemId(item.id)}
+                    onToggle={() => onToggleAvailability(item)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* RIGHT: Category Sidebar */}
+          <div className="w-[240px] flex-shrink-0 space-y-4">
+            <Card className="sticky top-4">
+              <CardContent className="p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="text-sm font-semibold">Categories</h3>
+                  {categoryFilter !== "all" && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setCategoryFilter("all")}
+                      className="h-auto p-1 text-xs"
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  {/* All Items */}
+                  <button
+                    onClick={() => setCategoryFilter("all")}
+                    className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors ${
+                      categoryFilter === "all"
+                        ? "bg-primary text-primary-foreground"
+                        : "hover:bg-muted"
+                    }`}
                   >
-                    <Plus className="mr-2 size-4" />
-                    Add Item
-                  </Button>
-                )}
+                    <div className="flex items-center gap-2">
+                      <UtensilsCrossed className="size-4" />
+                      <span className="font-medium">All Items</span>
+                    </div>
+                    <span className={`text-xs font-semibold tabular-nums ${
+                      categoryFilter === "all" ? "text-primary-foreground/80" : "text-muted-foreground"
+                    }`}>
+                      {items.length}
+                    </span>
+                  </button>
+
+                  {/* Category List */}
+                  {categories.filter(c => c.is_active).map((cat) => {
+                    const catItems = itemsByCategory.get(cat.id) ?? []
+                    const available = catItems.filter((i) => i.is_available).length
+                    const isActive = categoryFilter === cat.id
+                    
+                    return (
+                      <button
+                        key={cat.id}
+                        onClick={() => setCategoryFilter(cat.id)}
+                        className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors ${
+                          isActive
+                            ? "bg-primary text-primary-foreground"
+                            : "hover:bg-muted"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className={`flex size-5 shrink-0 items-center justify-center text-xs ${
+                            isActive ? "text-primary-foreground/80" : "text-muted-foreground"
+                          }`}>
+                            {cat.sort_order}
+                          </span>
+                          <span className="font-medium truncate">{cat.name}</span>
+                        </div>
+                        <span className={`text-sm font-semibold tabular-nums shrink-0 ml-2 ${
+                          isActive ? "text-primary-foreground" : "text-emerald-600 dark:text-emerald-400"
+                        }`}>
+                          {available}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Manage Categories Button */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-4 w-full"
+                  onClick={() => setShowCategoryManager(true)}
+                >
+                  <Tag className="mr-2 size-3.5" />
+                  Manage Categories
+                </Button>
               </CardContent>
             </Card>
-          ) : (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {filteredItems.map((item) => (
-                <ItemCard
-                  key={item.id}
-                  item={item}
-                  pending={pending}
-                  onEdit={() => setItemDialog({ open: true, item })}
-                  onDelete={() => setDeleteItemId(item.id)}
-                  onToggle={() => onToggleAvailability(item)}
-                />
-              ))}
-            </div>
-          )}
-        </TabsContent>
+          </div>
 
-        <TabsContent value="categories" className="space-y-4">
+          {/* End of right sidebar */}
+        </div>
+      ) : (
+        /* CATEGORY MANAGER */
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowCategoryManager(false)}
+            >
+              <ChevronDown className="mr-2 size-4 rotate-90" />
+              Back to Menu
+            </Button>
+          </div>
           {categories.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-16 text-center">
@@ -386,12 +462,12 @@ export function MenuManager({
               </CardContent>
             </Card>
           )}
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
 
       {/* Item dialog */}
       <ItemFormDialog
-        key={itemDialog.item?.id ?? "new"}
+        key={itemDialog.item?.id ?? "new-item"}
         open={itemDialog.open}
         item={itemDialog.item}
         categories={categories}
@@ -404,7 +480,7 @@ export function MenuManager({
 
       {/* Category dialog */}
       <CategoryFormDialog
-        key={categoryDialog.category?.id ?? "new"}
+        key={categoryDialog.category?.id ?? "new-category"}
         open={categoryDialog.open}
         category={categoryDialog.category}
         onClose={() => setCategoryDialog({ open: false, category: null })}

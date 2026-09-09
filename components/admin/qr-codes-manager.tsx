@@ -162,54 +162,60 @@ function QRCard({
   }, [table.id, origin])
 
   return (
-    <Card className="overflow-hidden print:break-inside-avoid print:shadow-none print:border-2">
-      <CardContent className="space-y-3 p-5 text-center">
-        <div>
-          <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            {RESTAURANT_NAME}
+    <Card className="overflow-hidden print:break-inside-avoid print:shadow-none print:border-2 print:border-gray-300">
+      <CardContent className="space-y-4 p-6 text-center print:p-6">
+        {/* Header Section - TABLE INFO */}
+        <div className="space-y-1 border-b pb-4 print:border-b-2">
+          <div className="text-4xl font-black tracking-tight text-emerald-500 dark:text-emerald-400 print:text-5xl">
+            {table.label}
           </div>
-          <div className="text-[0.65rem] text-muted-foreground">{RESTAURANT_TAGLINE}</div>
+          <div className="text-sm font-medium text-muted-foreground">
+            {table.seats} {table.seats === 1 ? "Seat" : "Seats"}
+            {table.zone ? ` • ${table.zone}` : ""}
+          </div>
         </div>
 
-        <div className="mx-auto flex h-44 w-44 items-center justify-center rounded-lg border bg-white p-2 print:border-2">
+        {/* QR Code Section */}
+        <div className="mx-auto flex size-52 items-center justify-center rounded-xl border-4 border-gray-200 bg-white p-3 shadow-sm print:border-4 print:size-56">
           {qrUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={qrUrl} alt={`QR for ${table.label}`} className="h-full w-full" />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-              <ScanLine className="size-12 opacity-40" />
+              <ScanLine className="size-16 opacity-30" />
             </div>
           )}
         </div>
 
-        <div>
-          <div className="text-2xl font-bold tracking-tight">{table.label}</div>
-          <div className="text-xs text-muted-foreground">
-            {table.seats} {table.seats === 1 ? "seat" : "seats"}
-            {table.zone ? ` • ${table.zone}` : ""}
+        {/* Table Code - Corporate Style Badge */}
+        <div className="mx-auto max-w-[200px] rounded-lg border-2 border-primary bg-primary/5 px-4 py-3 print:border-3">
+          <p className="text-[0.65rem] font-semibold uppercase tracking-widest text-muted-foreground">
+            Table Code
+          </p>
+          <p className="mt-1 text-3xl font-black tracking-wider text-primary print:text-4xl">
+            {(table as any).table_code || "----"}
+          </p>
+        </div>
+
+        {/* Instructions */}
+        <div className="space-y-1 border-t pt-3 text-xs text-muted-foreground print:border-t-2 print:pt-4">
+          <div className="flex items-center justify-center gap-2">
+            <ScanLine className="size-4" />
+            <span className="font-medium">Scan to view menu & place order</span>
           </div>
-        </div>
-
-        {/* Table Code */}
-        <div className="rounded-lg border-2 border-dashed border-primary/30 bg-primary/5 px-4 py-2">
-          <p className="text-[0.6rem] uppercase tracking-wider text-muted-foreground">Table Code</p>
-          <p className="text-2xl font-black tracking-widest text-primary">{(table as any).table_code || "----"}</p>
-        </div>
-
-        <div className="flex flex-col gap-1 text-[0.65rem] text-muted-foreground print:hidden">
-          <span>Scan to view menu & order</span>
           {token && (
-            <code className="mx-auto max-w-[180px] truncate rounded bg-muted px-1.5 py-0.5 font-mono text-[0.6rem]">
+            <code className="mx-auto mt-2 block max-w-[200px] truncate rounded-md bg-muted px-2 py-1 font-mono text-[0.6rem] print:hidden">
               {token}
             </code>
           )}
         </div>
 
-        <div className="flex gap-1.5 pt-1 print:hidden">
+        {/* Action Buttons - Hidden on Print */}
+        <div className="flex gap-2 pt-2 print:hidden">
           <Button
             size="sm"
             variant="outline"
-            className="flex-1"
+            className="flex-1 h-9"
             onClick={() => {
               if (qrUrl) {
                 const a = document.createElement("a")
@@ -221,12 +227,24 @@ function QRCard({
             }}
             disabled={!qrUrl}
           >
-            <Download className="mr-1 size-3" />
-            PNG
+            <Download className="mr-2 size-4" />
+            Download PNG
           </Button>
-          <Button size="sm" variant="outline" onClick={onRegenerate} disabled={pending}>
-            <RefreshCw className="size-3" />
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="h-9 px-3"
+            onClick={onRegenerate} 
+            disabled={pending}
+            title="Regenerate QR Code"
+          >
+            <RefreshCw className={`size-4 ${pending ? "animate-spin" : ""}`} />
           </Button>
+        </div>
+
+        {/* Footer - Print Only */}
+        <div className="hidden print:block pt-3 border-t-2 text-[0.65rem] text-muted-foreground">
+          <p>For assistance, please call your server</p>
         </div>
       </CardContent>
     </Card>

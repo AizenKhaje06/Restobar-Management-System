@@ -42,12 +42,12 @@ export function Brand({
   const displayTagline = tagline ?? RESTAURANT_TAGLINE
 
   return (
-    <div className={cn("flex items-center gap-3", className)}>
-      <BrandMark logoUrl={logoUrl} />
-      <div className="leading-tight">
+    <div className={cn("flex items-start gap-3", className)}>
+      <BrandMark logoUrl={logoUrl} className="shrink-0" />
+      <div className="min-w-0 flex-1 leading-tight">
         <div
           className={cn(
-            "font-semibold tracking-tight",
+            "font-semibold tracking-tight break-words",
             variant === "sidebar" ? "text-sidebar-foreground" : "text-foreground",
           )}
         >
@@ -56,7 +56,7 @@ export function Brand({
         {showTagline && (
           <div
             className={cn(
-              "text-xs",
+              "text-xs break-words line-clamp-2",
               variant === "sidebar" ? "text-sidebar-foreground/60" : "text-muted-foreground",
             )}
           >

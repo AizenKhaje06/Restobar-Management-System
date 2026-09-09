@@ -48,7 +48,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { ROLE_LABELS, relativeTime } from "@/lib/constants"
 import type { Profile, UserRole } from "@/lib/types"
-import { updateStaffAction, toggleStaffStatusAction, createStaffInviteAction, cancelStaffInviteAction } from "@/app/actions/admin"
+import { updateStaffAction, toggleStaffStatusAction, createStaffAccountAction, cancelStaffInviteAction } from "@/app/actions/admin"
 
 type StaffWithTables = Profile & { assigned_tables: string[] }
 
@@ -341,6 +341,7 @@ function StaffEditDialog({
 }) {
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
   const [role, setRole] = useState<UserRole>(staff?.role ?? "waiter")
   const [isActive, setIsActive] = useState(staff?.is_active ?? true)
 
@@ -349,6 +350,8 @@ function StaffEditDialog({
     if (staff) {
       setRole(staff.role)
       setIsActive(staff.is_active)
+      setSuccess(false)
+      setError(null)
     }
   }, [staff])
 
@@ -356,6 +359,7 @@ function StaffEditDialog({
     e.preventDefault()
     if (!staff) return
     setError(null)
+    setSuccess(false)
     const fd = new FormData(e.currentTarget)
     fd.set("role", role)
     fd.set("is_active", String(isActive))
@@ -363,100 +367,123 @@ function StaffEditDialog({
       const result = await updateStaffAction(staff.id, fd)
       if (result?.error) {
         setError(result.error)
+        setTimeout(() => setError(null), 5000)
         return
       }
-      onSaved()
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 3000)
+      setTimeout(() => onSaved(), 1000) // Close after showing success
     })
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Edit Staff Member</DialogTitle>
-          <DialogDescription>
-            Update role and access. The user will need to re-login to see role-based changes take full effect.
-          </DialogDescription>
-        </DialogHeader>
-        {staff && (
-          <form onSubmit={onSubmit} className="space-y-4">
-            <div className="flex items-center gap-3 rounded-md border bg-muted/40 p-3">
-              <Avatar className="size-10">
-                <AvatarFallback className="bg-muted text-sm font-medium">
-                  {initials(staff.full_name)}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <div className="text-sm font-semibold">{staff.full_name ?? "Unnamed"}</div>
-                <div className="text-xs text-muted-foreground">{staff.email}</div>
-              </div>
+    <>
+      {success && (
+        <div className="fixed top-20 right-6 z-50 min-w-[320px] rounded-lg border border-emerald-500/50 bg-white p-4 shadow-xl dark:bg-gray-950 dark:border-emerald-500/30 animate-in fade-in slide-in-from-right-4 duration-300">
+          <div className="flex items-start gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/10">
+              <Users className="size-5 text-emerald-600 dark:text-emerald-400" />
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="full_name">Full name</Label>
-                <Input id="full_name" name="full_name" defaultValue={staff.full_name ?? ""} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="phone">Phone</Label>
-                <Input id="phone" name="phone" type="tel" defaultValue={staff.phone ?? ""} />
-              </div>
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label htmlFor="address">Address</Label>
-                <Input id="address" name="address" defaultValue={(staff as any).address ?? ""} placeholder="Street, City, Province" />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="role-select">Role</Label>
-                <Select value={role} onValueChange={(v) => setRole(v as UserRole)}>
-                  <SelectTrigger id="role-select" className="w-full">
-                    <SelectValue>
-                      {ROLE_LABELS[role]}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">Administrator</SelectItem>
-                    <SelectItem value="pos">POS Cashier</SelectItem>
-                    <SelectItem value="waiter">Waiter</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="is_active">Status</Label>
-                <div className="flex h-8 items-center gap-2 rounded-md border bg-transparent px-2.5">
-                  <Switch
-                    id="is_active"
-                    checked={isActive}
-                    onCheckedChange={setIsActive}
-                  />
-                  <span className="text-sm">
-                    {isActive ? "Active — can sign in" : "Inactive — access revoked"}
-                  </span>
+            <div className="flex-1 pt-0.5">
+              <p className="text-sm font-semibold" style={{ color: '#000000' }}>
+                Staff updated
+              </p>
+              <p className="mt-0.5 text-xs" style={{ color: '#333333' }}>
+                Changes have been saved successfully.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Staff Member</DialogTitle>
+            <DialogDescription>
+              Update role and access. The user will need to re-login to see role-based changes take full effect.
+            </DialogDescription>
+          </DialogHeader>
+          {staff && (
+            <form onSubmit={onSubmit} className="space-y-4">
+              <div className="flex items-center gap-3 rounded-md border bg-muted/40 p-3">
+                <Avatar className="size-10">
+                  <AvatarFallback className="bg-muted text-sm font-medium">
+                    {initials(staff.full_name)}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="text-sm font-semibold">{staff.full_name ?? "Unnamed"}</div>
+                  <div className="text-xs text-muted-foreground">{staff.email}</div>
                 </div>
               </div>
-            </div>
-
-            {error && (
-              <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-                {error}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="full_name">Full name</Label>
+                  <Input id="full_name" name="full_name" defaultValue={staff.full_name ?? ""} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input id="phone" name="phone" type="tel" defaultValue={staff.phone ?? ""} />
+                </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label htmlFor="address">Address</Label>
+                  <Input id="address" name="address" defaultValue={(staff as any).address ?? ""} placeholder="Street, City, Province" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="role-select">Role</Label>
+                  <Select value={role} onValueChange={(v) => setRole(v as UserRole)}>
+                    <SelectTrigger id="role-select" className="w-full">
+                      <SelectValue>
+                        {ROLE_LABELS[role]}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">Administrator</SelectItem>
+                      <SelectItem value="pos">POS Cashier</SelectItem>
+                      <SelectItem value="waiter">Waiter</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="is_active">Status</Label>
+                  <div className="flex h-10 items-center gap-3 rounded-md border bg-transparent px-3">
+                    <Switch
+                      id="is_active"
+                      checked={isActive}
+                      onCheckedChange={setIsActive}
+                    />
+                    <span className="text-sm">
+                      {isActive ? "Active" : "Inactive"}
+                    </span>
+                  </div>
+                </div>
               </div>
-            )}
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={pending}>
-                {pending ? "Saving..." : "Save Changes"}
-              </Button>
-            </DialogFooter>
-          </form>
-        )}
-      </DialogContent>
-    </Dialog>
+              {error && (
+                <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+                  {error}
+                </div>
+              )}
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={onClose}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={pending}>
+                  {pending ? "Saving..." : "Save Changes"}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 
 // ============================================================
-// Add Staff dialog
+// Add Staff dialog (NEW: Direct account creation)
 // ============================================================
 function AddStaffDialog({
   open,
@@ -469,116 +496,220 @@ function AddStaffDialog({
 }) {
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
   const [selectedRole, setSelectedRole] = useState<UserRole>("waiter")
+  const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
+    setSuccess(false)
+
+    // Validate password match
+    if (password !== confirmPassword) {
+      setError("Passwords do not match")
+      return
+    }
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters")
+      return
+    }
+
     const fd = new FormData(e.currentTarget)
     fd.set("role", selectedRole)
+    fd.set("password", password)
+
     startTransition(async () => {
-      const result = await createStaffInviteAction(fd)
+      const result = await createStaffAccountAction(fd)
       if (result?.error) {
         setError(result.error)
+        setTimeout(() => setError(null), 5000)
         return
       }
-      onSaved()
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 3000)
+      setTimeout(() => {
+        // Reset form
+        setPassword("")
+        setConfirmPassword("")
+        setSelectedRole("waiter")
+        onSaved()
+      }, 1000)
     })
   }
 
   const handleClose = () => {
     if (!pending) {
       setError(null)
+      setSuccess(false)
+      setPassword("")
+      setConfirmPassword("")
       setSelectedRole("waiter")
       onClose()
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Add Staff Member</DialogTitle>
-          <DialogDescription>
-            Send an invitation to a new team member. They&apos;ll receive an email to join.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={onSubmit} className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="add_full_name">Full name</Label>
-              <Input
-                id="add_full_name"
-                name="full_name"
-                placeholder="Juan dela Cruz"
-                required
-              />
+    <>
+      {success && (
+        <div className="fixed top-20 right-6 z-[100] min-w-[320px] rounded-lg border border-emerald-500/50 bg-white p-4 shadow-xl dark:bg-gray-950 dark:border-emerald-500/30 animate-in fade-in slide-in-from-right-4 duration-300">
+          <div className="flex items-start gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/10">
+              <UserPlus className="size-5 text-emerald-600 dark:text-emerald-400" />
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="add_email">Email address</Label>
-              <Input
-                id="add_email"
-                name="email"
-                type="email"
-                placeholder="juan@restaurant.com"
-                required
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="add_phone">Phone number</Label>
-              <Input
-                id="add_phone"
-                name="phone"
-                type="tel"
-                placeholder="+63 9XX XXX XXXX"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="add_role">Role</Label>
-              <Select
-                value={selectedRole}
-                onValueChange={(v) => setSelectedRole(v as UserRole)}
-              >
-                <SelectTrigger id="add_role" className="w-full">
-                  <SelectValue>{ROLE_LABELS[selectedRole]}</SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pos">POS Cashier</SelectItem>
-                  <SelectItem value="waiter">Waiter</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="add_address">Address</Label>
-              <Input
-                id="add_address"
-                name="address"
-                placeholder="Street, City, Province"
-              />
+            <div className="flex-1 pt-0.5">
+              <p className="text-sm font-semibold" style={{ color: '#000000' }}>
+                Staff account created
+              </p>
+              <p className="mt-0.5 text-xs" style={{ color: '#333333' }}>
+                New staff member can now login with their username.
+              </p>
             </div>
           </div>
+        </div>
+      )}
 
-          <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300">
-            <strong>How it works:</strong> An invitation record will be created. The staff member must sign up on the login page using this email address — their profile will be automatically filled with the details above.
-          </div>
+      <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create Staff Account</DialogTitle>
+            <DialogDescription>
+              Create a new staff account directly. Staff will login with username and password.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={onSubmit} className="space-y-4">
+            <div className="grid gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="add_full_name">
+                  Full name <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="add_full_name"
+                  name="full_name"
+                  placeholder="Juan dela Cruz"
+                  required
+                  autoComplete="off"
+                />
+              </div>
 
-          {error && (
-            <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
+              <div className="space-y-1.5">
+                <Label htmlFor="add_username">
+                  Username <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="add_username"
+                  name="username"
+                  placeholder="juandc"
+                  required
+                  autoComplete="off"
+                  pattern="[a-z0-9_]+"
+                  minLength={3}
+                  maxLength={20}
+                  className="lowercase"
+                />
+                <p className="text-xs text-muted-foreground">
+                  3-20 characters, lowercase letters, numbers, underscores only
+                </p>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="add_password">
+                    Password <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="add_password"
+                    type="password"
+                    placeholder="••••••••"
+                    required
+                    minLength={8}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="new-password"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="add_confirm_password">
+                    Confirm Password <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="add_confirm_password"
+                    type="password"
+                    placeholder="••••••••"
+                    required
+                    minLength={8}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    autoComplete="new-password"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="add_role">
+                  Role <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={selectedRole}
+                  onValueChange={(v) => setSelectedRole(v as UserRole)}
+                >
+                  <SelectTrigger id="add_role" className="w-full">
+                    <SelectValue>{ROLE_LABELS[selectedRole]}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Administrator</SelectItem>
+                    <SelectItem value="pos">POS Cashier</SelectItem>
+                    <SelectItem value="waiter">Waiter</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="add_phone">Phone number</Label>
+                  <Input
+                    id="add_phone"
+                    name="phone"
+                    type="tel"
+                    placeholder="+63 9XX XXX XXXX"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="add_address">Address</Label>
+                  <Input
+                    id="add_address"
+                    name="address"
+                    placeholder="City, Province"
+                  />
+                </div>
+              </div>
             </div>
-          )}
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={handleClose} disabled={pending}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={pending}>
-              <Plus className="mr-2 size-4" />
-              {pending ? "Sending invite..." : "Send Invite"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+            <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-300">
+              <strong>Note:</strong> The account will be created immediately and the staff member can login right away using their username and password.
+            </div>
+
+            {error && (
+              <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+                {error}
+              </div>
+            )}
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={handleClose} disabled={pending}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={pending}>
+                <Plus className="mr-2 size-4" />
+                {pending ? "Creating account..." : "Create Account"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
+

@@ -1,7 +1,7 @@
 export const TAX_RATE = 0.12 // 12% VAT
 export const CURRENCY = "₱"
-export const RESTAURANT_NAME = "Lumière"
-export const RESTAURANT_TAGLINE = "Restaurant & Bar"
+export const RESTAURANT_NAME = "Lydias Lechon"
+export const RESTAURANT_TAGLINE = "Great Food. Great Moments."
 
 export function formatCurrency(amount: number): string {
   return `${CURRENCY}${Number(amount).toLocaleString("en-PH", {
