@@ -263,7 +263,7 @@ export function CashflowDashboard() {
                 />
                 <YAxis className="text-xs" />
                 <Tooltip 
-                  formatter={(value: number) => formatCurrency(value)}
+                  formatter={(value: any) => formatCurrency(Number(value) || 0)}
                   labelFormatter={(label) => new Date(label).toLocaleDateString("en-PH")}
                 />
                 <Legend />
@@ -315,7 +315,7 @@ export function CashflowDashboard() {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                <Tooltip formatter={(value: any) => formatCurrency(Number(value) || 0)} />
                 <Legend 
                   formatter={(value) => PAYMENT_METHOD_LABELS[value] || value}
                 />
