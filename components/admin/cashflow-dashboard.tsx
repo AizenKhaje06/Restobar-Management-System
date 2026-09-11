@@ -264,7 +264,7 @@ export function CashflowDashboard() {
                 <YAxis className="text-xs" />
                 <Tooltip 
                   formatter={(value: any) => formatCurrency(Number(value) || 0)}
-                  labelFormatter={(label) => new Date(label).toLocaleDateString("en-PH")}
+                  labelFormatter={(label: any) => label ? new Date(label).toLocaleDateString("en-PH") : ""}
                 />
                 <Legend />
                 <Area 
