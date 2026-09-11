@@ -83,7 +83,12 @@ export async function updatePosOrderStatus(orderId: string, status: OrderStatus)
 
   const patch: Record<string, unknown> = { status }
   if (status === "served") patch.served_by = profile?.id ?? null
-  if (status === "completed") patch.completed_at = new Date().toISOString()
+  
+  // When order status is "completed", mark payment as "paid" and set completed timestamp
+  if (status === "completed") {
+    patch.payment_status = "paid"
+    patch.completed_at = new Date().toISOString()
+  }
 
   const { error } = await supabase.from("orders").update(patch).eq("id", orderId)
   if (error) return { error: error.message }

@@ -18,6 +18,12 @@ export async function updateWaiterOrderStatus(orderId: string, status: OrderStat
 
   const patch: Record<string, unknown> = { status }
   if (status === "served") patch.served_by = profile.id
+  
+  // When order status is "completed", mark payment as "paid" and set completed timestamp
+  if (status === "completed") {
+    patch.payment_status = "paid"
+    patch.completed_at = new Date().toISOString()
+  }
 
   const { error } = await supabase
     .from("orders")

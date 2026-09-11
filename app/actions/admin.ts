@@ -562,12 +562,18 @@ export async function cancelStaffInviteAction(inviteId: string) {
 // ============================================================
 export async function updateOrderStatusAction(orderId: string, status: OrderStatus) {
   const supabase = await createClient()
+  
+  const patch: Record<string, unknown> = { status }
+  
+  // When order status is "completed", mark payment as "paid" and set completed timestamp
+  if (status === "completed") {
+    patch.payment_status = "paid"
+    patch.completed_at = new Date().toISOString()
+  }
+  
   const { error } = await supabase
     .from("orders")
-    .update({
-      status,
-      completed_at: status === "completed" ? new Date().toISOString() : null,
-    })
+    .update(patch)
     .eq("id", orderId)
   if (error) return { error: error.message }
   await supabase.rpc("log_activity", { p_action: `order.${status}`, p_entity: "order", p_entity_id: orderId })
