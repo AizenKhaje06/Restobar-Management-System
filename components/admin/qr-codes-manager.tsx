@@ -9,11 +9,22 @@ import {
   RefreshCw,
   ScanLine,
   Search,
+  AlertTriangle,
+  Loader2,
+  ShieldAlert,
 } from "lucide-react"
 import { PageHeader } from "@/components/page-header"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { createClient } from "@/lib/supabase/client"
 import type { RestaurantTable } from "@/lib/types"
 import { generateTableQRAction } from "@/app/actions/admin"
@@ -26,6 +37,7 @@ export function QRCodesManager({ tables }: { tables: TableWithWaiter[] }) {
   const [pending, startTransition] = useTransition()
   const [search, setSearch] = useState("")
   const [origin, setOrigin] = useState("")
+  const [showRegenerateDialog, setShowRegenerateDialog] = useState(false)
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -46,7 +58,11 @@ export function QRCodesManager({ tables }: { tables: TableWithWaiter[] }) {
   }
 
   const onRegenerateAll = () => {
-    if (!confirm("Regenerate QR for ALL tables? Old codes will stop working.")) return
+    setShowRegenerateDialog(true)
+  }
+
+  const confirmRegenerateAll = () => {
+    setShowRegenerateDialog(false)
     startTransition(async () => {
       for (const t of tables) {
         await generateTableQRAction(t.id)
@@ -118,6 +134,107 @@ export function QRCodesManager({ tables }: { tables: TableWithWaiter[] }) {
           ))}
         </div>
       )}
+
+      {/* Enterprise-Grade Regenerate All Confirmation Dialog */}
+      <Dialog open={showRegenerateDialog} onOpenChange={setShowRegenerateDialog}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
+              <ShieldAlert className="h-8 w-8 text-amber-600 dark:text-amber-500" />
+            </div>
+            <DialogTitle className="text-center text-2xl font-bold">
+              Regenerate All QR Codes?
+            </DialogTitle>
+            <DialogDescription className="text-center text-base pt-2">
+              This action will regenerate QR codes for all {tables.length} tables in your system.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Warning Box */}
+            <div className="rounded-lg border-2 border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/20 p-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-500 mt-0.5 shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <h4 className="font-semibold text-amber-900 dark:text-amber-200">
+                    Critical Security Impact
+                  </h4>
+                  <ul className="space-y-1.5 text-sm text-amber-800 dark:text-amber-300">
+                    <li className="flex items-start gap-2">
+                      <span className="text-amber-600 dark:text-amber-500 font-bold mt-0.5">•</span>
+                      <span>All existing QR codes will <strong>immediately stop working</strong></span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-amber-600 dark:text-amber-500 font-bold mt-0.5">•</span>
+                      <span>Customers with saved links <strong>will not be able to order</strong></span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-amber-600 dark:text-amber-500 font-bold mt-0.5">•</span>
+                      <span>Printed QR codes must be <strong>replaced at all tables</strong></span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-amber-600 dark:text-amber-500 font-bold mt-0.5">•</span>
+                      <span>This action <strong>cannot be undone</strong></span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="rounded-lg border bg-muted/50 p-3 text-center">
+                <p className="text-2xl font-bold text-primary">{tables.length}</p>
+                <p className="text-xs text-muted-foreground mt-1">Tables</p>
+              </div>
+              <div className="rounded-lg border bg-muted/50 p-3 text-center">
+                <p className="text-2xl font-bold text-primary">{tables.length}</p>
+                <p className="text-xs text-muted-foreground mt-1">QR Codes</p>
+              </div>
+              <div className="rounded-lg border bg-muted/50 p-3 text-center">
+                <p className="text-2xl font-bold text-amber-600">~{tables.length * 2}s</p>
+                <p className="text-xs text-muted-foreground mt-1">Est. Time</p>
+              </div>
+            </div>
+
+            {/* Recommendation */}
+            <div className="rounded-lg border bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800 p-3">
+              <p className="text-xs text-blue-800 dark:text-blue-300">
+                <strong className="font-semibold">💡 Recommendation:</strong> Only regenerate if QR codes are compromised or stolen. 
+                For single-table updates, use the individual regenerate button instead.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setShowRegenerateDialog(false)}
+              disabled={pending}
+              className="flex-1 sm:flex-none"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmRegenerateAll}
+              disabled={pending}
+              className="flex-1 sm:flex-none bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white"
+            >
+              {pending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Regenerating {tables.length} QR Codes...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Yes, Regenerate All
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </div>
   )
