@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { toast } from "sonner"
 import {
   Armchair,
   Edit3,
@@ -136,9 +137,11 @@ export function TablesManager({
       const result = await updateTableStatusAction(id, status)
       if (result?.error) {
         console.error("Failed to update status:", result.error)
+        toast.error("Failed to update table status")
         // Revert local state on error
         setLocalTables(tables)
       } else {
+        toast.success("Table status updated")
         router.refresh()
       }
     })
@@ -146,7 +149,12 @@ export function TablesManager({
 
   const onRegenerateQR = (tableId: string) => {
     startTransition(async () => {
-      await generateTableQRAction(tableId)
+      const result = await generateTableQRAction(tableId)
+      if (result?.error) {
+        toast.error(result.error)
+      } else {
+        toast.success("QR code regenerated successfully")
+      }
       router.refresh()
     })
   }
@@ -154,7 +162,12 @@ export function TablesManager({
   const onDelete = () => {
     if (!deleteId) return
     startTransition(async () => {
-      await deleteTableAction(deleteId)
+      const result = await deleteTableAction(deleteId)
+      if (result?.error) {
+        toast.error(result.error)
+      } else {
+        toast.success("Table deleted successfully")
+      }
       setDeleteId(null)
       router.refresh()
     })
@@ -453,6 +466,14 @@ function TableFormDialog({
 }) {
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [status, setStatus] = useState<TableStatus>(table?.status ?? "available")
+
+  // Reset status when dialog opens with a different table
+  useEffect(() => {
+    if (table) {
+      setStatus(table.status)
+    }
+  }, [table?.id])
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -464,8 +485,10 @@ function TableFormDialog({
         : await createTableAction(fd)
       if (result?.error) {
         setError(result.error)
+        toast.error(result.error)
         return
       }
+      toast.success(table ? "Table updated successfully" : "Table created successfully")
       onSaved()
     })
   }
@@ -519,8 +542,9 @@ function TableFormDialog({
                 <select
                   id="status"
                   name="status"
-                  defaultValue={table.status}
-                  className="flex h-8 w-full rounded-md border border-input bg-transparent px-2 text-sm"
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as TableStatus)}
+                  className="flex h-8 w-full rounded-md border border-input bg-background px-2 text-sm text-foreground [&>option]:text-foreground [&>option]:bg-background"
                 >
                   <option value="available">Available</option>
                   <option value="occupied">Occupied</option>
