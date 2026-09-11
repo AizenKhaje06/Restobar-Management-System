@@ -54,7 +54,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { AssistModal, type WaiterOrderForModal } from "@/components/dashboard/assist-modal"
-import { DateRangePicker, type DateRange } from "@/components/ui/date-range-picker"
 import { formatCurrency, formatTime, formatDateTime } from "@/lib/constants"
 import { createClient } from "@/lib/supabase/client"
 import type { Profile, OrderWithItems, OrderStatus } from "@/lib/types"
@@ -138,7 +137,6 @@ export function WaiterOrdersClient({
   // New state for enterprise features
   const [currentTime, setCurrentTime] = useState(new Date())
   const [sortBy, setSortBy] = useState<"time" | "priority" | "table" | "amount">("time")
-  const [dateRange, setDateRange] = useState<DateRange>({ from: null, to: null })
 
   // Update current time every second for live timers
   useEffect(() => {
@@ -303,12 +301,6 @@ export function WaiterOrdersClient({
       // Status filter
       if (tab !== "all" && o.status !== tab) return false
       
-      // Date range filter
-      if (dateRange.from && dateRange.to) {
-        const orderDate = new Date(o.created_at)
-        if (orderDate < dateRange.from || orderDate > dateRange.to) return false
-      }
-      
       // Search filter
       if (!search) return true
       const q = search.toLowerCase()
@@ -345,7 +337,7 @@ export function WaiterOrdersClient({
     })
 
     return result
-  }, [orders, tab, search, sortBy, dateRange, getOrderPriority])
+  }, [orders, tab, search, sortBy, getOrderPriority])
 
   const counts = orders.reduce(
     (acc, o) => {
@@ -439,87 +431,60 @@ export function WaiterOrdersClient({
       <main className="w-full px-4 sm:px-6 lg:px-8 py-6 max-w-[1600px] mx-auto">
       {/* Header with Search and Sort */}
       <div className="mb-6 space-y-4">
-        <div className="flex flex-col gap-3">
-          {/* Search and Sort Row */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search by order #, table, customer..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            
-            <div className="flex flex-row gap-2">
-              <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
-                <SelectTrigger className="flex-1 sm:w-[180px]">
-                  <ArrowUpDown className="size-4 mr-2" />
-                  <SelectValue placeholder="Sort by..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="time">
-                    <div className="flex items-center gap-2">
-                      <Clock className="size-4" />
-                      <span>Oldest First</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="priority">
-                    <div className="flex items-center gap-2">
-                      <Flame className="size-4" />
-                      <span>Priority</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="table">
-                    <div className="flex items-center gap-2">
-                      <UtensilsCrossed className="size-4" />
-                      <span>Table Number</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="amount">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="size-4" />
-                      <span>Highest Amount</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.location.reload()}
-                className="shrink-0"
-              >
-                <RefreshCw className="size-3.5" />
-                <span className="ml-1.5 hidden sm:inline">Refresh</span>
-              </Button>
-            </div>
-          </div>
-
-          {/* Date Range Picker Row */}
-          <div className="flex items-center gap-2">
-            <DateRangePicker
-              value={dateRange}
-              onChange={setDateRange}
-              onClear={() => setDateRange({ from: null, to: null })}
-              className="w-full sm:w-[280px]"
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search by order #, table, customer..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
             />
-            {(search || dateRange.from) && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setSearch("")
-                  setDateRange({ from: null, to: null })
-                }}
-                className="shrink-0"
-              >
-                <X className="size-3.5 mr-1.5" />
-                Clear Filters
-              </Button>
-            )}
+          </div>
+          
+          <div className="flex flex-row gap-2">
+            <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+              <SelectTrigger className="flex-1 sm:w-[180px]">
+                <ArrowUpDown className="size-4 mr-2" />
+                <SelectValue placeholder="Sort by..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="time">
+                  <div className="flex items-center gap-2">
+                    <Clock className="size-4" />
+                    <span>Oldest First</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="priority">
+                  <div className="flex items-center gap-2">
+                    <Flame className="size-4" />
+                    <span>Priority</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="table">
+                  <div className="flex items-center gap-2">
+                    <UtensilsCrossed className="size-4" />
+                    <span>Table Number</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="amount">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="size-4" />
+                    <span>Highest Amount</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.location.reload()}
+              className="shrink-0"
+            >
+              <RefreshCw className="size-3.5" />
+              <span className="ml-1.5">Refresh</span>
+            </Button>
           </div>
         </div>
       </div>

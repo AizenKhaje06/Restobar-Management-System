@@ -35,7 +35,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { DateRangePicker, type DateRange } from "@/components/ui/date-range-picker"
 import { formatCurrency, formatDateTime, relativeTime } from "@/lib/constants"
 import type { OrderWithItems, OrderStatus, PaymentStatus } from "@/lib/types"
 import { updateOrderStatusAction } from "@/app/actions/admin"
@@ -72,7 +71,6 @@ export function OrdersManager({ orders }: { orders: OrderWithItems[] }) {
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all")
   const [paymentFilter, setPaymentFilter] = useState<PaymentStatus | "all">("all")
-  const [dateRange, setDateRange] = useState<DateRange>({ from: null, to: null })
   const [selected, setSelected] = useState<OrderWithItems | null>(null)
   const [pending, startTransition] = useTransition()
 
@@ -84,12 +82,6 @@ export function OrdersManager({ orders }: { orders: OrderWithItems[] }) {
       // Payment filter
       if (paymentFilter !== "all" && o.payment_status !== paymentFilter) return false
       
-      // Date range filter
-      if (dateRange.from && dateRange.to) {
-        const orderDate = new Date(o.created_at)
-        if (orderDate < dateRange.from || orderDate > dateRange.to) return false
-      }
-      
       // Search filter
       if (!search) return true
       const q = search.toLowerCase()
@@ -100,7 +92,7 @@ export function OrdersManager({ orders }: { orders: OrderWithItems[] }) {
         o.id.toLowerCase().includes(q)
       )
     })
-  }, [orders, search, statusFilter, paymentFilter, dateRange])
+  }, [orders, search, statusFilter, paymentFilter])
 
   const counts = useMemo(() => {
     const c: Record<OrderStatus, number> = {
@@ -206,13 +198,6 @@ export function OrdersManager({ orders }: { orders: OrderWithItems[] }) {
             />
           </div>
           
-          <DateRangePicker
-            value={dateRange}
-            onChange={setDateRange}
-            onClear={() => setDateRange({ from: null, to: null })}
-            className="w-[260px]"
-          />
-          
           <Select value={paymentFilter} onValueChange={(v) => setPaymentFilter(v as PaymentStatus | "all")}>
             <SelectTrigger className="h-9 w-40">
               <SelectValue placeholder="Payment" />
@@ -226,7 +211,7 @@ export function OrdersManager({ orders }: { orders: OrderWithItems[] }) {
             </SelectContent>
           </Select>
           
-          {(statusFilter !== "all" || paymentFilter !== "all" || search || dateRange.from) && (
+          {(statusFilter !== "all" || paymentFilter !== "all" || search) && (
             <Button
               variant="ghost"
               size="sm"
@@ -234,7 +219,6 @@ export function OrdersManager({ orders }: { orders: OrderWithItems[] }) {
                 setStatusFilter("all")
                 setPaymentFilter("all")
                 setSearch("")
-                setDateRange({ from: null, to: null })
               }}
             >
               <Filter className="mr-1 size-3" />
