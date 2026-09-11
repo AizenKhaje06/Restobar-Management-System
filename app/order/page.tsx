@@ -1013,7 +1013,10 @@ function CustomerOrderContent() {
 
   // Load table, categories, menu, and settings + check active session
   useEffect(() => {
-    if (!token) return
+    if (!token) {
+      setLoading(false)
+      return
+    }
 
     async function load() {
       setLoading(true)
@@ -1021,32 +1024,44 @@ function CustomerOrderContent() {
         await loadData()
       } catch (err) {
         console.error("[OrderPage] load failed:", err)
-        // Reset to a safe state so the page doesn't crash
-        setSessionState({ kind: "create" })
+        // Only reset to create state if we have a table
+        // Don't set table to null on error - keep it if we had it
+        if (table) {
+          setSessionState({ kind: "create" })
+        }
         setLoading(false)
       }
     }
 
     async function loadData() {
       // Find table by QR token
-      const { data: qrData } = await supabase
+      const { data: qrData, error: qrError } = await supabase
         .from("table_qr_codes")
         .select("table_id, is_active")
         .eq("token", token)
         .eq("is_active", true)
         .single()
 
-      if (!qrData) {
+      if (qrError || !qrData) {
+        console.error("[OrderPage] QR code not found or inactive:", qrError)
         setLoading(false)
+        setTable(null)
         return
       }
 
       // Get table info
-      const { data: tableData } = await supabase
+      const { data: tableData, error: tableError } = await supabase
         .from("tables")
         .select("*")
         .eq("id", qrData.table_id)
         .single()
+
+      if (tableError || !tableData) {
+        console.error("[OrderPage] Table not found:", tableError)
+        setLoading(false)
+        setTable(null)
+        return
+      }
 
       setTable(tableData)
 
@@ -1287,6 +1302,23 @@ function CustomerOrderContent() {
     )
   }
 
+  // No token provided
+  if (!token && !loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <Card className="max-w-sm text-center">
+          <CardContent className="p-8">
+            <AlertCircle className="mx-auto mb-4 size-12 text-amber-500" />
+            <h1 className="text-xl font-bold">Invalid Link</h1>
+            <p className="mt-2 text-muted-foreground">
+              Please scan the QR code at your table to access the menu.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   // Loading
   if (loading) {
     return (
@@ -1299,7 +1331,7 @@ function CustomerOrderContent() {
     )
   }
 
-  // Table not found
+  // Table not found (QR code invalid or inactive)
   if (!table) {
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
