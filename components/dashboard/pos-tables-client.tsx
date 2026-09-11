@@ -50,6 +50,16 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/pos/receipts", label: "Receipts", icon: "Receipt" },
 ]
 
+const ORDER_STATUS_CONFIG: Record<string, { label: string; className: string; dot: string }> = {
+  pending:    { label: "Pending",    className: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20",   dot: "bg-amber-500" },
+  confirmed:  { label: "Confirmed",  className: "bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border-cyan-500/20",       dot: "bg-cyan-500" },
+  preparing:  { label: "Preparing",  className: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20",       dot: "bg-blue-500" },
+  ready:      { label: "Ready",      className: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20", dot: "bg-emerald-500" },
+  served:     { label: "Served",     className: "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20", dot: "bg-purple-500" },
+  completed:  { label: "Paid",       className: "bg-zinc-500/10 text-zinc-700 dark:text-zinc-300 border-zinc-500/20",       dot: "bg-zinc-500" },
+  cancelled:  { label: "Cancelled",  className: "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20",       dot: "bg-rose-500" },
+}
+
 interface TableRow {
   id: string
   label: string
@@ -65,6 +75,7 @@ interface ActiveSession {
   customer_name: string
   created_at: string
   status: string
+  order_status?: string | null  // Added: most recent order status for the table
 }
 
 interface OrderRow {
@@ -279,15 +290,24 @@ export function PosTablesClient({
                       {table.label}
                     </p>
                   </div>
-                  {isOccupied ? (
-                    <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
-                      <Lock className="size-3 mr-1" /> Occupied
-                    </Badge>
-                  ) : (
-                    <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">
-                      <Unlock className="size-3 mr-1" /> Available
-                    </Badge>
-                  )}
+                  <div className="flex flex-col gap-1.5 items-end">
+                    {isOccupied ? (
+                      <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                        <Lock className="size-3 mr-1" /> Occupied
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">
+                        <Unlock className="size-3 mr-1" /> Available
+                      </Badge>
+                    )}
+                    {/* Order Status Badge */}
+                    {session?.order_status && ORDER_STATUS_CONFIG[session.order_status] && (
+                      <div className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-medium ${ORDER_STATUS_CONFIG[session.order_status].className}`}>
+                        <span className={`size-1.5 rounded-full ${ORDER_STATUS_CONFIG[session.order_status].dot}`} />
+                        {ORDER_STATUS_CONFIG[session.order_status].label}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {session ? (
