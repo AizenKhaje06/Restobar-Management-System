@@ -130,19 +130,48 @@ export function OrdersManager({ orders }: { orders: OrderWithItems[] }) {
         {ORDER_STATUSES.map((status) => {
           const s = STATUS_STYLES[status]
           const active = statusFilter === status
+          
+          // Active button gets colored background based on status
+          let activeClass = "border-primary bg-primary/10 text-primary ring-2 ring-primary/20"
+          if (active) {
+            switch(status) {
+              case "pending":
+                activeClass = "border-amber-500 bg-amber-500/20 text-amber-700 dark:text-amber-300 ring-2 ring-amber-500/30"
+                break
+              case "confirmed":
+                activeClass = "border-cyan-500 bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 ring-2 ring-cyan-500/30"
+                break
+              case "preparing":
+                activeClass = "border-blue-500 bg-blue-500/20 text-blue-700 dark:text-blue-300 ring-2 ring-blue-500/30"
+                break
+              case "ready":
+                activeClass = "border-emerald-500 bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 ring-2 ring-emerald-500/30"
+                break
+              case "served":
+                activeClass = "border-purple-500 bg-purple-500/20 text-purple-700 dark:text-purple-300 ring-2 ring-purple-500/30"
+                break
+              case "completed":
+                activeClass = "border-green-600 bg-green-600/20 text-green-700 dark:text-green-300 ring-2 ring-green-600/30"
+                break
+              case "cancelled":
+                activeClass = "border-rose-500 bg-rose-500/20 text-rose-700 dark:text-rose-300 ring-2 ring-rose-500/30"
+                break
+            }
+          }
+          
           return (
             <button
               key={status}
               onClick={() => setStatusFilter(active ? "all" : status)}
-              className={`flex items-center justify-between rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
-                active ? "border-primary bg-primary/5" : "hover:bg-muted/40"
+              className={`flex items-center justify-between rounded-lg border px-3 py-2 text-left text-sm transition-all ${
+                active ? activeClass : "hover:bg-muted/40"
               }`}
             >
               <span className="flex items-center gap-2">
                 <span className={`size-1.5 rounded-full ${s.dot}`} />
                 <span className="font-medium">{s.label}</span>
               </span>
-              <span className="font-semibold tabular-nums text-muted-foreground">
+              <span className={`font-semibold tabular-nums ${active ? "" : "text-muted-foreground"}`}>
                 {counts[status]}
               </span>
             </button>
