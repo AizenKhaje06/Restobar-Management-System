@@ -296,52 +296,56 @@ export function CashflowDashboard() {
         {/* Payment Method Breakdown */}
         <Card>
           <CardHeader>
-            <CardTitle>Payment Methods</CardTitle>
+            <CardTitle>Top Selling Items</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={data.paymentMethodBreakdown}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={(entry: any) => `${PAYMENT_METHOD_LABELS[entry.method as string] || entry.method}: ${formatCurrency(entry.amount)}`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="amount"
-                >
-                  {data.paymentMethodBreakdown.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value: any) => formatCurrency(Number(value) || 0)} />
-                <Legend 
-                  formatter={(value) => PAYMENT_METHOD_LABELS[value] || value}
+              <BarChart data={data.topSellingItems.slice(0, 5)}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis 
+                  dataKey="name" 
+                  className="text-xs" 
+                  angle={-45} 
+                  textAnchor="end" 
+                  height={80}
                 />
-              </PieChart>
+                <YAxis className="text-xs" />
+                <Tooltip formatter={(value: any) => formatCurrency(Number(value) || 0)} />
+                <Bar dataKey="revenue" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+              </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
 
-      {/* Top Selling Items */}
+      {/* Payment Methods Distribution */}
       <Card>
         <CardHeader>
-          <CardTitle>Top Selling Items</CardTitle>
+          <CardTitle>Payment Methods Distribution</CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={data.topSellingItems.slice(0, 10)}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-              <XAxis dataKey="name" className="text-xs" angle={-45} textAnchor="end" height={100} />
-              <YAxis className="text-xs" />
-              <Tooltip formatter={(value: number) => formatCurrency(value)} />
-              <Bar dataKey="revenue" fill="#3b82f6" />
-            </BarChart>
-          </ResponsiveContainer>
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+            {data.paymentMethodBreakdown.map((method, index) => (
+              <div key={method.method} className="flex items-center gap-3 rounded-lg border p-4">
+                <div 
+                  className="h-12 w-12 rounded-full flex items-center justify-center text-white font-semibold"
+                  style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                >
+                  {method.count}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium truncate">
+                    {PAYMENT_METHOD_LABELS[method.method as string] || method.method}
+                  </div>
+                  <div className="text-lg font-bold">{formatCurrency(method.amount)}</div>
+                </div>
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
+
+      {/* Top Selling Items Table - Removed old chart */}
 
       {/* Transaction History */}
       <Card>
