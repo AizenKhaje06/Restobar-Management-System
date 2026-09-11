@@ -63,6 +63,7 @@ import {
   getWaiterTables,
 } from "@/app/actions/waiter"
 import { signOut } from "@/app/actions/auth"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { toast } from "sonner"
 
 const STATUS_CONFIG: Record<OrderStatus, { label: string; color: string; icon: React.ReactNode }> = {
@@ -409,6 +410,7 @@ export function WaiterOrdersClient({
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <Button variant="ghost" size="sm" onClick={() => setShowTablesSheet(true)}>
               <Grid3x3 className="size-4" />
               <span className="ml-2 hidden sm:inline">Tables</span>

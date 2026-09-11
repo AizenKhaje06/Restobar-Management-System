@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState, useCallback } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { RESTAURANT_NAME } from "@/lib/constants"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -1465,20 +1466,23 @@ function CustomerOrderContent() {
               </p>
             </div>
           </div>
-          <Button
-            size="default"
-            className="relative shrink-0"
-            onClick={() => setShowCart(true)}
-            aria-label={`View cart with ${cartCount} item${cartCount !== 1 ? "s" : ""}`}
-          >
-            <ShoppingCart className="size-4 sm:size-5" />
-            <span className="ml-1.5 hidden sm:inline">Cart</span>
-            {cartCount > 0 && (
-              <span className="ml-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-white/20 px-1.5 text-xs font-bold">
-                {cartCount}
-              </span>
-            )}
-          </Button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button
+              size="default"
+              className="relative shrink-0"
+              onClick={() => setShowCart(true)}
+              aria-label={`View cart with ${cartCount} item${cartCount !== 1 ? "s" : ""}`}
+            >
+              <ShoppingCart className="size-4 sm:size-5" />
+              <span className="ml-1.5 hidden sm:inline">Cart</span>
+              {cartCount > 0 && (
+                <span className="ml-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-white/20 px-1.5 text-xs font-bold">
+                  {cartCount}
+                </span>
+              )}
+            </Button>
+          </div>
         </div>
 
         {/* Category Tabs */}
