@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { ROLE_LABELS } from "@/lib/constants"
 import { signOut } from "@/app/actions/auth"
 import type { Profile } from "@/lib/types"
@@ -263,6 +264,8 @@ export function StaffShell({
               </kbd>
             </div>
           </div>
+
+          <ThemeToggle />
 
           <Avatar className="size-8 lg:hidden">
             <AvatarFallback className="bg-muted text-xs">

@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Toaster } from "@/components/ui/sonner"
 import { PwaRegister } from "@/components/pwa-register"
+import { Providers } from "@/components/providers"
 import "./globals.css"
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] })
@@ -70,7 +71,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`dark ${geistSans.variable} ${geistMono.variable} bg-background`}>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -78,10 +79,12 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Lumière" />
       </head>
       <body className="font-sans antialiased">
-        {children}
-        <Toaster richColors position="top-right" />
-        <PwaRegister />
-        {process.env.NODE_ENV === "production" && <Analytics />}
+        <Providers>
+          {children}
+          <Toaster richColors position="top-right" />
+          <PwaRegister />
+          {process.env.NODE_ENV === "production" && <Analytics />}
+        </Providers>
       </body>
     </html>
   )
