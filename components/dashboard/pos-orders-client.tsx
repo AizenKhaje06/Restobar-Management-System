@@ -52,6 +52,7 @@ import {
 } from "@/app/actions/pos"
 import { MenuBrowserModal } from "@/components/dashboard/assist-modal"
 import { CancelOrderModal } from "@/components/pos/cancel-order-modal"
+import { DateRangePicker } from "@/components/ui/date-range-picker"
 
 const NAV_ITEMS: NavItem[] = [
   { href: "/pos", label: "POS Terminal", icon: "LayoutDashboard" },
@@ -108,6 +109,8 @@ export function PosOrdersClient({
   const [orders, setOrders] = useState(initialOrders)
   const [search, setSearch] = useState("")
   const [tab, setTab] = useState<OrderStatus | "all">("all")
+  const [dateStart, setDateStart] = useState<Date | null>(null)
+  const [dateEnd, setDateEnd] = useState<Date | null>(null)
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null)
   const [payDialog, setPayDialog] = useState<PayDialog>({
     open: false,
@@ -121,6 +124,21 @@ export function PosOrdersClient({
   const filtered = orders.filter((o) => {
     if (!o.status) return false
     if (tab !== "all" && o.status !== tab) return false
+    
+    // Date range filter
+    if (dateStart) {
+      const orderDate = new Date(o.created_at)
+      const startOfDay = new Date(dateStart)
+      startOfDay.setHours(0, 0, 0, 0)
+      if (orderDate < startOfDay) return false
+    }
+    if (dateEnd) {
+      const orderDate = new Date(o.created_at)
+      const endOfDay = new Date(dateEnd)
+      endOfDay.setHours(23, 59, 59, 999)
+      if (orderDate > endOfDay) return false
+    }
+    
     if (!search) return true
     const q = search.toLowerCase()
     return (
@@ -244,7 +262,7 @@ export function PosOrdersClient({
       restaurantName={restaurantName}
       restaurantLogo={restaurantLogo}
     >
-      {/* Search + Refresh */}
+      {/* Search + Date Filter + Refresh */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -255,6 +273,14 @@ export function PosOrdersClient({
             className="pl-9"
           />
         </div>
+        <DateRangePicker
+          onRangeChange={(start, end) => {
+            setDateStart(start)
+            setDateEnd(end)
+          }}
+          initialStartDate={dateStart}
+          initialEndDate={dateEnd}
+        />
         <Button
           variant="outline"
           size="sm"

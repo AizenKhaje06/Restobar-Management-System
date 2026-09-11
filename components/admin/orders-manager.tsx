@@ -14,6 +14,7 @@ import {
   Search,
   Utensils,
   CalendarDays,
+  RefreshCw,
 } from "lucide-react"
 import { PageHeader } from "@/components/page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -38,6 +39,7 @@ import {
 import { formatCurrency, formatDateTime, relativeTime } from "@/lib/constants"
 import type { OrderWithItems, OrderStatus, PaymentStatus } from "@/lib/types"
 import { updateOrderStatusAction } from "@/app/actions/admin"
+import { DateRangePicker } from "@/components/ui/date-range-picker"
 
 const ORDER_STATUSES: OrderStatus[] = [
   "pending",
@@ -71,6 +73,8 @@ export function OrdersManager({ orders }: { orders: OrderWithItems[] }) {
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all")
   const [paymentFilter, setPaymentFilter] = useState<PaymentStatus | "all">("all")
+  const [dateStart, setDateStart] = useState<Date | null>(null)
+  const [dateEnd, setDateEnd] = useState<Date | null>(null)
   const [selected, setSelected] = useState<OrderWithItems | null>(null)
   const [pending, startTransition] = useTransition()
 
@@ -82,6 +86,20 @@ export function OrdersManager({ orders }: { orders: OrderWithItems[] }) {
       // Payment filter
       if (paymentFilter !== "all" && o.payment_status !== paymentFilter) return false
       
+      // Date range filter
+      if (dateStart) {
+        const orderDate = new Date(o.created_at)
+        const startOfDay = new Date(dateStart)
+        startOfDay.setHours(0, 0, 0, 0)
+        if (orderDate < startOfDay) return false
+      }
+      if (dateEnd) {
+        const orderDate = new Date(o.created_at)
+        const endOfDay = new Date(dateEnd)
+        endOfDay.setHours(23, 59, 59, 999)
+        if (orderDate > endOfDay) return false
+      }
+      
       // Search filter
       if (!search) return true
       const q = search.toLowerCase()
@@ -92,7 +110,7 @@ export function OrdersManager({ orders }: { orders: OrderWithItems[] }) {
         o.id.toLowerCase().includes(q)
       )
     })
-  }, [orders, search, statusFilter, paymentFilter])
+  }, [orders, search, statusFilter, paymentFilter, dateStart, dateEnd])
 
   const counts = useMemo(() => {
     const c: Record<OrderStatus, number> = {
@@ -124,10 +142,20 @@ export function OrdersManager({ orders }: { orders: OrderWithItems[] }) {
         description="Manage and track all orders across the restaurant."
         crumbs={[{ label: "Admin", href: "/admin" }, { label: "Orders" }]}
         actions={
-          <Button size="sm" onClick={() => router.refresh()}>
-            <ClipboardList className="mr-2 size-4" />
-            Refresh
-          </Button>
+          <div className="flex gap-2">
+            <DateRangePicker
+              onRangeChange={(start, end) => {
+                setDateStart(start)
+                setDateEnd(end)
+              }}
+              initialStartDate={dateStart}
+              initialEndDate={dateEnd}
+            />
+            <Button size="sm" onClick={() => router.refresh()}>
+              <RefreshCw className="mr-2 size-4" />
+              Refresh
+            </Button>
+          </div>
         }
       />
 
@@ -211,7 +239,7 @@ export function OrdersManager({ orders }: { orders: OrderWithItems[] }) {
             </SelectContent>
           </Select>
           
-          {(statusFilter !== "all" || paymentFilter !== "all" || search) && (
+          {(statusFilter !== "all" || paymentFilter !== "all" || search || dateStart || dateEnd) && (
             <Button
               variant="ghost"
               size="sm"
@@ -219,6 +247,8 @@ export function OrdersManager({ orders }: { orders: OrderWithItems[] }) {
                 setStatusFilter("all")
                 setPaymentFilter("all")
                 setSearch("")
+                setDateStart(null)
+                setDateEnd(null)
               }}
             >
               <Filter className="mr-1 size-3" />

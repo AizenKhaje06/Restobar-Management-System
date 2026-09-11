@@ -66,6 +66,7 @@ import {
 import { signOut } from "@/app/actions/auth"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { toast } from "sonner"
+import { DateRangePicker } from "@/components/ui/date-range-picker"
 
 const STATUS_CONFIG: Record<OrderStatus, { label: string; color: string; icon: React.ReactNode }> = {
   pending:    { label: "Pending",    color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",  icon: <AlertCircle className="size-3.5" /> },
@@ -120,6 +121,8 @@ export function WaiterOrdersClient({
   const [orders, setOrders] = useState(initialOrders)
   const [search, setSearch] = useState("")
   const [tab, setTab] = useState<OrderStatus | "all">("all")
+  const [dateStart, setDateStart] = useState<Date | null>(null)
+  const [dateEnd, setDateEnd] = useState<Date | null>(null)
   const [selectedOrder, setSelectedOrder] = useState<WaiterOrder | null>(null)
   const [pending, setPending] = useState<string | null>(null)
   const [assisting, setAssisting] = useState<string | null>(null)
@@ -301,6 +304,20 @@ export function WaiterOrdersClient({
       // Status filter
       if (tab !== "all" && o.status !== tab) return false
       
+      // Date range filter
+      if (dateStart) {
+        const orderDate = new Date(o.created_at)
+        const startOfDay = new Date(dateStart)
+        startOfDay.setHours(0, 0, 0, 0)
+        if (orderDate < startOfDay) return false
+      }
+      if (dateEnd) {
+        const orderDate = new Date(o.created_at)
+        const endOfDay = new Date(dateEnd)
+        endOfDay.setHours(23, 59, 59, 999)
+        if (orderDate > endOfDay) return false
+      }
+      
       // Search filter
       if (!search) return true
       const q = search.toLowerCase()
@@ -337,7 +354,7 @@ export function WaiterOrdersClient({
     })
 
     return result
-  }, [orders, tab, search, sortBy, getOrderPriority])
+  }, [orders, tab, search, sortBy, getOrderPriority, dateStart, dateEnd])
 
   const counts = orders.reduce(
     (acc, o) => {
@@ -443,6 +460,15 @@ export function WaiterOrdersClient({
           </div>
           
           <div className="flex flex-row gap-2">
+            <DateRangePicker
+              onRangeChange={(start, end) => {
+                setDateStart(start)
+                setDateEnd(end)
+              }}
+              initialStartDate={dateStart}
+              initialEndDate={dateEnd}
+            />
+            
             <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
               <SelectTrigger className="flex-1 sm:w-[180px]">
                 <ArrowUpDown className="size-4 mr-2" />
