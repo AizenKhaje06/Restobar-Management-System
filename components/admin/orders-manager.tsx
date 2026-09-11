@@ -13,6 +13,7 @@ import {
   Receipt,
   Search,
   Utensils,
+  CalendarDays,
 } from "lucide-react"
 import { PageHeader } from "@/components/page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -34,6 +35,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { DateRangePicker, type DateRange } from "@/components/ui/date-range-picker"
 import { formatCurrency, formatDateTime, relativeTime } from "@/lib/constants"
 import type { OrderWithItems, OrderStatus, PaymentStatus } from "@/lib/types"
 import { updateOrderStatusAction } from "@/app/actions/admin"
@@ -70,13 +72,25 @@ export function OrdersManager({ orders }: { orders: OrderWithItems[] }) {
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all")
   const [paymentFilter, setPaymentFilter] = useState<PaymentStatus | "all">("all")
+  const [dateRange, setDateRange] = useState<DateRange>({ from: null, to: null })
   const [selected, setSelected] = useState<OrderWithItems | null>(null)
   const [pending, startTransition] = useTransition()
 
   const filtered = useMemo(() => {
     return orders.filter((o) => {
+      // Status filter
       if (statusFilter !== "all" && o.status !== statusFilter) return false
+      
+      // Payment filter
       if (paymentFilter !== "all" && o.payment_status !== paymentFilter) return false
+      
+      // Date range filter
+      if (dateRange.from && dateRange.to) {
+        const orderDate = new Date(o.created_at)
+        if (orderDate < dateRange.from || orderDate > dateRange.to) return false
+      }
+      
+      // Search filter
       if (!search) return true
       const q = search.toLowerCase()
       return (
@@ -86,7 +100,7 @@ export function OrdersManager({ orders }: { orders: OrderWithItems[] }) {
         o.id.toLowerCase().includes(q)
       )
     })
-  }, [orders, search, statusFilter, paymentFilter])
+  }, [orders, search, statusFilter, paymentFilter, dateRange])
 
   const counts = useMemo(() => {
     const c: Record<OrderStatus, number> = {
@@ -191,6 +205,14 @@ export function OrdersManager({ orders }: { orders: OrderWithItems[] }) {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
+          
+          <DateRangePicker
+            value={dateRange}
+            onChange={setDateRange}
+            onClear={() => setDateRange({ from: null, to: null })}
+            className="w-[260px]"
+          />
+          
           <Select value={paymentFilter} onValueChange={(v) => setPaymentFilter(v as PaymentStatus | "all")}>
             <SelectTrigger className="h-9 w-40">
               <SelectValue placeholder="Payment" />
@@ -203,7 +225,8 @@ export function OrdersManager({ orders }: { orders: OrderWithItems[] }) {
               <SelectItem value="refunded">Refunded</SelectItem>
             </SelectContent>
           </Select>
-          {(statusFilter !== "all" || paymentFilter !== "all" || search) && (
+          
+          {(statusFilter !== "all" || paymentFilter !== "all" || search || dateRange.from) && (
             <Button
               variant="ghost"
               size="sm"
@@ -211,14 +234,16 @@ export function OrdersManager({ orders }: { orders: OrderWithItems[] }) {
                 setStatusFilter("all")
                 setPaymentFilter("all")
                 setSearch("")
+                setDateRange({ from: null, to: null })
               }}
             >
               <Filter className="mr-1 size-3" />
-              Clear
+              Clear All
             </Button>
           )}
-          <div className="ml-auto text-sm text-muted-foreground">
-            {filtered.length} of {orders.length} orders • {formatCurrency(totalRevenue)} paid
+          
+          <div className="ml-auto text-sm text-muted-foreground whitespace-nowrap">
+            {filtered.length} of {orders.length} • {formatCurrency(totalRevenue)} paid
           </div>
         </CardContent>
       </Card>

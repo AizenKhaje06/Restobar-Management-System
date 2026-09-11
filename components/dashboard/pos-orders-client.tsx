@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition, useCallback } from "react"
+import { useState, useTransition, useCallback, useMemo } from "react"
 import {
   ChefHat,
   Check,
@@ -15,6 +15,7 @@ import {
   AlertCircle,
   Plus,
   ClipboardList,
+  CalendarDays,
 } from "lucide-react"
 import { StaffShell, type NavItem } from "@/components/staff-shell"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -52,6 +53,7 @@ import {
 } from "@/app/actions/pos"
 import { MenuBrowserModal } from "@/components/dashboard/assist-modal"
 import { CancelOrderModal } from "@/components/pos/cancel-order-modal"
+import { DateRangePicker, type DateRange } from "@/components/ui/date-range-picker"
 
 const NAV_ITEMS: NavItem[] = [
   { href: "/pos", label: "POS Terminal", icon: "LayoutDashboard" },
@@ -108,6 +110,7 @@ export function PosOrdersClient({
   const [orders, setOrders] = useState(initialOrders)
   const [search, setSearch] = useState("")
   const [tab, setTab] = useState<OrderStatus | "all">("all")
+  const [dateRange, setDateRange] = useState<DateRange>({ from: null, to: null })
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null)
   const [payDialog, setPayDialog] = useState<PayDialog>({
     open: false,
@@ -118,18 +121,30 @@ export function PosOrdersClient({
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [orderToCancel, setOrderToCancel] = useState<OrderWithItems | null>(null)
 
-  const filtered = orders.filter((o) => {
-    if (!o.status) return false
-    if (tab !== "all" && o.status !== tab) return false
-    if (!search) return true
-    const q = search.toLowerCase()
-    return (
-      o.id.toLowerCase().includes(q) ||
-      (o.tables?.label ?? "").toLowerCase().includes(q) ||
-      (o.customer_name ?? "").toLowerCase().includes(q) ||
-      String(o.order_number).includes(q)
-    )
-  })
+  const filtered = useMemo(() => {
+    return orders.filter((o) => {
+      if (!o.status) return false
+      
+      // Status filter
+      if (tab !== "all" && o.status !== tab) return false
+      
+      // Date range filter
+      if (dateRange.from && dateRange.to) {
+        const orderDate = new Date(o.created_at)
+        if (orderDate < dateRange.from || orderDate > dateRange.to) return false
+      }
+      
+      // Search filter
+      if (!search) return true
+      const q = search.toLowerCase()
+      return (
+        o.id.toLowerCase().includes(q) ||
+        (o.tables?.label ?? "").toLowerCase().includes(q) ||
+        (o.customer_name ?? "").toLowerCase().includes(q) ||
+        String(o.order_number).includes(q)
+      )
+    })
+  }, [orders, tab, dateRange, search])
 
   const counts = orders.reduce(
     (acc, o) => {
@@ -244,28 +259,51 @@ export function PosOrdersClient({
       restaurantName={restaurantName}
       restaurantLogo={restaurantLogo}
     >
-      {/* Search + tabs */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search by table, customer, order #..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
+      {/* Search + Date Range + Refresh */}
+      <div className="mb-6 space-y-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search by table, customer, order #..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.location.reload()}
+            className="shrink-0"
+          >
+            <RefreshCw className="size-3.5" />
+            <span className="ml-1.5 hidden sm:inline">Refresh</span>
+          </Button>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            // Refresh
-            window.location.reload()
-          }}
-        >
-          <RefreshCw className="size-3.5" />
-          <span className="ml-1.5">Refresh</span>
-        </Button>
+        
+        <div className="flex items-center gap-2">
+          <DateRangePicker
+            value={dateRange}
+            onChange={setDateRange}
+            onClear={() => setDateRange({ from: null, to: null })}
+            className="w-full sm:w-[280px]"
+          />
+          {(search || dateRange.from) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSearch("")
+                setDateRange({ from: null, to: null })
+              }}
+              className="shrink-0"
+            >
+              <X className="size-3.5 mr-1.5" />
+              Clear Filters
+            </Button>
+          )}
+        </div>
       </div>
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as OrderStatus | "all")}>
