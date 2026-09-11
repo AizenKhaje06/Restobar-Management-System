@@ -285,22 +285,24 @@ function OrderDetailDialog({
         {order && (
           <>
             <DialogHeader>
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
                   <DialogTitle className="flex items-center gap-2">
                     <Receipt className="size-4" />
                     Order #{order.order_number.toString().slice(-6)}
                   </DialogTitle>
-                  <DialogDescription>
+                  <DialogDescription className="mt-1">
                     {formatDateTime(order.created_at)} • {relativeTime(order.created_at)}
                   </DialogDescription>
+                  <div className="mt-2">
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_STYLES[order.status].className}`}
+                    >
+                      <span className={`size-1.5 rounded-full ${STATUS_STYLES[order.status].dot}`} />
+                      {STATUS_STYLES[order.status].label}
+                    </span>
+                  </div>
                 </div>
-                <span
-                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_STYLES[order.status].className}`}
-                >
-                  <span className={`size-1.5 rounded-full ${STATUS_STYLES[order.status].dot}`} />
-                  {STATUS_STYLES[order.status].label}
-                </span>
               </div>
             </DialogHeader>
 
@@ -365,11 +367,41 @@ function OrderDetailDialog({
                 <div className="flex flex-wrap gap-1.5">
                   {ORDER_STATUSES.map((s) => {
                     const active = order.status === s
+                    
+                    // Only add color when button is ACTIVE
+                    let buttonClass = "border-border"
+                    if (active) {
+                      switch(s) {
+                        case "pending":
+                          buttonClass = "border-red-400 bg-red-50 text-red-700 dark:border-red-700 dark:bg-red-950/30 dark:text-red-400"
+                          break
+                        case "confirmed":
+                          buttonClass = "border-blue-400 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-950/30 dark:text-blue-400"
+                          break
+                        case "preparing":
+                          buttonClass = "border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
+                          break
+                        case "ready":
+                          buttonClass = "border-emerald-400 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400"
+                          break
+                        case "served":
+                          buttonClass = "border-purple-400 bg-purple-50 text-purple-700 dark:border-purple-700 dark:bg-purple-950/30 dark:text-purple-400"
+                          break
+                        case "completed":
+                          buttonClass = "border-green-500 bg-green-50 text-green-700 dark:border-green-600 dark:bg-green-950/30 dark:text-green-400"
+                          break
+                        case "cancelled":
+                          buttonClass = "border-rose-500 bg-rose-50 text-rose-700 dark:border-rose-600 dark:bg-rose-950/30 dark:text-rose-400"
+                          break
+                      }
+                    }
+                    
                     return (
                       <Button
                         key={s}
                         size="sm"
-                        variant={active ? "default" : "outline"}
+                        variant="outline"
+                        className={buttonClass}
                         disabled={active || pending}
                         onClick={() => onChangeStatus(order.id, s)}
                       >
