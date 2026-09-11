@@ -131,30 +131,30 @@ export function OrdersManager({ orders }: { orders: OrderWithItems[] }) {
           const s = STATUS_STYLES[status]
           const active = statusFilter === status
           
-          // Active button gets colored background based on status
+          // Active button gets colored background based on status with high-contrast text
           let activeClass = "border-primary bg-primary/10 text-primary ring-2 ring-primary/20"
           if (active) {
             switch(status) {
               case "pending":
-                activeClass = "border-amber-500 bg-amber-500/20 text-amber-700 dark:text-amber-300 ring-2 ring-amber-500/30"
+                activeClass = "border-amber-600 bg-amber-500/20 text-amber-900 dark:text-amber-200 ring-2 ring-amber-500/30"
                 break
               case "confirmed":
-                activeClass = "border-cyan-500 bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 ring-2 ring-cyan-500/30"
+                activeClass = "border-cyan-600 bg-cyan-500/20 text-cyan-900 dark:text-cyan-200 ring-2 ring-cyan-500/30"
                 break
               case "preparing":
-                activeClass = "border-blue-500 bg-blue-500/20 text-blue-700 dark:text-blue-300 ring-2 ring-blue-500/30"
+                activeClass = "border-blue-600 bg-blue-500/20 text-blue-900 dark:text-blue-200 ring-2 ring-blue-500/30"
                 break
               case "ready":
-                activeClass = "border-emerald-500 bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 ring-2 ring-emerald-500/30"
+                activeClass = "border-emerald-600 bg-emerald-500/20 text-emerald-900 dark:text-emerald-200 ring-2 ring-emerald-500/30"
                 break
               case "served":
-                activeClass = "border-purple-500 bg-purple-500/20 text-purple-700 dark:text-purple-300 ring-2 ring-purple-500/30"
+                activeClass = "border-purple-600 bg-purple-500/20 text-purple-900 dark:text-purple-200 ring-2 ring-purple-500/30"
                 break
               case "completed":
-                activeClass = "border-green-600 bg-green-600/20 text-green-700 dark:text-green-300 ring-2 ring-green-600/30"
+                activeClass = "border-green-700 bg-green-600/20 text-green-900 dark:text-green-200 ring-2 ring-green-600/30"
                 break
               case "cancelled":
-                activeClass = "border-rose-500 bg-rose-500/20 text-rose-700 dark:text-rose-300 ring-2 ring-rose-500/30"
+                activeClass = "border-rose-600 bg-rose-500/20 text-rose-900 dark:text-rose-200 ring-2 ring-rose-500/30"
                 break
             }
           }
@@ -397,30 +397,30 @@ function OrderDetailDialog({
                   {ORDER_STATUSES.map((s) => {
                     const active = order.status === s
                     
-                    // Only add color when button is ACTIVE
+                    // Active button gets stronger colored highlight with ring and high-contrast text
                     let buttonClass = "border-border"
                     if (active) {
                       switch(s) {
                         case "pending":
-                          buttonClass = "border-red-400 bg-red-50 text-red-700 dark:border-red-700 dark:bg-red-950/30 dark:text-red-400"
+                          buttonClass = "border-amber-600 bg-amber-500/20 text-amber-900 dark:text-amber-200 ring-2 ring-amber-500/30 font-semibold"
                           break
                         case "confirmed":
-                          buttonClass = "border-blue-400 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-950/30 dark:text-blue-400"
+                          buttonClass = "border-cyan-600 bg-cyan-500/20 text-cyan-900 dark:text-cyan-200 ring-2 ring-cyan-500/30 font-semibold"
                           break
                         case "preparing":
-                          buttonClass = "border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
+                          buttonClass = "border-blue-600 bg-blue-500/20 text-blue-900 dark:text-blue-200 ring-2 ring-blue-500/30 font-semibold"
                           break
                         case "ready":
-                          buttonClass = "border-emerald-400 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400"
+                          buttonClass = "border-emerald-600 bg-emerald-500/20 text-emerald-900 dark:text-emerald-200 ring-2 ring-emerald-500/30 font-semibold"
                           break
                         case "served":
-                          buttonClass = "border-purple-400 bg-purple-50 text-purple-700 dark:border-purple-700 dark:bg-purple-950/30 dark:text-purple-400"
+                          buttonClass = "border-purple-600 bg-purple-500/20 text-purple-900 dark:text-purple-200 ring-2 ring-purple-500/30 font-semibold"
                           break
                         case "completed":
-                          buttonClass = "border-green-500 bg-green-50 text-green-700 dark:border-green-600 dark:bg-green-950/30 dark:text-green-400"
+                          buttonClass = "border-green-700 bg-green-600/20 text-green-900 dark:text-green-200 ring-2 ring-green-600/30 font-semibold"
                           break
                         case "cancelled":
-                          buttonClass = "border-rose-500 bg-rose-50 text-rose-700 dark:border-rose-600 dark:bg-rose-950/30 dark:text-rose-400"
+                          buttonClass = "border-rose-600 bg-rose-500/20 text-rose-900 dark:text-rose-200 ring-2 ring-rose-500/30 font-semibold"
                           break
                       }
                     }
