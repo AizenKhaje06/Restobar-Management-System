@@ -54,7 +54,7 @@ const STATUS_STYLES: Record<OrderStatus, { label: string; className: string; dot
   preparing:  { label: "Preparing",  className: "bg-blue-500/10 text-blue-700 dark:text-blue-400",       dot: "bg-blue-500" },
   ready:      { label: "Ready",      className: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400", dot: "bg-emerald-500" },
   served:     { label: "Served",     className: "bg-purple-500/10 text-purple-700 dark:text-purple-400", dot: "bg-purple-500" },
-  completed:  { label: "Completed",  className: "bg-zinc-500/10 text-zinc-700 dark:text-zinc-300",       dot: "bg-zinc-500" },
+  completed:  { label: "Paid",       className: "bg-zinc-500/10 text-zinc-700 dark:text-zinc-300",       dot: "bg-zinc-500" },
   cancelled:  { label: "Cancelled",  className: "bg-rose-500/10 text-rose-700 dark:text-rose-400",       dot: "bg-rose-500" },
 }
 
