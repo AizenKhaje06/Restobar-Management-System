@@ -61,13 +61,14 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/pos/receipts", label: "Receipts", icon: "Receipt" },
 ]
 
-const STATUS_CONFIG: Record<OrderStatus, { label: string; color: string }> = {
+const STATUS_CONFIG: Record<OrderStatus | "addon", { label: string; color: string }> = {
   pending: { label: "Pending", color: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400" },
   confirmed: { label: "Confirmed", color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400" },
   preparing: { label: "Preparing", color: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400" },
   ready: { label: "Ready", color: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400" },
   served: { label: "Served", color: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400" },
   completed: { label: "Completed", color: "bg-gray-100 text-gray-600 dark:bg-gray-900/30 dark:text-gray-400" },
+  addon: { label: "Add-On", color: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400" },
   cancelled: { label: "Cancelled", color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" },
 }
 
@@ -108,7 +109,7 @@ export function PosOrdersClient({
   const [pending, startTransition] = useTransition()
   const [orders, setOrders] = useState(initialOrders)
   const [search, setSearch] = useState("")
-  const [tab, setTab] = useState<OrderStatus | "all">("all")
+  const [tab, setTab] = useState<OrderStatus | "all" | "addon">("all")
   const [dateStart, setDateStart] = useState<Date | null>(null)
   const [dateEnd, setDateEnd] = useState<Date | null>(null)
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null)
@@ -123,7 +124,13 @@ export function PosOrdersClient({
 
   const filtered = orders.filter((o) => {
     if (!o.status) return false
-    if (tab !== "all" && o.status !== tab) return false
+    
+    // Add-On filter: only show orders with order_type === 'additional'
+    if (tab === "addon") {
+      if (o.order_type !== "additional") return false
+    } else if (tab !== "all") {
+      if (o.status !== tab) return false
+    }
     
     // Date range filter
     if (dateStart) {
@@ -153,6 +160,10 @@ export function PosOrdersClient({
     (acc, o) => {
       if (!o.status) return acc
       acc[o.status] = (acc[o.status] ?? 0) + 1
+      // Count add-on orders separately
+      if (o.order_type === "additional") {
+        acc["addon"] = (acc["addon"] ?? 0) + 1
+      }
       return acc
     },
     {} as Record<string, number>
@@ -288,7 +299,7 @@ export function PosOrdersClient({
       </div>
 
       {/* Status summary cards — click to filter */}
-      <div className="mb-6 grid gap-2 sm:grid-cols-3 lg:grid-cols-7">
+      <div className="mb-6 grid gap-2 sm:grid-cols-3 lg:grid-cols-8">
           {(
             [
               "pending",
@@ -297,8 +308,9 @@ export function PosOrdersClient({
               "ready",
               "served",
               "completed",
+              "addon",
               "cancelled",
-            ] as OrderStatus[]
+            ] as (OrderStatus | "addon")[]
           ).map((status) => {
             const s = STATUS_CONFIG[status]
             const active = tab === status
@@ -324,6 +336,9 @@ export function PosOrdersClient({
                   break
                 case "completed":
                   activeClass = "border-green-700 bg-green-600/20 text-green-900 dark:text-green-200 ring-2 ring-green-600/30"
+                  break
+                case "addon":
+                  activeClass = "border-indigo-600 bg-indigo-500/20 text-indigo-900 dark:text-indigo-200 ring-2 ring-indigo-500/30"
                   break
                 case "cancelled":
                   activeClass = "border-rose-600 bg-rose-500/20 text-rose-900 dark:text-rose-200 ring-2 ring-rose-500/30"
@@ -354,6 +369,8 @@ export function PosOrdersClient({
                         ? "bg-purple-500"
                         : status === "completed"
                         ? "bg-zinc-500"
+                        : status === "addon"
+                        ? "bg-indigo-500"
                         : "bg-rose-500"
                     }`}
                   />
@@ -432,6 +449,11 @@ export function PosOrdersClient({
                             <span className="text-sm font-medium">
                               {order.tables?.label ?? "Take-Out"}{order.tables?.zone ? ` • ${order.tables.zone}` : ""}
                             </span>
+                            {order.order_type === "additional" && (
+                              <Badge className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400 text-xs">
+                                <Plus className="mr-1 size-3" /> Add-On
+                              </Badge>
+                            )}
                             {order.payment_status === "paid" && (
                               <Badge variant="outline" className="text-xs">
                                 <CreditCard className="mr-1 size-3" /> Paid
@@ -497,6 +519,11 @@ export function PosOrdersClient({
                         {STATUS_CONFIG[selectedOrder?.status as OrderStatus]?.label ??
                           selectedOrder?.status}
                       </Badge>
+                      {selectedOrder.order_type === "additional" && (
+                        <Badge className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400">
+                          <Plus className="mr-1 size-3" /> Add-On
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex items-center gap-3 mt-1 text-xs sm:text-sm text-muted-foreground flex-wrap">
                       {selectedOrder.tables?.label && (
