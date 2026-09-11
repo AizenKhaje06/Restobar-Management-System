@@ -3,8 +3,8 @@
 import { createClient } from "@/lib/supabase/server"
 import { getSessionProfile } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
-import { getRestaurantTaxRate } from "@/lib/constants"
 import type { OrderStatus } from "@/lib/types"
+import { getTaxRate } from "@/lib/settings"
 
 // ============================================================
 // UPDATE ORDER STATUS (waiter action)
@@ -505,7 +505,7 @@ async function recalculateOrderTotals(supabase: Awaited<ReturnType<typeof create
     return
   }
 
-  const taxRate = await getRestaurantTaxRate()
+  const taxRate = await getTaxRate()
   const subtotal = items.reduce((sum, i) => sum + Number(i.unit_price) * i.quantity, 0)
   const tax = Math.round(subtotal * taxRate * 100) / 100
   const total = Math.round((subtotal + tax) * 100) / 100

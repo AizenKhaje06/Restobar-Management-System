@@ -1,46 +1,7 @@
-export const TAX_RATE = 0.12 // 12% VAT - DEPRECATED: Use getRestaurantTaxRate() instead
-export const SERVICE_CHARGE = 0 // No service charge by default - DEPRECATED: Use getRestaurantServiceCharge() instead
+export const TAX_RATE = 0.12 // 12% VAT (fallback only)
 export const CURRENCY = "₱"
 export const RESTAURANT_NAME = "Lydias Lechon"
 export const RESTAURANT_TAGLINE = "Great Food. Great Moments."
-
-/**
- * Get the current tax rate from restaurant settings.
- * Falls back to TAX_RATE constant if settings not available.
- */
-export async function getRestaurantTaxRate(): Promise<number> {
-  try {
-    const { createClient } = await import("@/lib/supabase/server")
-    const supabase = await createClient()
-    const { data } = await supabase
-      .from("restaurant_settings")
-      .select("tax_rate")
-      .eq("id", 1)
-      .maybeSingle()
-    return data?.tax_rate ?? TAX_RATE
-  } catch {
-    return TAX_RATE
-  }
-}
-
-/**
- * Get the current service charge from restaurant settings.
- * Falls back to SERVICE_CHARGE constant if settings not available.
- */
-export async function getRestaurantServiceCharge(): Promise<number> {
-  try {
-    const { createClient } = await import("@/lib/supabase/server")
-    const supabase = await createClient()
-    const { data } = await supabase
-      .from("restaurant_settings")
-      .select("service_charge")
-      .eq("id", 1)
-      .maybeSingle()
-    return data?.service_charge ?? SERVICE_CHARGE
-  } catch {
-    return SERVICE_CHARGE
-  }
-}
 
 export function formatCurrency(amount: number): string {
   return `${CURRENCY}${Number(amount).toLocaleString("en-PH", {
@@ -88,7 +49,12 @@ export const ROLE_HOME: Record<string, string> = {
   waiter: "/waiter",
 }
 
-export function computeTotals(subtotal: number) {
-  const tax = Math.round(subtotal * TAX_RATE * 100) / 100
+/**
+ * Compute order totals with tax rate
+ * @param subtotal - Order subtotal
+ * @param taxRate - Tax rate as decimal (e.g., 0.12 for 12%) - if not provided, uses fallback
+ */
+export function computeTotals(subtotal: number, taxRate: number = TAX_RATE) {
+  const tax = Math.round(subtotal * taxRate * 100) / 100
   return { subtotal, tax, total: Math.round((subtotal + tax) * 100) / 100 }
 }

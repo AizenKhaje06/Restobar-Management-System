@@ -7,7 +7,7 @@ import type {
   PaymentMethod,
   ReservationStatus,
 } from "@/lib/types"
-import { getRestaurantTaxRate } from "@/lib/constants"
+import { getTaxRate } from "@/lib/settings"
 
 const MENU_IMAGE_BUCKET = "menu-images"
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024 // 5MB
@@ -594,7 +594,8 @@ export async function createOrderWithPaymentAction(input: {
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const taxRate = await getRestaurantTaxRate()
+  
+  const taxRate = await getTaxRate()
   const subtotal = input.items.reduce((sum, i) => sum + i.price * i.quantity, 0)
   const tax = Math.round(subtotal * taxRate * 100) / 100
   const total = Math.round((subtotal + tax) * 100) / 100
