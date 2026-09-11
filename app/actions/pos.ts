@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 import { getSessionProfile } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
 import type { OrderStatus, PaymentMethod } from "@/lib/types"
-import { TAX_RATE } from "@/lib/constants"
+import { getRestaurantTaxRate } from "@/lib/constants"
 
 // ============================================================
 // CREATE ORDER (for POS terminal)
@@ -20,8 +20,9 @@ export async function createPosOrder(input: {
 
   if (!input.items.length) return { error: "Order must have at least one item" }
 
+  const taxRate = await getRestaurantTaxRate()
   const subtotal = input.items.reduce((s, i) => s + i.price * i.quantity, 0)
-  const tax = Math.round(subtotal * TAX_RATE * 100) / 100
+  const tax = Math.round(subtotal * taxRate * 100) / 100
   const total = Math.round((subtotal + tax) * 100) / 100
 
   // Create order
@@ -264,8 +265,9 @@ export async function addPosOrderItem(input: {
     .select("unit_price, quantity")
     .eq("order_id", input.order_id)
 
+  const taxRate = await getRestaurantTaxRate()
   const subtotal = (items ?? []).reduce((s, i) => s + Number(i.unit_price) * i.quantity, 0)
-  const tax = Math.round(subtotal * TAX_RATE * 100) / 100
+  const tax = Math.round(subtotal * taxRate * 100) / 100
   const total = Math.round((subtotal + tax) * 100) / 100
 
   await supabase
