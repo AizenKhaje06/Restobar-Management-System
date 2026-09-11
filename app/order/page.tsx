@@ -29,6 +29,7 @@ import {
   Receipt,
   Gamepad2,
   ChevronRight,
+  AlertCircle,
 } from "lucide-react"
 import type { Category, MenuItem, RestaurantTable, OrderStatus } from "@/lib/types"
 
