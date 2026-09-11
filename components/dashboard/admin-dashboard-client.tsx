@@ -301,7 +301,7 @@ export function AdminDashboardClient({
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="text-sm font-medium">
-                              {order.tables?.label ?? "Takeout"}
+                              {order.tables?.label ?? "Take-Out"}
                             </span>
                             <Badge variant={pay.variant} className="text-xs">
                               {pay.label}

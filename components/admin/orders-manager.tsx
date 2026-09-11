@@ -252,7 +252,7 @@ export function OrdersManager({ orders }: { orders: OrderWithItems[] }) {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                         <span className="text-sm font-medium">
-                          {order.tables?.label ?? "Takeout"}{order.tables?.zone ? ` • ${order.tables.zone}` : ""}
+                          {order.tables?.label ?? "Take-Out"}{order.tables?.zone ? ` • ${order.tables.zone}` : ""}
                         </span>
                         <Badge variant={pay.variant} className="text-xs">
                           {pay.label}
@@ -337,7 +337,7 @@ function OrderDetailDialog({
 
             <div className="space-y-4">
               <div className="grid gap-2 rounded-lg border bg-muted/30 p-3 sm:grid-cols-2">
-                <Info label="Table" value={order.tables?.label ?? "Takeout"} />
+                <Info label="Table" value={order.tables?.label ?? "Take-Out"} />
                 <Info label="Customer" value={order.customer_name ?? "Walk-in"} />
                 <Info label="Payment" value={PAYMENT_STYLES[order.payment_status as PaymentStatus]?.label ?? order.payment_status} />
                 <Info label="Order #" value={order.order_number.toString().slice(-6)} mono />

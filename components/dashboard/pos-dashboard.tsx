@@ -61,7 +61,15 @@ interface PaymentDialog {
   amountTendered: string
 }
 
-export function PosDashboard({ profile }: { profile: Profile }) {
+export function PosDashboard({ 
+  profile,
+  restaurantName,
+  restaurantLogo,
+}: { 
+  profile: Profile
+  restaurantName?: string
+  restaurantLogo?: string
+}) {
   const [pending, startTransition] = useTransition()
 
   // Menu data from Supabase
@@ -234,7 +242,13 @@ export function PosDashboard({ profile }: { profile: Profile }) {
 
   if (loadingData) {
     return (
-      <StaffShell profile={profile} items={NAV_ITEMS} title="POS Terminal">
+      <StaffShell 
+        profile={profile} 
+        items={NAV_ITEMS} 
+        title="POS Terminal"
+        restaurantName={restaurantName}
+        restaurantLogo={restaurantLogo}
+      >
         <div className="flex h-64 items-center justify-center">
           <Loader2 className="size-8 animate-spin text-muted-foreground" />
         </div>
@@ -243,7 +257,13 @@ export function PosDashboard({ profile }: { profile: Profile }) {
   }
 
   return (
-    <StaffShell profile={profile} items={NAV_ITEMS} title="POS Terminal">
+    <StaffShell 
+      profile={profile} 
+      items={NAV_ITEMS} 
+      title="POS Terminal"
+      restaurantName={restaurantName}
+      restaurantLogo={restaurantLogo}
+    >
       {/* Success toast */}
       {successMsg && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 shadow-lg dark:bg-emerald-950/30 dark:text-emerald-400">

@@ -9,8 +9,10 @@ import {
   ChefHat,
   Loader2,
   UtensilsCrossed,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -300,6 +302,7 @@ export function AssistModal({
   const [confirming, setConfirming] = useState(false)
   const [localOrder, setLocalOrder] = useState(order)
   const [showMenuModal, setShowMenuModal] = useState(false)
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
 
   useEffect(() => {
     setLocalOrder(order)
@@ -369,7 +372,6 @@ export function AssistModal({
   )
 
   const handleConfirm = useCallback(async () => {
-    if (!confirm("Send this order to the kitchen?")) return
     setConfirming(true)
     try {
       const result = await confirmWaiterOrder(localOrder.id)
@@ -380,6 +382,7 @@ export function AssistModal({
       }
       onConfirmed(localOrder.id)
       onClose()
+      setShowConfirmDialog(false)
     } finally {
       setConfirming(false)
     }
@@ -429,9 +432,16 @@ export function AssistModal({
               </Badge>
             </div>
             <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 truncate">
-              {localOrder.tables?.label
-                ? `${localOrder.tables.label}${localOrder.tables.zone ? ` (${localOrder.tables.zone})` : ""}`
-                : "No table"}
+              {localOrder.tables?.label ? (
+                <>
+                  {localOrder.tables.label}
+                  {localOrder.tables.zone ? ` (${localOrder.tables.zone})` : ""}
+                </>
+              ) : (
+                <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                  Take-Out
+                </span>
+              )}
               {localOrder.customer_name ? ` · ${localOrder.customer_name}` : ""}
               {" · "}
               {itemCount} item{itemCount !== 1 ? "s" : ""}
@@ -557,7 +567,7 @@ export function AssistModal({
                 Cancel
               </Button>
               <Button
-                onClick={handleConfirm}
+                onClick={() => setShowConfirmDialog(true)}
                 disabled={confirming || (localOrder.order_items ?? []).length === 0}
                 className="bg-emerald-600 hover:bg-emerald-700 h-9 sm:h-10 text-xs sm:text-sm"
               >
@@ -566,10 +576,7 @@ export function AssistModal({
                 ) : (
                   <ChefHat className="size-4" />
                 )}
-                <span className="ml-1.5 sm:ml-2 hidden sm:inline">
-                  Confirm & Send to Kitchen
-                </span>
-                <span className="ml-1.5 sm:hidden">Confirm</span>
+                <span className="ml-1.5 sm:ml-2">Confirm</span>
               </Button>
             </div>
           </div>
@@ -585,6 +592,107 @@ export function AssistModal({
         getMenu={getWaiterMenu}
         addItem={addWaiterOrderItem}
       />
+
+      {/* Enterprise Confirmation Dialog */}
+      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
+                <ChefHat className="size-6 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <DialogTitle className="text-lg font-semibold">
+                  Confirm Order?
+                </DialogTitle>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  Order #{localOrder.order_number}
+                </p>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Order Summary */}
+            <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Table</span>
+                <span className="font-semibold">
+                  {localOrder.tables?.label ? (
+                    <>
+                      {localOrder.tables.label}
+                      {localOrder.tables.zone && (
+                        <span className="text-muted-foreground ml-1">
+                          ({localOrder.tables.zone})
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-emerald-600 dark:text-emerald-400">
+                      Take-Out
+                    </span>
+                  )}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Items</span>
+                <span className="font-semibold">
+                  {(localOrder.order_items ?? []).reduce((sum, i) => sum + i.quantity, 0)} items
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between border-t pt-3">
+                <span className="font-semibold">Total Amount</span>
+                <span className="text-xl font-bold text-primary">
+                  {formatCurrency(localOrder.total || 0)}
+                </span>
+              </div>
+            </div>
+
+            {/* Warning Message */}
+            <div className="flex gap-3 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/20 p-3">
+              <AlertCircle className="size-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0 text-sm">
+                <p className="font-medium text-amber-900 dark:text-amber-200">
+                  This will send the order to the kitchen
+                </p>
+                <p className="text-amber-700 dark:text-amber-300 mt-1 text-xs">
+                  Make sure all items and quantities are correct before confirming.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setShowConfirmDialog(false)}
+              disabled={confirming}
+              className="sm:flex-1"
+            >
+              Go Back
+            </Button>
+            <Button
+              onClick={handleConfirm}
+              disabled={confirming}
+              className="bg-emerald-600 hover:bg-emerald-700 sm:flex-1"
+            >
+              {confirming ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  <span className="ml-2">Confirming...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="size-4" />
+                  <span className="ml-2">Yes, Confirm Order</span>
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

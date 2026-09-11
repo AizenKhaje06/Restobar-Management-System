@@ -5,12 +5,14 @@ import { useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { signInWithUsernameOrEmail } from "@/app/actions/auth"
+import { createClient } from "@/lib/supabase/client"
 import { Brand } from "@/components/brand"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Loader2, Lock, ShieldCheck, Utensils, Users, Package, TrendingUp } from "lucide-react"
+import { ROLE_HOME } from "@/lib/constants"
 
 const FEATURES = [
   { icon: Utensils, label: "POS & Orders", color: "text-emerald-400" },
@@ -43,9 +45,40 @@ export function LoginForm() {
       return
     }
 
-    // Successful login - redirect
-    const dest = next || "/admin"
-    router.push(dest)
+    // Successful login - wait a moment for session to settle
+    await new Promise(resolve => setTimeout(resolve, 300))
+
+    // Fetch the user's profile to determine their role
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+      
+      if (profile?.role) {
+        // Redirect directly to role-specific dashboard
+        const roleHome = ROLE_HOME[profile.role] || "/admin"
+        const dest = next || roleHome
+        
+        console.log('[login] Redirecting:', { 
+          role: profile.role, 
+          roleHome,
+          next,
+          dest 
+        })
+        
+        router.push(dest)
+        router.refresh()
+        return
+      }
+    }
+
+    // Fallback: redirect to root page (will auto-redirect based on session)
+    router.push(next || "/")
     router.refresh()
   }
 

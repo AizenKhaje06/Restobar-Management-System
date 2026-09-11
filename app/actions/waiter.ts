@@ -16,14 +16,39 @@ export async function updateWaiterOrderStatus(orderId: string, status: OrderStat
   if (!profile) return { error: "Not authenticated" }
   if (profile.role !== "waiter") return { error: "Not authorized" }
 
+  // SECURITY: Waiters can ONLY mark "ready" orders as "served"
+  // They cannot update to: preparing, ready, or completed
+  // Kitchen handles: confirmed → preparing → ready
+  // POS/Admin handles: served → completed (paid)
+  const allowedTransitions: Record<OrderStatus, OrderStatus[]> = {
+    pending: [], // Use confirmWaiterOrder() instead
+    confirmed: [], // Kitchen only
+    preparing: [], // Kitchen only
+    ready: ["served"], // Waiter can serve
+    served: [], // POS/Admin only
+    completed: [],
+    cancelled: [],
+  }
+
+  const { data: order } = await supabase
+    .from("orders")
+    .select("status")
+    .eq("id", orderId)
+    .single()
+
+  if (!order) return { error: "Order not found" }
+
+  const currentStatus = order.status as OrderStatus
+  const allowed = allowedTransitions[currentStatus] || []
+
+  if (!allowed.includes(status)) {
+    return { 
+      error: `Not authorized: Waiters can only mark "Ready" orders as "Served". Kitchen handles food preparation.` 
+    }
+  }
+
   const patch: Record<string, unknown> = { status }
   if (status === "served") patch.served_by = profile.id
-  
-  // When order status is "completed", mark payment as "paid" and set completed timestamp
-  if (status === "completed") {
-    patch.payment_status = "paid"
-    patch.completed_at = new Date().toISOString()
-  }
 
   const { error } = await supabase
     .from("orders")
@@ -64,7 +89,7 @@ export async function assistWaiterOrder(orderId: string) {
 
   if (orderErr) return { error: orderErr.message }
 
-  // Assign the table to this waiter
+  // Assign the table to this waiter AND set assisted_by
   if (order.table_id) {
     const { error: tableErr } = await supabase
       .from("tables")
@@ -73,6 +98,14 @@ export async function assistWaiterOrder(orderId: string) {
 
     if (tableErr) return { error: tableErr.message }
   }
+
+  // Record who assisted this order
+  const { error: orderUpdateErr } = await supabase
+    .from("orders")
+    .update({ assisted_by: profile.id })
+    .eq("id", orderId)
+
+  if (orderUpdateErr) return { error: orderUpdateErr.message }
 
   await supabase.rpc("log_activity", {
     p_action: "order.assisted",
@@ -181,7 +214,9 @@ export async function getWaiterOrders(status?: OrderStatus) {
       `
       *,
       tables(label, zone, assigned_waiter),
-      order_items(*)
+      order_items(*),
+      assisted_by_profile:profiles!orders_assisted_by_fkey(id, full_name, username),
+      served_by_profile:profiles!orders_served_by_fkey(id, full_name, username)
     `
     )
     .order("created_at", { ascending: false })
@@ -194,14 +229,9 @@ export async function getWaiterOrders(status?: OrderStatus) {
   const { data, error } = await query
   if (error) return { error: error.message }
 
-  // Show ALL non-cancelled, non-completed orders to ALL waiters
-  // Each waiter can assist / claim any order
-  const filtered = (data ?? []).filter((o) => {
-    if (o.status === "cancelled" || o.status === "completed") return false
-    return true
-  })
-
-  return { orders: filtered }
+  // Return ALL orders - let the frontend handle filtering
+  // This allows viewing completed/cancelled orders in history
+  return { orders: data ?? [] }
 }
 
 // ============================================================

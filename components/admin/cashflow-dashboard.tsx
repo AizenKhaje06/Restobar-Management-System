@@ -373,7 +373,7 @@ export function CashflowDashboard() {
                       {new Date(txn.created_at).toLocaleDateString("en-PH")}
                     </td>
                     <td className="py-2">{txn.customer_name || "Walk-in"}</td>
-                    <td className="py-2">{txn.table_label || "Takeout"}</td>
+                    <td className="py-2">{txn.table_label || "Take-Out"}</td>
                     <td className="py-2 capitalize">{PAYMENT_METHOD_LABELS[txn.payment_method] || txn.payment_method}</td>
                     <td className="py-2 text-right font-medium">{formatCurrency(txn.amount)}</td>
                   </tr>

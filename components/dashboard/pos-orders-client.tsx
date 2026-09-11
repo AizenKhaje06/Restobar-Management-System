@@ -14,6 +14,7 @@ import {
   UtensilsCrossed,
   AlertCircle,
   Plus,
+  ClipboardList,
 } from "lucide-react"
 import { StaffShell, type NavItem } from "@/components/staff-shell"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -95,9 +96,13 @@ interface PayDialog {
 export function PosOrdersClient({
   profile,
   initialOrders,
+  restaurantName,
+  restaurantLogo,
 }: {
   profile: Profile
   initialOrders: OrderWithItems[]
+  restaurantName?: string
+  restaurantLogo?: string
 }) {
   const [pending, startTransition] = useTransition()
   const [orders, setOrders] = useState(initialOrders)
@@ -232,7 +237,13 @@ export function PosOrdersClient({
       : null
 
   return (
-    <StaffShell profile={profile} items={NAV_ITEMS} title="Orders">
+    <StaffShell 
+      profile={profile} 
+      items={NAV_ITEMS} 
+      title="Orders"
+      restaurantName={restaurantName}
+      restaurantLogo={restaurantLogo}
+    >
       {/* Search + tabs */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="relative flex-1">
@@ -259,7 +270,7 @@ export function PosOrdersClient({
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as OrderStatus | "all")}>
         {/* Status summary cards — click to filter */}
-        <div className="mb-4 grid gap-2 grid-cols-2 sm:grid-cols-4 lg:grid-cols-7">
+        <div className="mb-4 grid gap-2 sm:grid-cols-3 lg:grid-cols-7">
           {(
             [
               "pending",
@@ -273,19 +284,46 @@ export function PosOrdersClient({
           ).map((status) => {
             const s = STATUS_CONFIG[status]
             const active = tab === status
+            
+            // Active button gets colored highlight with ring
+            let activeClass = "border-border"
+            if (active) {
+              switch(status) {
+                case "pending":
+                  activeClass = "border-amber-600 bg-amber-500/20 text-amber-900 dark:text-amber-200 ring-2 ring-amber-500/30"
+                  break
+                case "confirmed":
+                  activeClass = "border-cyan-600 bg-cyan-500/20 text-cyan-900 dark:text-cyan-200 ring-2 ring-cyan-500/30"
+                  break
+                case "preparing":
+                  activeClass = "border-blue-600 bg-blue-500/20 text-blue-900 dark:text-blue-200 ring-2 ring-blue-500/30"
+                  break
+                case "ready":
+                  activeClass = "border-emerald-600 bg-emerald-500/20 text-emerald-900 dark:text-emerald-200 ring-2 ring-emerald-500/30"
+                  break
+                case "served":
+                  activeClass = "border-purple-600 bg-purple-500/20 text-purple-900 dark:text-purple-200 ring-2 ring-purple-500/30"
+                  break
+                case "completed":
+                  activeClass = "border-green-700 bg-green-600/20 text-green-900 dark:text-green-200 ring-2 ring-green-600/30"
+                  break
+                case "cancelled":
+                  activeClass = "border-rose-600 bg-rose-500/20 text-rose-900 dark:text-rose-200 ring-2 ring-rose-500/30"
+                  break
+              }
+            }
+            
             return (
               <button
                 key={status}
                 onClick={() => setTab(active ? "all" : status)}
-                className={`flex flex-col items-center gap-1.5 rounded-lg border px-3 py-3 text-center transition-colors ${
-                  active
-                    ? "border-primary bg-primary/5"
-                    : "hover:bg-muted/40"
+                className={`flex items-center justify-between rounded-lg border px-3 py-2 text-left text-sm transition-all ${
+                  active ? activeClass : "hover:bg-muted/40"
                 }`}
               >
-                <div className="flex items-center gap-2 w-full justify-center">
+                <span className="flex items-center gap-2">
                   <span
-                    className={`size-1.5 rounded-full shrink-0 ${
+                    className={`size-1.5 rounded-full ${
                       status === "pending"
                         ? "bg-amber-500"
                         : status === "confirmed"
@@ -301,9 +339,9 @@ export function PosOrdersClient({
                         : "bg-rose-500"
                     }`}
                   />
-                  <span className="text-xs font-medium">{s.label}</span>
-                </div>
-                <span className="text-xl font-bold tabular-nums">
+                  <span className="font-medium">{s.label}</span>
+                </span>
+                <span className={`font-semibold tabular-nums ${active ? "" : "text-muted-foreground"}`}>
                   {counts[status] ?? 0}
                 </span>
               </button>
@@ -312,24 +350,75 @@ export function PosOrdersClient({
         </div>
 
         <TabsContent value={tab}>
-          {filtered.length === 0 ? (
-            <div className="rounded-lg border border-dashed py-16 text-center text-muted-foreground">
-              No orders in this stage.
-            </div>
-          ) : (
-            <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
-              {filtered.map((order) => (
-                <OrderCard
-                  key={order.id}
-                  order={order}
-                  onView={() => setSelectedOrder(order)}
-                  onStatusUpdate={(s) => handleStatusUpdate(order, s)}
-                  onPay={() => openPayDialog(order)}
-                  pending={pending}
-                />
-              ))}
-            </div>
-          )}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-base font-semibold">Order Queue</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {filtered.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <ClipboardList className="mb-2 size-8 text-muted-foreground" />
+                  <p className="text-sm font-medium">No orders in this stage</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Orders will appear here when available</p>
+                </div>
+              ) : (
+                <div className="-mx-2 divide-y">
+                  {filtered.map((order) => {
+                    const status = STATUS_CONFIG[order.status as OrderStatus]
+                    return (
+                      <button
+                        key={order.id}
+                        onClick={() => setSelectedOrder(order)}
+                        className="flex w-full items-center gap-4 rounded-md px-2 py-3 text-left transition-colors hover:bg-muted/40"
+                      >
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-xs font-semibold text-primary">
+                          #{order.order_number.toString().slice(-4)}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                            <span className="text-sm font-medium">
+                              {order.tables?.label ?? "Take-Out"}{order.tables?.zone ? ` • ${order.tables.zone}` : ""}
+                            </span>
+                            {order.payment_status === "paid" && (
+                              <Badge variant="outline" className="text-xs">
+                                <CreditCard className="mr-1 size-3" /> Paid
+                              </Badge>
+                            )}
+                            <span className="text-xs text-muted-foreground">
+                              • {order.order_items?.length ?? 0} items
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              • {formatDateTime(order.created_at)}
+                            </span>
+                          </div>
+                          <div className="mt-0.5 text-xs text-muted-foreground">
+                            {order.customer_name ?? "—"}
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-1.5">
+                          <span className="text-sm font-semibold tabular-nums">
+                            {formatCurrency(Number(order.total))}
+                          </span>
+                          <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${status?.color ?? "bg-gray-100"}`}>
+                            <span className={`size-1.5 rounded-full ${
+                              order.status === "pending" ? "bg-amber-500" :
+                              order.status === "confirmed" ? "bg-cyan-500" :
+                              order.status === "preparing" ? "bg-blue-500" :
+                              order.status === "ready" ? "bg-emerald-500" :
+                              order.status === "served" ? "bg-purple-500" :
+                              order.status === "completed" ? "bg-zinc-500" : "bg-rose-500"
+                            }`} />
+                            {status?.label ?? order.status}
+                          </span>
+                        </div>
+                        <Eye className="size-4 text-muted-foreground" />
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 

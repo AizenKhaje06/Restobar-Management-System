@@ -4,6 +4,7 @@ export type OrderStatus = "pending" | "confirmed" | "preparing" | "ready" | "ser
 export type PaymentStatus = "unpaid" | "pending" | "paid" | "refunded"
 export type PaymentMethod = "cash" | "card" | "gcash" | "maya" | "other"
 export type ReservationStatus = "pending" | "confirmed" | "seated" | "completed" | "cancelled" | "no_show"
+export type OrderType = "initial" | "additional"
 
 export interface StaffInvitation {
   id: string
@@ -91,7 +92,11 @@ export interface Order {
   total: number
   notes: string | null
   created_by: string | null
+  assisted_by: string | null
   served_by: string | null
+  order_type: OrderType
+  parent_order_id: string | null
+  is_notified: boolean
   created_at: string
   updated_at: string
   completed_at: string | null

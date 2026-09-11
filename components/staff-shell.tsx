@@ -9,6 +9,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { ROLE_LABELS } from "@/lib/constants"
 import { signOut } from "@/app/actions/auth"
@@ -31,6 +38,9 @@ import {
   ShoppingCart,
   Receipt,
   DollarSign,
+  AlertCircle,
+  X,
+  Loader2,
   type LucideIcon,
 } from "lucide-react"
 
@@ -114,7 +124,7 @@ function NavLinks({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => 
   )
 }
 
-function SidebarFooter({ profile }: { profile: Profile }) {
+function SidebarFooter({ profile, onLogoutClick }: { profile: Profile; onLogoutClick: () => void }) {
   return (
     <div className="border-t border-sidebar-border p-3">
       <div className="flex items-center gap-3 rounded-md px-2 py-2">
@@ -127,17 +137,16 @@ function SidebarFooter({ profile }: { profile: Profile }) {
           <div className="truncate text-sm font-medium text-sidebar-foreground">{profile.full_name ?? "User"}</div>
           <div className="truncate text-xs text-sidebar-foreground/60">{ROLE_LABELS[profile.role]}</div>
         </div>
-        <form action={signOut}>
-          <Button
-            type="submit"
-            size="icon"
-            variant="ghost"
-            className="size-8 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-            aria-label="Sign out"
-          >
-            <LogOut className="size-4" />
-          </Button>
-        </form>
+        <Button
+          type="button"
+          size="icon"
+          variant="ghost"
+          className="size-8 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          aria-label="Sign out"
+          onClick={onLogoutClick}
+        >
+          <LogOut className="size-4" />
+        </Button>
       </div>
     </div>
   )
@@ -169,12 +178,14 @@ function Sidebar({
   restaurantName,
   restaurantTagline,
   restaurantLogo,
+  onLogoutClick,
 }: {
   items: NavItem[]
   profile: Profile
   restaurantName?: string
   restaurantTagline?: string
   restaurantLogo?: string | null
+  onLogoutClick: () => void
 }) {
   return (
     <div className="flex h-full flex-col">
@@ -190,7 +201,7 @@ function Sidebar({
         <SidebarSectionLabel>Workspace</SidebarSectionLabel>
         <NavLinks items={items} />
       </div>
-      <SidebarFooter profile={profile} />
+      <SidebarFooter profile={profile} onLogoutClick={onLogoutClick} />
     </div>
   )
 }
@@ -213,6 +224,22 @@ export function StaffShell({
   restaurantLogo?: string | null
 }) {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+
+  const handleLogoutClick = () => {
+    setShowLogoutDialog(true)
+  }
+
+  const confirmLogout = async () => {
+    setIsLoggingOut(true)
+    try {
+      await signOut()
+    } catch (error) {
+      setIsLoggingOut(false)
+      setShowLogoutDialog(false)
+    }
+  }
 
   return (
     <div className="flex min-h-svh bg-background">
@@ -224,6 +251,7 @@ export function StaffShell({
           restaurantName={restaurantName}
           restaurantTagline={restaurantTagline}
           restaurantLogo={restaurantLogo}
+          onLogoutClick={handleLogoutClick}
         />
       </aside>
 
@@ -244,6 +272,7 @@ export function StaffShell({
                 restaurantName={restaurantName}
                 restaurantTagline={restaurantTagline}
                 restaurantLogo={restaurantLogo}
+                onLogoutClick={handleLogoutClick}
               />
             </SheetContent>
           </Sheet>
@@ -278,6 +307,66 @@ export function StaffShell({
 
         <main className="flex-1 px-4 py-6 md:px-8 md:py-8">{children}</main>
       </div>
+
+      {/* Logout Confirmation Dialog */}
+      <Dialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg">
+              <LogOut className="size-5 text-amber-600" />
+              Confirm Logout
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="py-4 space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to log out of your {ROLE_LABELS[profile.role]} account?
+            </p>
+            <div className="rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 p-3">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="size-4 text-amber-600 dark:text-amber-500 mt-0.5 shrink-0" />
+                <div className="flex-1 text-xs text-amber-800 dark:text-amber-300">
+                  <p className="font-medium mb-1">Before logging out:</p>
+                  <ul className="list-disc list-inside space-y-0.5 text-amber-700 dark:text-amber-400">
+                    <li>Save any unsaved work</li>
+                    <li>Ensure all tasks are completed</li>
+                    <li>Notify your team if necessary</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setShowLogoutDialog(false)}
+              disabled={isLoggingOut}
+              className="flex-1 sm:flex-none"
+            >
+              <X className="size-4 mr-2" />
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmLogout}
+              disabled={isLoggingOut}
+              className="flex-1 sm:flex-none bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800"
+            >
+              {isLoggingOut ? (
+                <>
+                  <Loader2 className="size-4 mr-2 animate-spin" />
+                  Logging out...
+                </>
+              ) : (
+                <>
+                  <LogOut className="size-4 mr-2" />
+                  Yes, Logout
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

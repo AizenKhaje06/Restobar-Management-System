@@ -148,7 +148,7 @@ export function WaiterDashboard({ profile }: { profile: Profile }) {
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [showItemPreview, setShowItemPreview] = useState<Record<string, boolean>>({})
   
-  // Performance metrics state
+  // Performance metrics state - collapsed by default on mobile
   const [showMetrics, setShowMetrics] = useState(false)
   
   // Table notes state
@@ -545,8 +545,23 @@ export function WaiterDashboard({ profile }: { profile: Profile }) {
         <div className="grid gap-6 lg:grid-cols-5">
           {/* Tables Column */}
           <div className="lg:col-span-2 space-y-4">
+            <Card className="lg:hidden bg-primary/5 border-primary/20">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                    <UtensilsCrossed className="size-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold">My Tables</p>
+                    <p className="text-xs text-muted-foreground">
+                      {filteredTables.length} table{filteredTables.length !== 1 ? "s" : ""} assigned
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide hidden lg:block">
                 My Tables
               </h2>
               <span className="text-xs text-muted-foreground">
@@ -632,11 +647,11 @@ export function WaiterDashboard({ profile }: { profile: Profile }) {
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1">
                             <h3 className="text-lg font-bold">{table.label}</h3>
-                            <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
+                            <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
                               {/* Capacity Indicator */}
-                              <div className="flex items-center gap-1.5">
-                                <UserCheck className="size-3" />
-                                <span className={`font-medium ${
+                              <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/50">
+                                <UserCheck className="size-3.5" />
+                                <span className={`font-semibold ${
                                   occupancyPercent > 100 
                                     ? "text-red-600 dark:text-red-400" 
                                     : occupancyPercent >= 80 
@@ -645,16 +660,12 @@ export function WaiterDashboard({ profile }: { profile: Profile }) {
                                 }`}>
                                   {currentGuests}/{maxSeats}
                                 </span>
-                                <span>guests</span>
                               </div>
                               {table.zone && (
-                                <>
-                                  <span>•</span>
-                                  <div className="flex items-center gap-1">
-                                    <MapPin className="size-3" />
-                                    {table.zone}
-                                  </div>
-                                </>
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-muted/50">
+                                  <MapPin className="size-3.5" />
+                                  <span>{table.zone}</span>
+                                </div>
                               )}
                             </div>
                           </div>
@@ -672,29 +683,30 @@ export function WaiterDashboard({ profile }: { profile: Profile }) {
                               const slaStatus = getSLAStatus(o)
                               
                               return (
-                                <div key={o.id} className="flex items-center justify-between text-xs">
-                                  <div className="flex items-center gap-1.5">
+                                <div key={o.id} className="flex items-center justify-between gap-2 text-xs">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
                                     <span className="font-semibold">#{o.order_number}</span>
-                                    <Badge className={cfg?.color ?? "bg-gray-100"}>{cfg?.label}</Badge>
+                                    <Badge className={`${cfg?.color ?? "bg-gray-100"} text-xs px-1.5 py-0`}>{cfg?.label}</Badge>
                                     {/* Timer */}
-                                    <div className={`flex items-center gap-0.5 ${
+                                    <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full ${
                                       slaStatus === "critical" 
-                                        ? "text-red-600 dark:text-red-400 font-semibold" 
+                                        ? "bg-red-600 text-white font-bold animate-pulse" 
                                         : slaStatus === "warning"
-                                        ? "text-amber-600 dark:text-amber-400"
-                                        : "text-muted-foreground"
+                                        ? "bg-amber-500 text-white font-semibold"
+                                        : "bg-muted text-muted-foreground"
                                     }`}>
+                                      {slaStatus === "critical" && <AlertTriangle className="size-3" />}
                                       <Timer className="size-3" />
-                                      <span>{age}m</span>
+                                      <span className="font-semibold">{age}m</span>
                                     </div>
                                   </div>
-                                  <span className="text-muted-foreground">{formatCurrency(o.total)}</span>
+                                  <span className="text-muted-foreground font-medium shrink-0">{formatCurrency(o.total)}</span>
                                 </div>
                               )
                             })}
                             {tableOrders.length > 2 && (
-                              <p className="text-xs text-muted-foreground text-center">
-                                +{tableOrders.length - 2} more orders
+                              <p className="text-xs text-muted-foreground text-center pt-1">
+                                +{tableOrders.length - 2} more order{tableOrders.length - 2 > 1 ? "s" : ""}
                               </p>
                             )}
                           </div>
@@ -739,11 +751,27 @@ export function WaiterDashboard({ profile }: { profile: Profile }) {
 
           {/* Orders Column */}
           <div className="lg:col-span-3 space-y-4">
+            <Card className="lg:hidden bg-amber-500/5 border-amber-500/20">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-amber-500/10">
+                    <ClipboardList className="size-5 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold">Orders Requiring Action</p>
+                    <p className="text-xs text-muted-foreground">
+                      {filteredOrders.length} order{filteredOrders.length !== 1 ? "s" : ""} active
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide hidden lg:block">
                 Orders Requiring Action
               </h2>
-              <Button size="sm" variant="ghost" asChild>
+              <Button size="sm" variant="ghost" asChild className="hidden lg:flex">
                 <Link href="/waiter/orders">View All</Link>
               </Button>
             </div>
@@ -772,6 +800,8 @@ export function WaiterDashboard({ profile }: { profile: Profile }) {
                   const cfg = ORDER_STATUS_CONFIG[order.status as OrderStatus]
                   const nextStatus = NEXT_STATUS[order.status as OrderStatus]
                   const isUpdating = updating === order.id
+                  const tableLabel = Array.isArray(order.tables) ? order.tables[0]?.label : order.tables?.label
+                  const tableZone = Array.isArray(order.tables) ? order.tables[0]?.zone : order.tables?.zone
                   const age = getOrderAge(order.created_at)
                   const slaStatus = getSLAStatus(order)
                   const showPreview = showItemPreview[order.id] || false
@@ -847,8 +877,6 @@ export function WaiterDashboard({ profile }: { profile: Profile }) {
 
                             <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
                               {(() => {
-                                const tableLabel = Array.isArray(order.tables) ? order.tables[0]?.label : order.tables?.label
-                                const tableZone = Array.isArray(order.tables) ? order.tables[0]?.zone : order.tables?.zone
                                 return (
                                   <>
                                     {tableLabel && (
@@ -945,6 +973,16 @@ export function WaiterDashboard({ profile }: { profile: Profile }) {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Mobile: View All Orders Button */}
+        <div className="lg:hidden">
+          <Button asChild className="w-full" size="lg">
+            <Link href="/waiter/orders">
+              <ClipboardList className="mr-2 size-4" />
+              View All Orders
+            </Link>
+          </Button>
         </div>
       </div>
 

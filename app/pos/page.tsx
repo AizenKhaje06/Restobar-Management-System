@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
 import { getSessionProfile } from "@/lib/auth"
+import { getRestaurantSettings } from "@/lib/settings"
 import { PosDashboard } from "@/components/dashboard/pos-dashboard"
 
 export default async function PosPage() {
@@ -13,5 +14,13 @@ export default async function PosPage() {
     return
   }
 
-  return <PosDashboard profile={profile} />
+  const settings = await getRestaurantSettings()
+
+  return (
+    <PosDashboard 
+      profile={profile}
+      restaurantName={settings?.name}
+      restaurantLogo={settings?.logo_url ?? undefined}
+    />
+  )
 }

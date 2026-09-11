@@ -12,7 +12,7 @@ export function BrandMark({ className, logoUrl }: { className?: string; logoUrl?
     >
       {logoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={logoUrl} alt="Logo" className="size-full object-contain" />
+        <img src={logoUrl} alt="Logo" className="size-full object-contain rounded-md" />
       ) : (
         <svg viewBox="0 0 24 24" fill="none" className="size-5" stroke="currentColor" strokeWidth="1.8">
           <path d="M5 3v7a3 3 0 0 0 6 0V3M8 10v11" strokeLinecap="round" strokeLinejoin="round" />

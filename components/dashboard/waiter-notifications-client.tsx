@@ -171,23 +171,25 @@ export function WaiterNotificationsClient({
                 </h3>
                 <div className="space-y-2">
                   {orders.map((order) => (
-                    <Card key={order.id} className="cursor-pointer hover:bg-muted/30 transition-colors">
-                      <CardContent className="flex items-center justify-between p-3">
-                        <div className="flex items-center gap-3">
-                          <div className={`size-2 rounded-full ${STATUS_DOT_COLOR[status] ?? "bg-gray-400"}`} />
-                          <div>
-                            <span className="font-semibold">#{order.order_number}</span>
-                            <span className="ml-2 text-sm text-muted-foreground">
-                              {Array.isArray(order.tables) ? order.tables[0]?.label ?? "—" : order.tables?.label ?? "—"}
-                            </span>
+                    <Card key={order.id} className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => window.location.href = "/waiter/orders"}>
+                      <CardContent className="flex items-center justify-between p-3.5">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className={`size-3 rounded-full shrink-0 ${STATUS_DOT_COLOR[status] ?? "bg-gray-400"}`} />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-semibold text-sm">#{order.order_number}</span>
+                              <span className="text-sm text-muted-foreground">
+                                {Array.isArray(order.tables) ? order.tables[0]?.label ?? "—" : order.tables?.label ?? "—"}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <div className="text-xs text-muted-foreground">
+                        <div className="text-right shrink-0 ml-3">
+                          <div className="text-xs text-muted-foreground mb-1">
                             {formatTime(new Date(order.created_at))}
                           </div>
-                          <Button size="sm" variant="ghost" asChild className="h-7 mt-1">
-                            <a href="/waiter/orders">View</a>
+                          <Button size="sm" variant="outline" className="h-7 text-xs">
+                            View
                           </Button>
                         </div>
                       </CardContent>
@@ -225,21 +227,21 @@ export function WaiterNotificationsClient({
               const detail = notif.detail ? parseDetail(notif.detail) : null
 
               return (
-                <Card key={notif.id}>
-                  <CardContent className="flex items-start gap-3 p-3">
-                    <div className="mt-0.5 shrink-0">{icon}</div>
+                <Card key={notif.id} className="hover:bg-muted/30 transition-colors">
+                  <CardContent className="flex items-start gap-3 p-3.5">
+                    <div className="mt-0.5 shrink-0 flex size-8 items-center justify-center rounded-full bg-muted/50">{icon}</div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium text-sm">{label}</span>
+                      <div className="flex items-start justify-between gap-2 flex-wrap">
+                        <span className="font-semibold text-sm">{label}</span>
                         <span className="text-xs text-muted-foreground shrink-0">
                           {formatTime(new Date(notif.created_at))}
                         </span>
                       </div>
                       {detail && (
-                        <p className="text-xs text-muted-foreground mt-0.5">{detail}</p>
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{detail}</p>
                       )}
                       {notif.actor_name && (
-                        <p className="text-xs text-muted-foreground mt-0.5">
+                        <p className="text-xs text-muted-foreground mt-1">
                           by {notif.actor_name}
                         </p>
                       )}

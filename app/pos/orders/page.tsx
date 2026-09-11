@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
 import { getSessionProfile } from "@/lib/auth"
+import { getRestaurantSettings } from "@/lib/settings"
 import { createClient } from "@/lib/supabase/server"
 import { PosOrdersClient } from "@/components/dashboard/pos-orders-client"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
@@ -18,25 +19,33 @@ export default async function PosOrdersPage() {
 
   const supabase = await createClient()
 
-  const { data: orders } = await supabase
-    .from("orders")
-    .select(
+  const [{ data: orders }, settings] = await Promise.all([
+    supabase
+      .from("orders")
+      .select(
+        `
+        *,
+        order_items(*),
+        tables(label, zone)
       `
-      *,
-      order_items(*),
-      tables(label, zone)
-    `
-    )
-    .in("status", ["pending", "confirmed", "preparing", "ready", "served"])
-    .order("created_at", { ascending: false })
-    .limit(50)
+      )
+      .in("status", ["pending", "confirmed", "preparing", "ready", "served"])
+      .order("created_at", { ascending: false })
+      .limit(50),
+    getRestaurantSettings(),
+  ])
 
   // Filter out any orders with null status (defensive)
   const safeOrders = (orders ?? []).filter((o) => o.status !== null)
 
   return (
     <ErrorBoundary>
-      <PosOrdersClient profile={profile} initialOrders={safeOrders} />
+      <PosOrdersClient 
+        profile={profile} 
+        initialOrders={safeOrders}
+        restaurantName={settings?.name}
+        restaurantLogo={settings?.logo_url ?? undefined}
+      />
     </ErrorBoundary>
   )
 }
