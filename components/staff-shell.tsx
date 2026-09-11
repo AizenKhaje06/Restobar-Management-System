@@ -30,6 +30,7 @@ import {
   Bell,
   ShoppingCart,
   Receipt,
+  DollarSign,
   type LucideIcon,
 } from "lucide-react"
 
@@ -58,6 +59,7 @@ const ICONS = {
   Bell,
   ShoppingCart,
   Receipt,
+  DollarSign,
 } as const satisfies Record<string, LucideIcon>
 
 function initials(name?: string | null) {
