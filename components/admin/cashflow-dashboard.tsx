@@ -151,7 +151,7 @@ export function CashflowDashboard() {
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
-        <Select value={dateRange} onValueChange={setDateRange}>
+        <Select value={dateRange} onValueChange={(value) => value && setDateRange(value)}>
           <SelectTrigger className="w-40">
             <Calendar className="mr-2 size-4" />
             <SelectValue />
@@ -164,7 +164,7 @@ export function CashflowDashboard() {
           </SelectContent>
         </Select>
 
-        <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+        <Select value={paymentFilter} onValueChange={(value) => value && setPaymentFilter(value)}>
           <SelectTrigger className="w-44">
             <CreditCard className="mr-2 size-4" />
             <SelectValue />
