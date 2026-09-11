@@ -7,6 +7,7 @@ import {
   Clock,
   CreditCard,
   Eye,
+  Filter,
   Loader2,
   RefreshCw,
   Search,
@@ -21,7 +22,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent } from "@/components/ui/tabs"
 import {
   Dialog,
   DialogContent,
@@ -262,38 +262,33 @@ export function PosOrdersClient({
       restaurantName={restaurantName}
       restaurantLogo={restaurantLogo}
     >
-      {/* Search + Date Filter + Refresh */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search by table, customer, order #..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
+      {/* Header Section with Date Picker + Refresh */}
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Orders</h1>
+          <p className="text-sm text-muted-foreground">Manage and track all orders across the restaurant</p>
         </div>
-        <DateRangePicker
-          onRangeChange={(start, end) => {
-            setDateStart(start)
-            setDateEnd(end)
-          }}
-          initialStartDate={dateStart}
-          initialEndDate={dateEnd}
-        />
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => window.location.reload()}
-        >
-          <RefreshCw className="size-3.5" />
-          <span className="ml-1.5">Refresh</span>
-        </Button>
+        <div className="flex gap-2">
+          <DateRangePicker
+            onRangeChange={(start, end) => {
+              setDateStart(start)
+              setDateEnd(end)
+            }}
+            initialStartDate={dateStart}
+            initialEndDate={dateEnd}
+          />
+          <Button
+            size="sm"
+            onClick={() => window.location.reload()}
+          >
+            <RefreshCw className="mr-2 size-4" />
+            Refresh
+          </Button>
+        </div>
       </div>
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as OrderStatus | "all")}>
-        {/* Status summary cards — click to filter */}
-        <div className="mb-4 grid gap-2 sm:grid-cols-3 lg:grid-cols-7">
+      {/* Status summary cards — click to filter */}
+      <div className="mb-6 grid gap-2 sm:grid-cols-3 lg:grid-cols-7">
           {(
             [
               "pending",
@@ -370,14 +365,49 @@ export function PosOrdersClient({
               </button>
             )
           })}
-        </div>
+      </div>
 
-        <TabsContent value={tab}>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-base font-semibold">Order Queue</CardTitle>
-            </CardHeader>
-            <CardContent>
+      {/* Filters + search */}
+      <Card className="mb-6">
+        <CardContent className="flex flex-wrap items-center gap-3 p-4">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search by order #, table, customer..."
+              className="h-9 pl-8"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          
+          {(tab !== "all" || search || dateStart || dateEnd) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setTab("all")
+                setSearch("")
+                setDateStart(null)
+                setDateEnd(null)
+              }}
+            >
+              <Filter className="mr-1 size-3" />
+              Clear All
+            </Button>
+          )}
+          
+          <div className="ml-auto text-sm text-muted-foreground whitespace-nowrap">
+            {filtered.length} of {orders.length} orders
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Orders table */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <CardTitle className="text-base font-semibold">Order Queue</CardTitle>
+        </CardHeader>
+        <CardContent>
               {filtered.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <ClipboardList className="mb-2 size-8 text-muted-foreground" />
@@ -442,8 +472,6 @@ export function PosOrdersClient({
               )}
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
 
       {/* Order Detail Dialog */}
       <Dialog

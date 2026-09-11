@@ -42,6 +42,7 @@ import { createPosOrder, processPosPayment, getPosData } from "@/app/actions/pos
 const NAV_ITEMS: NavItem[] = [
   { href: "/pos", label: "POS Terminal", icon: "LayoutDashboard" },
   { href: "/pos/orders", label: "Orders", icon: "ShoppingCart" },
+  { href: "/pos/tables", label: "Tables", icon: "Utensils" },
   { href: "/pos/receipts", label: "Receipts", icon: "Receipt" },
 ]
 
