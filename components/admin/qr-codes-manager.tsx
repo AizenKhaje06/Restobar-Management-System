@@ -14,6 +14,7 @@ import { PageHeader } from "@/components/page-header"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { createClient } from "@/lib/supabase/client"
 import type { RestaurantTable } from "@/lib/types"
 import { generateTableQRAction } from "@/app/actions/admin"
 import { RESTAURANT_NAME, RESTAURANT_TAGLINE } from "@/lib/constants"
@@ -136,8 +137,10 @@ function QRCard({
   onRegenerate: () => void
   pending: boolean
 }) {
+  const supabase = createClient()
   const [qrUrl, setQrUrl] = useState<string>("")
   const [token, setToken] = useState<string>("")
+  const [accessCode, setAccessCode] = useState<string | null>(null)
 
   useEffect(() => {
     // Fetch the active QR for this table
@@ -160,6 +163,30 @@ function QRCard({
       cancelled = true
     }
   }, [table.id, origin])
+
+  // Fetch active session's access code
+  useEffect(() => {
+    let cancelled = false
+    async function loadSession() {
+      const { data } = await supabase
+        .from("table_sessions")
+        .select("access_code")
+        .eq("table_id", table.id)
+        .eq("status", "active")
+        .maybeSingle()
+      
+      if (cancelled) return
+      setAccessCode(data?.access_code || null)
+    }
+    loadSession()
+
+    // Poll every 5 seconds to update the access code in real-time
+    const interval = setInterval(loadSession, 5000)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
+  }, [table.id, supabase])
 
   return (
     <Card className="overflow-hidden print:break-inside-avoid print:shadow-none print:border-2 print:border-gray-300">
@@ -187,14 +214,27 @@ function QRCard({
           )}
         </div>
 
-        {/* Table Code - Corporate Style Badge */}
-        <div className="mx-auto max-w-[200px] rounded-lg border-2 border-primary bg-primary/5 px-4 py-3 print:border-3">
+        {/* Table Code - Shows customer's PIN when session is active */}
+        <div className={`mx-auto max-w-[200px] rounded-lg border-2 px-4 py-3 print:border-3 transition-colors ${
+          accessCode 
+            ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20' 
+            : 'border-gray-300 bg-gray-50 dark:bg-gray-900/20'
+        }`}>
           <p className="text-[0.65rem] font-semibold uppercase tracking-widest text-muted-foreground">
             Table Code
           </p>
-          <p className="mt-1 text-3xl font-black tracking-wider text-primary print:text-4xl">
-            {(table as any).table_code || "----"}
+          <p className={`mt-1 text-3xl font-black tracking-wider print:text-4xl ${
+            accessCode 
+              ? 'text-emerald-600 dark:text-emerald-400' 
+              : 'text-gray-400 dark:text-gray-600'
+          }`}>
+            {accessCode || "----"}
           </p>
+          {accessCode && (
+            <p className="mt-1 text-[0.6rem] font-medium text-emerald-600 dark:text-emerald-400">
+              Session Active
+            </p>
+          )}
         </div>
 
         {/* Instructions */}
