@@ -5,6 +5,9 @@ import { getSessionProfile } from "@/lib/auth"
 
 export interface CashflowData {
   totalRevenue: number
+  totalExpenses: number
+  netProfit: number
+  profitMargin: number
   totalOrders: number
   averageOrderValue: number
   paymentMethodBreakdown: {
@@ -15,6 +18,8 @@ export interface CashflowData {
   revenueByDay: {
     date: string
     revenue: number
+    expenses: number
+    profit: number
     orders: number
   }[]
   topSellingItems: {
@@ -31,6 +36,11 @@ export interface CashflowData {
     amount: number
     status: string
     table_label: string | null
+  }[]
+  expensesByCategory: {
+    category: string
+    amount: number
+    count: number
   }[]
 }
 
@@ -123,9 +133,57 @@ export async function getCashflowData(params: {
         orders: current.orders + 1,
       })
     })
+
+    // Fetch expenses for the same date range
+    let expensesQuery = supabase.from("expenses").select("date, category, amount")
+
+    if (startDate) {
+      expensesQuery = expensesQuery.gte("date", startDate.split("T")[0])
+    }
+    if (endDate) {
+      expensesQuery = expensesQuery.lte("date", endDate.split("T")[0])
+    }
+
+    const { data: expenses } = await expensesQuery
+    const totalExpenses = (expenses || []).reduce((sum, exp) => sum + Number(exp.amount), 0)
+
+    // Add expenses to revenue by day
+    const expensesByDayMap = new Map<string, number>()
+    expenses?.forEach((expense) => {
+      const current = expensesByDayMap.get(expense.date) || 0
+      expensesByDayMap.set(expense.date, current + Number(expense.amount))
+    })
+
     const revenueByDay = Array.from(revenueByDayMap.entries())
-      .map(([date, data]) => ({ date, revenue: data.revenue, orders: data.orders }))
+      .map(([date, data]) => ({
+        date,
+        revenue: data.revenue,
+        expenses: expensesByDayMap.get(date) || 0,
+        profit: data.revenue - (expensesByDayMap.get(date) || 0),
+        orders: data.orders,
+      }))
       .sort((a, b) => a.date.localeCompare(b.date))
+
+    // Expenses by category
+    const expensesByCategoryMap = new Map<string, { amount: number; count: number }>()
+    expenses?.forEach((expense) => {
+      const current = expensesByCategoryMap.get(expense.category) || { amount: 0, count: 0 }
+      expensesByCategoryMap.set(expense.category, {
+        amount: current.amount + Number(expense.amount),
+        count: current.count + 1,
+      })
+    })
+    const expensesByCategory = Array.from(expensesByCategoryMap.entries()).map(
+      ([category, data]) => ({
+        category,
+        amount: data.amount,
+        count: data.count,
+      })
+    )
+
+    // Calculate net profit and profit margin
+    const netProfit = totalRevenue - totalExpenses
+    const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0
 
     // Top-selling items
     const { data: orderItems } = await supabase
@@ -164,12 +222,16 @@ export async function getCashflowData(params: {
     return {
       data: {
         totalRevenue,
+        totalExpenses,
+        netProfit,
+        profitMargin,
         totalOrders,
         averageOrderValue,
         paymentMethodBreakdown,
         revenueByDay,
         topSellingItems,
         transactions,
+        expensesByCategory,
       },
     }
   } catch (error) {

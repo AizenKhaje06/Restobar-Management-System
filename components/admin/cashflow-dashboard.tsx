@@ -24,7 +24,9 @@ import { formatCurrency } from "@/lib/constants"
 import { getCashflowData, exportCashflowToCSV, type CashflowData } from "@/app/actions/cashflow"
 import { 
   LineChart, 
-  Line, 
+  Line,
+  AreaChart,
+  Area,
   XAxis, 
   YAxis, 
   CartesianGrid, 
@@ -181,10 +183,10 @@ export function CashflowDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <DollarSign className="size-4 text-muted-foreground" />
+            <DollarSign className="size-4 text-emerald-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(data.totalRevenue)}</div>
+            <div className="text-2xl font-bold text-emerald-600">{formatCurrency(data.totalRevenue)}</div>
             <p className="text-xs text-muted-foreground">
               From {data.totalOrders} paid orders
             </p>
@@ -193,13 +195,28 @@ export function CashflowDashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-            <ShoppingCart className="size-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
+            <TrendingUp className="size-4 text-rose-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{data.totalOrders}</div>
+            <div className="text-2xl font-bold text-rose-600">{formatCurrency(data.totalExpenses)}</div>
             <p className="text-xs text-muted-foreground">
-              Completed transactions
+              Operating costs
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Net Profit</CardTitle>
+            <DollarSign className="size-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold ${data.netProfit >= 0 ? "text-blue-600" : "text-rose-600"}`}>
+              {formatCurrency(data.netProfit)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {data.profitMargin.toFixed(1)}% profit margin
             </p>
           </CardContent>
         </Card>
@@ -207,25 +224,12 @@ export function CashflowDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Average Order Value</CardTitle>
-            <TrendingUp className="size-4 text-muted-foreground" />
+            <ShoppingCart className="size-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(data.averageOrderValue)}</div>
+            <div className="text-2xl font-bold text-purple-600">{formatCurrency(data.averageOrderValue)}</div>
             <p className="text-xs text-muted-foreground">
               Per transaction
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Payment Methods</CardTitle>
-            <CreditCard className="size-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{data.paymentMethodBreakdown.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Active methods
             </p>
           </CardContent>
         </Card>
@@ -236,11 +240,21 @@ export function CashflowDashboard() {
         {/* Revenue Trend */}
         <Card>
           <CardHeader>
-            <CardTitle>Revenue Trend</CardTitle>
+            <CardTitle>Revenue & Expenses Trend</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={data.revenueByDay}>
+              <AreaChart data={data.revenueByDay}>
+                <defs>
+                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
+                  </linearGradient>
+                  <linearGradient id="colorExpenses" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.6}/>
+                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0.05}/>
+                  </linearGradient>
+                </defs>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis 
                   dataKey="date" 
@@ -252,14 +266,29 @@ export function CashflowDashboard() {
                   formatter={(value: number) => formatCurrency(value)}
                   labelFormatter={(label) => new Date(label).toLocaleDateString("en-PH")}
                 />
-                <Line 
-                  type="monotone" 
+                <Legend />
+                <Area 
+                  type="monotoneX" 
                   dataKey="revenue" 
+                  name="Revenue"
                   stroke="#10b981" 
-                  strokeWidth={2}
-                  dot={{ fill: "#10b981" }}
+                  strokeWidth={3}
+                  fill="url(#colorRevenue)"
+                  fillOpacity={1}
+                  dot={{ fill: "#10b981", r: 4 }}
+                  activeDot={{ r: 6, strokeWidth: 2 }}
                 />
-              </LineChart>
+                <Area 
+                  type="monotoneX" 
+                  dataKey="expenses" 
+                  name="Expenses"
+                  stroke="#ef4444" 
+                  strokeWidth={2}
+                  fill="url(#colorExpenses)"
+                  fillOpacity={1}
+                  dot={{ fill: "#ef4444", r: 3 }}
+                />
+              </AreaChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
