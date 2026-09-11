@@ -1217,51 +1217,115 @@ function CustomerOrderContent() {
     const currentTax = Math.round(currentCartTotal * taxRate * 100) / 100
     const currentTotal = Math.round((currentCartTotal + currentTax) * 100) / 100
 
-    // Create order linked to the active table session
-    const { data: orderData, error: orderError } = await supabase
+    // Check if there's already an existing order for this session
+    const { data: existingOrder } = await supabase
       .from("orders")
-      .insert({
-        table_id: table.id,
-        session_id: sessionState.sessionId,
-        session_token: sessionState.sessionId, // legacy field, keep populated
-        customer_name: sessionState.myName,
-        status: "pending",
-        payment_status: "unpaid",
-        subtotal: currentCartTotal,
-        tax: currentTax,
-        total: currentTotal,
-        notes: null,
-      })
-      .select()
+      .select("id, subtotal, tax, total")
+      .eq("session_id", sessionState.sessionId)
+      .neq("status", "cancelled")
+      .neq("status", "completed")
+      .order("created_at", { ascending: true })
+      .limit(1)
       .single()
 
-    if (orderError || !orderData) {
-      alert("Failed to create order: " + (orderError?.message || "Unknown error"))
-      setSubmitting(false)
-      return
+    let orderId: string
+    let orderNumber: number
+
+    if (existingOrder) {
+      // ADD TO EXISTING ORDER instead of creating new one
+      
+      // Insert new items to existing order
+      const orderItems = cart.map((c) => ({
+        order_id: existingOrder.id,
+        menu_item_id: c.item.id,
+        name: c.item.name,
+        unit_price: c.item.price,
+        quantity: c.quantity,
+        status: "pending",
+      }))
+
+      const { error: itemsError } = await supabase.from("order_items").insert(orderItems)
+
+      if (itemsError) {
+        alert("Failed to add items: " + (itemsError.message || "Unknown error"))
+        setSubmitting(false)
+        return
+      }
+
+      // Update order totals (add new items to existing totals)
+      const newSubtotal = Number(existingOrder.subtotal) + currentCartTotal
+      const newTax = Math.round(newSubtotal * taxRate * 100) / 100
+      const newTotal = Math.round((newSubtotal + newTax) * 100) / 100
+
+      const { error: updateError, data: updatedOrder } = await supabase
+        .from("orders")
+        .update({
+          subtotal: newSubtotal,
+          tax: newTax,
+          total: newTotal,
+        })
+        .eq("id", existingOrder.id)
+        .select("order_number")
+        .single()
+
+      if (updateError) {
+        alert("Failed to update order: " + (updateError.message || "Unknown error"))
+        setSubmitting(false)
+        return
+      }
+
+      orderId = existingOrder.id
+      orderNumber = updatedOrder.order_number
+    } else {
+      // CREATE NEW ORDER (first time ordering)
+      const { data: orderData, error: orderError } = await supabase
+        .from("orders")
+        .insert({
+          table_id: table.id,
+          session_id: sessionState.sessionId,
+          session_token: sessionState.sessionId, // legacy field, keep populated
+          customer_name: sessionState.myName,
+          status: "pending",
+          payment_status: "unpaid",
+          subtotal: currentCartTotal,
+          tax: currentTax,
+          total: currentTotal,
+          notes: null,
+        })
+        .select()
+        .single()
+
+      if (orderError || !orderData) {
+        alert("Failed to create order: " + (orderError?.message || "Unknown error"))
+        setSubmitting(false)
+        return
+      }
+
+      // Insert order items
+      const orderItems = cart.map((c) => ({
+        order_id: orderData.id,
+        menu_item_id: c.item.id,
+        name: c.item.name,
+        unit_price: c.item.price,
+        quantity: c.quantity,
+        status: "pending",
+      }))
+
+      const { error: itemsError } = await supabase.from("order_items").insert(orderItems)
+
+      if (itemsError) {
+        alert("Failed to add items: " + (itemsError.message || "Unknown error"))
+        setSubmitting(false)
+        return
+      }
+
+      orderId = orderData.id
+      orderNumber = orderData.order_number
     }
 
-    // Insert order items
-    const orderItems = cart.map((c) => ({
-      order_id: orderData.id,
-      menu_item_id: c.item.id,
-      name: c.item.name,
-      unit_price: c.item.price,
-      quantity: c.quantity,
-      status: "pending",
-    }))
-
-    const { error: itemsError } = await supabase.from("order_items").insert(orderItems)
-
-    if (itemsError) {
-      alert("Failed to add items: " + (itemsError.message || "Unknown error"))
-      setSubmitting(false)
-      return
-    }
-
-    // Show confirmation FIRST
+    // Show confirmation
     setOrderPlaced(true)
-    setOrderNumber(orderData.order_number)
+    setOrderNumber(orderNumber)
 
     // Clear cart + drawer
     setCart([])
