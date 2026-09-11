@@ -110,6 +110,8 @@ export function PosTablesClient({
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [search, setSearch] = useState("")
+  const [tableStatusFilter, setTableStatusFilter] = useState<"all" | "available" | "occupied" | "reserved" | "unavailable">("all")
+  const [orderStatusFilter, setOrderStatusFilter] = useState<string | "all">("all")
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null)
   const [tableOrders, setTableOrders] = useState<OrderRow[]>([])
   const [loadingOrders, setLoadingOrders] = useState(false)
@@ -126,6 +128,23 @@ export function PosTablesClient({
   }, [sessions])
 
   const filtered = tables.filter((t) => {
+    const session = sessionByTable[t.id]
+    const isOccupied = !!session
+    
+    // Table status filter
+    if (tableStatusFilter !== "all") {
+      if (tableStatusFilter === "occupied" && !isOccupied) return false
+      if (tableStatusFilter === "available" && (isOccupied || t.status !== "available")) return false
+      if (tableStatusFilter === "reserved" && t.status !== "reserved") return false
+      if (tableStatusFilter === "unavailable" && t.status !== "unavailable") return false
+    }
+    
+    // Order status filter - only applies to occupied tables
+    if (orderStatusFilter !== "all") {
+      if (!session || session.order_status !== orderStatusFilter) return false
+    }
+    
+    // Search filter
     if (!search) return true
     const q = search.toLowerCase()
     return (
@@ -138,12 +157,51 @@ export function PosTablesClient({
   const counts = useMemo(() => {
     let occupied = 0
     let available = 0
+    let reserved = 0
+    let unavailable = 0
+    
     for (const t of tables) {
-      if (sessionByTable[t.id]) occupied++
-      else if (t.status === "available") available++
+      if (sessionByTable[t.id]) {
+        occupied++
+      } else if (t.status === "available") {
+        available++
+      } else if (t.status === "reserved") {
+        reserved++
+      } else if (t.status === "unavailable") {
+        unavailable++
+      }
     }
-    return { occupied, available, total: tables.length }
+    
+    return { 
+      all: tables.length,
+      occupied, 
+      available,
+      reserved,
+      unavailable,
+    }
   }, [tables, sessionByTable])
+
+  // Count order statuses across all occupied tables
+  const orderStatusCounts = useMemo(() => {
+    const statusCounts: Record<string, number> = {
+      pending: 0,
+      confirmed: 0,
+      preparing: 0,
+      ready: 0,
+      served: 0,
+      completed: 0,
+      cancelled: 0,
+    }
+    
+    // Count statuses from sessions
+    for (const session of sessions) {
+      if (session.order_status && statusCounts[session.order_status] !== undefined) {
+        statusCounts[session.order_status]++
+      }
+    }
+    
+    return statusCounts
+  }, [sessions])
 
   // When a table is selected, load its orders
   async function openTableAccount(tableId: string) {
@@ -236,28 +294,149 @@ export function PosTablesClient({
         </div>
       </div>
 
-      {/* Summary cards */}
-      <div className="mb-4 grid gap-2 sm:grid-cols-3">
-        <div className="rounded-lg border bg-card px-4 py-3 flex items-center justify-between">
+      {/* Table Status Filter Cards - 5 in 1 row */}
+      <div className="mb-4 grid gap-2 grid-cols-5">
+        <button
+          onClick={() => setTableStatusFilter("all")}
+          className={`rounded-lg border px-4 py-3 flex items-center justify-between transition-all ${
+            tableStatusFilter === "all"
+              ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/20"
+              : "bg-card hover:bg-muted/40"
+          }`}
+        >
           <span className="flex items-center gap-2 text-sm font-medium">
-            <Users className="size-4 text-muted-foreground" /> Total Tables
+            <Users className="size-4" /> All Tables
           </span>
-          <span className="text-xl font-black tabular-nums">{counts.total}</span>
-        </div>
-        <div className="rounded-lg border bg-card px-4 py-3 flex items-center justify-between">
+          <span className={`text-xl font-black tabular-nums ${tableStatusFilter === "all" ? "" : "text-muted-foreground"}`}>
+            {counts.all}
+          </span>
+        </button>
+        
+        <button
+          onClick={() => setTableStatusFilter("occupied")}
+          className={`rounded-lg border px-4 py-3 flex items-center justify-between transition-all ${
+            tableStatusFilter === "occupied"
+              ? "border-amber-600 bg-amber-500/20 text-amber-900 dark:text-amber-200 ring-2 ring-amber-500/30"
+              : "bg-card hover:bg-muted/40"
+          }`}
+        >
           <span className="flex items-center gap-2 text-sm font-medium">
             <Lock className="size-4 text-amber-500" /> Occupied
           </span>
-          <span className="text-xl font-black tabular-nums text-amber-600">{counts.occupied}</span>
-        </div>
-        <div className="rounded-lg border bg-card px-4 py-3 flex items-center justify-between">
+          <span className={`text-xl font-black tabular-nums ${
+            tableStatusFilter === "occupied" ? "" : "text-muted-foreground"
+          }`}>
+            {counts.occupied}
+          </span>
+        </button>
+        
+        <button
+          onClick={() => setTableStatusFilter("available")}
+          className={`rounded-lg border px-4 py-3 flex items-center justify-between transition-all ${
+            tableStatusFilter === "available"
+              ? "border-emerald-600 bg-emerald-500/20 text-emerald-900 dark:text-emerald-200 ring-2 ring-emerald-500/30"
+              : "bg-card hover:bg-muted/40"
+          }`}
+        >
           <span className="flex items-center gap-2 text-sm font-medium">
             <Unlock className="size-4 text-emerald-500" /> Available
           </span>
-          <span className="text-xl font-black tabular-nums text-emerald-600">
+          <span className={`text-xl font-black tabular-nums ${
+            tableStatusFilter === "available" ? "" : "text-muted-foreground"
+          }`}>
             {counts.available}
           </span>
-        </div>
+        </button>
+        
+        <button
+          onClick={() => setTableStatusFilter("reserved")}
+          className={`rounded-lg border px-4 py-3 flex items-center justify-between transition-all ${
+            tableStatusFilter === "reserved"
+              ? "border-blue-600 bg-blue-500/20 text-blue-900 dark:text-blue-200 ring-2 ring-blue-500/30"
+              : "bg-card hover:bg-muted/40"
+          }`}
+        >
+          <span className="flex items-center gap-2 text-sm font-medium">
+            <Clock className="size-4 text-blue-500" /> Reserved
+          </span>
+          <span className={`text-xl font-black tabular-nums ${
+            tableStatusFilter === "reserved" ? "" : "text-muted-foreground"
+          }`}>
+            {counts.reserved}
+          </span>
+        </button>
+        
+        <button
+          onClick={() => setTableStatusFilter("unavailable")}
+          className={`rounded-lg border px-4 py-3 flex items-center justify-between transition-all ${
+            tableStatusFilter === "unavailable"
+              ? "border-rose-600 bg-rose-500/20 text-rose-900 dark:text-rose-200 ring-2 ring-rose-500/30"
+              : "bg-card hover:bg-muted/40"
+          }`}
+        >
+          <span className="flex items-center gap-2 text-sm font-medium">
+            <XCircle className="size-4 text-rose-500" /> Unavailable
+          </span>
+          <span className={`text-xl font-black tabular-nums ${
+            tableStatusFilter === "unavailable" ? "" : "text-muted-foreground"
+          }`}>
+            {counts.unavailable}
+          </span>
+        </button>
+      </div>
+
+      {/* Order Status Summary Cards */}
+      <div className="mb-6 grid gap-2 sm:grid-cols-3 lg:grid-cols-7">
+        {Object.entries(ORDER_STATUS_CONFIG).map(([status, config]) => {
+          const count = orderStatusCounts[status] ?? 0
+          const active = orderStatusFilter === status
+          
+          // Active button gets colored highlight with ring
+          let activeClass = "border-border"
+          if (active) {
+            switch(status) {
+              case "pending":
+                activeClass = "border-amber-600 bg-amber-500/20 text-amber-900 dark:text-amber-200 ring-2 ring-amber-500/30"
+                break
+              case "confirmed":
+                activeClass = "border-cyan-600 bg-cyan-500/20 text-cyan-900 dark:text-cyan-200 ring-2 ring-cyan-500/30"
+                break
+              case "preparing":
+                activeClass = "border-blue-600 bg-blue-500/20 text-blue-900 dark:text-blue-200 ring-2 ring-blue-500/30"
+                break
+              case "ready":
+                activeClass = "border-emerald-600 bg-emerald-500/20 text-emerald-900 dark:text-emerald-200 ring-2 ring-emerald-500/30"
+                break
+              case "served":
+                activeClass = "border-purple-600 bg-purple-500/20 text-purple-900 dark:text-purple-200 ring-2 ring-purple-500/30"
+                break
+              case "completed":
+                activeClass = "border-green-700 bg-green-600/20 text-green-900 dark:text-green-200 ring-2 ring-green-600/30"
+                break
+              case "cancelled":
+                activeClass = "border-rose-600 bg-rose-500/20 text-rose-900 dark:text-rose-200 ring-2 ring-rose-500/30"
+                break
+            }
+          }
+          
+          return (
+            <button
+              key={status}
+              onClick={() => setOrderStatusFilter(active ? "all" : status)}
+              className={`flex items-center justify-between rounded-lg border px-3 py-2 text-left text-sm transition-all ${
+                active ? activeClass : "hover:bg-muted/40"
+              }`}
+            >
+              <span className="flex items-center gap-2">
+                <span className={`size-1.5 rounded-full ${config.dot}`} />
+                <span className="font-medium">{config.label}</span>
+              </span>
+              <span className={`font-semibold tabular-nums ${active ? "" : "text-muted-foreground"}`}>
+                {count}
+              </span>
+            </button>
+          )
+        })}
       </div>
 
       {/* Tables grid */}
