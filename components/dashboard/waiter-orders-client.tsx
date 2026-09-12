@@ -26,6 +26,7 @@ import {
   Grid3x3,
   Users,
   CalendarDays,
+  Plus,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -120,7 +121,7 @@ export function WaiterOrdersClient({
   const supabase = createClient()
   const [orders, setOrders] = useState(initialOrders)
   const [search, setSearch] = useState("")
-  const [tab, setTab] = useState<OrderStatus | "all">("all")
+  const [tab, setTab] = useState<OrderStatus | "all" | "addon" | "urgent">("all")
   const [dateStart, setDateStart] = useState<Date | null>(null)
   const [dateEnd, setDateEnd] = useState<Date | null>(null)
   const [selectedOrder, setSelectedOrder] = useState<WaiterOrder | null>(null)
@@ -301,21 +302,36 @@ export function WaiterOrdersClient({
   // Smart sorting with priority
   const sortedAndFiltered = useMemo(() => {
     let result = orders.filter((o) => {
-      // Status filter
-      if (tab !== "all" && o.status !== tab) return false
+      // Add-On filter
+      if (tab === "addon") {
+        if (o.order_type !== "additional") return false
+      } else if (tab === "urgent") {
+        // Urgent filter - show orders with urgent priority
+        if (getOrderPriority(o) !== "urgent") return false
+      } else if (tab !== "all") {
+        // Status filter
+        if (o.status !== tab) return false
+      }
       
       // Date range filter
-      if (dateStart) {
+      if (dateStart || dateEnd) {
         const orderDate = new Date(o.created_at)
-        const startOfDay = new Date(dateStart)
-        startOfDay.setHours(0, 0, 0, 0)
-        if (orderDate < startOfDay) return false
-      }
-      if (dateEnd) {
-        const orderDate = new Date(o.created_at)
-        const endOfDay = new Date(dateEnd)
-        endOfDay.setHours(23, 59, 59, 999)
-        if (orderDate > endOfDay) return false
+        // Reset time to compare only dates
+        const orderDateOnly = new Date(orderDate.getFullYear(), orderDate.getMonth(), orderDate.getDate())
+        
+        // If only start date is set (single date selection), use it as both start and end
+        const effectiveStartDate = dateStart
+        const effectiveEndDate = dateEnd || dateStart // Use start date if end is null
+        
+        if (effectiveStartDate) {
+          const startDateOnly = new Date(effectiveStartDate.getFullYear(), effectiveStartDate.getMonth(), effectiveStartDate.getDate())
+          if (orderDateOnly < startDateOnly) return false
+        }
+        
+        if (effectiveEndDate) {
+          const endDateOnly = new Date(effectiveEndDate.getFullYear(), effectiveEndDate.getMonth(), effectiveEndDate.getDate())
+          if (orderDateOnly > endDateOnly) return false
+        }
       }
       
       // Search filter
@@ -330,6 +346,14 @@ export function WaiterOrdersClient({
 
     // Apply sorting
     result.sort((a, b) => {
+      // ALWAYS put paid/completed orders at the bottom
+      const aIsPaid = a.payment_status === "paid" || a.status === "completed"
+      const bIsPaid = b.payment_status === "paid" || b.status === "completed"
+      
+      if (aIsPaid && !bIsPaid) return 1 // a goes down
+      if (!aIsPaid && bIsPaid) return -1 // b goes down
+      
+      // Both paid or both unpaid, apply normal sorting
       switch (sortBy) {
         case "priority": {
           const priorityOrder = { urgent: 3, high: 2, normal: 1 }
@@ -356,15 +380,51 @@ export function WaiterOrdersClient({
     return result
   }, [orders, tab, search, sortBy, getOrderPriority, dateStart, dateEnd])
 
-  const counts = orders.reduce(
+  // Filter orders by date range first for accurate counts
+  const dateFilteredOrders = useMemo(() => {
+    return orders.filter((o) => {
+      // Date range filter
+      if (dateStart || dateEnd) {
+        const orderDate = new Date(o.created_at)
+        // Reset time to compare only dates
+        const orderDateOnly = new Date(orderDate.getFullYear(), orderDate.getMonth(), orderDate.getDate())
+        
+        // If only start date is set (single date selection), use it as both start and end
+        const effectiveStartDate = dateStart
+        const effectiveEndDate = dateEnd || dateStart // Use start date if end is null
+        
+        if (effectiveStartDate) {
+          const startDateOnly = new Date(effectiveStartDate.getFullYear(), effectiveStartDate.getMonth(), effectiveStartDate.getDate())
+          if (orderDateOnly < startDateOnly) return false
+        }
+        
+        if (effectiveEndDate) {
+          const endDateOnly = new Date(effectiveEndDate.getFullYear(), effectiveEndDate.getMonth(), effectiveEndDate.getDate())
+          if (orderDateOnly > endDateOnly) return false
+        }
+      }
+      return true
+    })
+  }, [orders, dateStart, dateEnd])
+
+  const counts = dateFilteredOrders.reduce(
     (acc, o) => {
       acc[o.status] = (acc[o.status] ?? 0) + 1
+      // Count add-on orders
+      if (o.order_type === "additional") {
+        acc["addon"] = (acc["addon"] ?? 0) + 1
+      }
       return acc
     },
     {} as Record<string, number>
   )
 
-  const activeTabCount = orders.length
+  // Count urgent orders (based on priority) - filtered by date
+  const urgentCount = useMemo(() => {
+    return dateFilteredOrders.filter(o => getOrderPriority(o) === "urgent").length
+  }, [dateFilteredOrders, getOrderPriority])
+
+  const activeTabCount = dateFilteredOrders.length
 
   const handleLogout = async () => {
     setIsLoggingOut(true)
@@ -404,6 +464,22 @@ export function WaiterOrdersClient({
   // Filter tables based on status filter
   const filteredTables = useMemo(() => {
     if (tableStatusFilter === "all") return tables
+    
+    if (tableStatusFilter === "available") {
+      // Available means: NO active orders AND status is not reserved/unavailable
+      return tables.filter(t => 
+        (!t.active_orders || t.active_orders.length === 0) && 
+        t.status !== 'reserved' && 
+        t.status !== 'unavailable'
+      )
+    }
+    
+    if (tableStatusFilter === "occupied") {
+      // Occupied means: has active orders
+      return tables.filter(t => t.active_orders && t.active_orders.length > 0)
+    }
+    
+    // For reserved/unavailable, use the status field
     return tables.filter(t => t.status === tableStatusFilter)
   }, [tables, tableStatusFilter])
 
@@ -432,9 +508,9 @@ export function WaiterOrdersClient({
           {/* Action Buttons */}
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Button variant="ghost" size="sm" onClick={() => setShowTablesSheet(true)}>
-              <Grid3x3 className="size-4" />
-              <span className="ml-2 hidden sm:inline">Tables</span>
+            <Button variant="ghost" size="sm" onClick={() => window.location.reload()}>
+              <RefreshCw className="size-4" />
+              <span className="ml-2 hidden sm:inline">Refresh</span>
             </Button>
             <Button variant="ghost" size="sm" onClick={() => setShowLogoutDialog(true)}>
               <LogOut className="size-4" />
@@ -446,10 +522,11 @@ export function WaiterOrdersClient({
 
       {/* Main Content - Full Width */}
       <main className="w-full px-4 sm:px-6 lg:px-8 py-6 max-w-[1600px] mx-auto">
-      {/* Header with Search and Sort */}
+      {/* Header with Search and Filters */}
       <div className="mb-6 space-y-4">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-          <div className="relative flex-1">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          {/* Search Bar - Half width on desktop */}
+          <div className="relative flex-1 sm:max-w-md">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search by order #, table, customer..."
@@ -459,20 +536,29 @@ export function WaiterOrdersClient({
             />
           </div>
           
-          <div className="flex flex-row gap-2">
-            <DateRangePicker
-              onRangeChange={(start, end) => {
-                setDateStart(start)
-                setDateEnd(end)
-              }}
-              initialStartDate={dateStart}
-              initialEndDate={dateEnd}
-            />
-            
+          {/* Right Side Buttons - Reordered: Time, Date Range, Tables */}
+          <div className="flex flex-row gap-2 items-center w-full sm:w-auto sm:flex-1 sm:justify-end">
+            {/* Sort Dropdown (Time) - First */}
             <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
-              <SelectTrigger className="flex-1 sm:w-[180px]">
-                <ArrowUpDown className="size-4 mr-2" />
-                <SelectValue placeholder="Sort by..." />
+              <SelectTrigger size="sm" className={`!h-9 py-0 ${
+                dateStart || dateEnd 
+                  ? dateStart && dateEnd && dateStart.toDateString() !== dateEnd.toDateString()
+                    ? 'w-auto min-w-[48px] px-3 sm:w-[165px] sm:px-3' // Date range - icon only on mobile
+                    : 'w-[120px] sm:w-[165px]' // Single date - show text on mobile
+                  : 'w-[165px]'
+              }`}>
+                <ArrowUpDown className={`size-4 ${
+                  dateStart && dateEnd && dateStart.toDateString() !== dateEnd.toDateString() 
+                    ? 'sm:mr-2' 
+                    : 'mr-2'
+                }`} />
+                <span className={
+                  dateStart && dateEnd && dateStart.toDateString() !== dateEnd.toDateString()
+                    ? 'hidden sm:inline'
+                    : ''
+                }>
+                  <SelectValue placeholder="Sort by..." />
+                </span>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="time">
@@ -501,110 +587,110 @@ export function WaiterOrdersClient({
                 </SelectItem>
               </SelectContent>
             </Select>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => window.location.reload()}
-              className="shrink-0"
+            
+            {/* Date Range Picker - Second */}
+            <DateRangePicker
+              onRangeChange={(start, end) => {
+                setDateStart(start)
+                setDateEnd(end)
+              }}
+              initialStartDate={dateStart}
+              initialEndDate={dateEnd}
+            />
+            
+            {/* Tables Button - Last */}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowTablesSheet(true)}
+              className={`h-9 ${
+                dateStart || dateEnd
+                  ? dateStart && dateEnd && dateStart.toDateString() !== dateEnd.toDateString()
+                    ? 'w-auto min-w-[48px] px-3 sm:px-4' // Date range - icon only on mobile
+                    : 'w-auto' // Single date - show text on mobile
+                  : ''
+              }`}
             >
-              <RefreshCw className="size-3.5" />
-              <span className="ml-1.5">Refresh</span>
+              <Grid3x3 className={`size-4 ${
+                dateStart && dateEnd && dateStart.toDateString() !== dateEnd.toDateString()
+                  ? 'sm:mr-2'
+                  : 'mr-2'
+              }`} />
+              <span className={
+                dateStart && dateEnd && dateStart.toDateString() !== dateEnd.toDateString()
+                  ? 'hidden sm:inline'
+                  : ''
+              }>Tables</span>
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid gap-3 grid-cols-2 sm:grid-cols-4 mb-6">
-        <div className="rounded-lg border bg-card p-3">
-          <div className="flex items-center gap-2">
-            <ClipboardList className="size-4 text-blue-500" />
-            <div className="text-xs text-muted-foreground">Active</div>
-          </div>
-          <div className="mt-1 text-2xl font-bold">{activeTabCount}</div>
-        </div>
-        <div className="rounded-lg border bg-card p-3">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="size-4 text-red-500" />
-            <div className="text-xs text-muted-foreground">Pending</div>
-          </div>
-          <div className="mt-1 text-2xl font-bold">{counts["pending"] ?? 0}</div>
-        </div>
-        <div className="rounded-lg border bg-card p-3">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="size-4 text-emerald-500" />
-            <div className="text-xs text-muted-foreground">Ready</div>
-          </div>
-          <div className="mt-1 text-2xl font-bold">{counts["ready"] ?? 0}</div>
-        </div>
-        <div className="rounded-lg border bg-card p-3">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="size-4 text-purple-500" />
-            <div className="text-xs text-muted-foreground">Total</div>
-          </div>
-          <div className="mt-1 text-xl font-bold">
-            {formatCurrency(
-              sortedAndFiltered.reduce((sum, o) => sum + Number(o.total), 0)
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Tabs - Status Filter Buttons */}
-      <div className="mb-6 flex flex-wrap gap-2">
+      {/* Quick Stats - Now Clickable Filters */}
+      <div className="mb-6 grid gap-3 grid-cols-2 sm:grid-cols-4">
+        {/* ACTIVE - Show all active orders */}
         <button
           onClick={() => setTab("all")}
-          className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+          className={`rounded-lg border p-3 text-left transition-all ${
             tab === "all"
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground"
+              ? "border-blue-600 bg-blue-500/20 text-blue-900 dark:text-blue-200 ring-2 ring-blue-500/30"
+              : "bg-card hover:bg-muted/40"
           }`}
         >
-          <span className="size-1.5 rounded-full bg-current" />
-          <span>All</span>
-          <span className="ml-1 opacity-70">{activeTabCount}</span>
+          <div className="flex items-center gap-2">
+            <ClipboardList className="size-4 text-blue-500" />
+            <div className="text-xs text-muted-foreground uppercase font-semibold">ACTIVE</div>
+          </div>
+          <div className="mt-1 text-2xl font-bold">{activeTabCount}</div>
         </button>
 
-        {(["pending", "confirmed", "preparing", "ready", "served", "completed", "cancelled"] as OrderStatus[]).map((s) => {
-          const count = counts[s] ?? 0
-          
-          const dotColors: Record<OrderStatus, string> = {
-            pending: "bg-red-500",
-            confirmed: "bg-cyan-500",
-            preparing: "bg-blue-500",
-            ready: "bg-emerald-500",
-            served: "bg-purple-500",
-            completed: "bg-green-600",
-            cancelled: "bg-rose-500",
-          }
+        {/* PENDING - Show pending orders */}
+        <button
+          onClick={() => setTab("pending")}
+          className={`rounded-lg border p-3 text-left transition-all ${
+            tab === "pending"
+              ? "border-red-600 bg-red-500/20 text-red-900 dark:text-red-200 ring-2 ring-red-500/30"
+              : "bg-card hover:bg-muted/40"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="size-4 text-red-500" />
+            <div className="text-xs text-muted-foreground uppercase font-semibold">PENDING</div>
+          </div>
+          <div className="mt-1 text-2xl font-bold">{counts["pending"] ?? 0}</div>
+        </button>
 
-          const labels: Record<OrderStatus, string> = {
-            pending: "Pending",
-            confirmed: "Confirmed",
-            preparing: "Preparing",
-            ready: "Ready",
-            served: "Served",
-            completed: "Paid",
-            cancelled: "Cancelled",
-          }
+        {/* URGENT - Show orders with urgent priority */}
+        <button
+          onClick={() => setTab(tab === "urgent" ? "all" : "urgent")}
+          className={`rounded-lg border p-3 text-left transition-all ${
+            tab === "urgent"
+              ? "border-red-600 bg-red-500/20 text-red-900 dark:text-red-200 ring-2 ring-red-500/30"
+              : "bg-card hover:bg-muted/40"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="size-4 text-red-500" />
+            <div className="text-xs text-muted-foreground uppercase font-semibold">URGENT</div>
+          </div>
+          <div className="mt-1 text-2xl font-bold">{urgentCount}</div>
+        </button>
 
-          return (
-            <button
-              key={s}
-              onClick={() => setTab(s)}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                tab === s
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <span className={`size-1.5 rounded-full ${dotColors[s]}`} />
-              <span>{labels[s]}</span>
-              <span className="ml-1 opacity-70">{count}</span>
-            </button>
-          )
-        })}
+        {/* ADD-ON - Show additional orders */}
+        <button
+          onClick={() => setTab("addon")}
+          className={`rounded-lg border p-3 text-left transition-all ${
+            tab === "addon"
+              ? "border-indigo-600 bg-indigo-500/20 text-indigo-900 dark:text-indigo-200 ring-2 ring-indigo-500/30"
+              : "bg-card hover:bg-muted/40"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Plus className="size-4 text-indigo-500" />
+            <div className="text-xs text-muted-foreground uppercase font-semibold">ADD-ON</div>
+          </div>
+          <div className="mt-1 text-2xl font-bold">{counts["addon"] ?? 0}</div>
+        </button>
       </div>
 
       {/* Orders Grid */}
@@ -674,12 +760,19 @@ export function WaiterOrdersClient({
       >
         <DialogContent className="max-w-md w-[calc(100%-2rem)] sm:w-full">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 flex-wrap">
               Order #{selectedOrder?.order_number}
               {selectedOrder && (
-                <Badge className={STATUS_CONFIG[selectedOrder.status as OrderStatus]?.color}>
-                  {STATUS_CONFIG[selectedOrder.status as OrderStatus]?.label}
-                </Badge>
+                <>
+                  <Badge className={STATUS_CONFIG[selectedOrder.status as OrderStatus]?.color}>
+                    {STATUS_CONFIG[selectedOrder.status as OrderStatus]?.label}
+                  </Badge>
+                  {selectedOrder.order_type === "additional" && (
+                    <Badge className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400">
+                      <Plus className="mr-1 size-3" /> Add-On
+                    </Badge>
+                  )}
+                </>
               )}
             </DialogTitle>
             <p className="text-sm text-muted-foreground">
@@ -966,6 +1059,14 @@ export function WaiterOrdersClient({
                 ) : (
                 <div className="space-y-3">
                   {filteredTables.map((table) => {
+                    // Determine actual status based on active_orders, not just the status field
+                    let actualStatus = table.status
+                    if (table.active_orders && table.active_orders.length > 0) {
+                      actualStatus = 'occupied' // If there are active orders, it's occupied
+                    } else if (table.status === 'occupied') {
+                      actualStatus = 'available' // If no active orders but marked as occupied, it's actually available
+                    }
+                    
                     const statusColors = {
                       available: 'border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/20',
                       occupied: 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20',
@@ -978,12 +1079,12 @@ export function WaiterOrdersClient({
                       reserved: { label: 'Reserved', color: 'text-amber-600 dark:text-amber-400' },
                       unavailable: { label: 'Unavailable', color: 'text-red-600 dark:text-red-400' },
                     }
-                    const status = statusLabels[table.status as keyof typeof statusLabels] || statusLabels.available
+                    const status = statusLabels[actualStatus as keyof typeof statusLabels] || statusLabels.available
 
                     return (
                       <div 
                         key={table.id}
-                        className={`rounded-lg border-2 p-4 transition-all hover:shadow-md ${statusColors[table.status as keyof typeof statusColors] || statusColors.available}`}
+                        className={`rounded-lg border-2 p-4 transition-all hover:shadow-md ${statusColors[actualStatus as keyof typeof statusColors] || statusColors.available}`}
                       >
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex-1">
@@ -1008,12 +1109,12 @@ export function WaiterOrdersClient({
                         </div>
 
                         {/* Active Orders */}
-                        {table.orders && table.orders.length > 0 && (
+                        {table.active_orders && table.active_orders.length > 0 && (
                           <div className="mt-3 pt-3 border-t">
                             <p className="text-xs font-semibold text-muted-foreground mb-2">
                               Active Orders:
                             </p>
-                            {table.orders.slice(0, 2).map((order: any) => (
+                            {table.active_orders.slice(0, 2).map((order: any) => (
                               <div key={order.id} className="flex items-center justify-between text-sm mb-1">
                                 <span>Order #{order.order_number}</span>
                                 <span className="text-xs text-muted-foreground">
@@ -1021,9 +1122,9 @@ export function WaiterOrdersClient({
                                 </span>
                               </div>
                             ))}
-                            {table.orders.length > 2 && (
+                            {table.active_orders.length > 2 && (
                               <p className="text-xs text-muted-foreground mt-1">
-                                +{table.orders.length - 2} more
+                                +{table.active_orders.length - 2} more
                               </p>
                             )}
                           </div>
@@ -1198,105 +1299,131 @@ function WaiterOrderCard({
   const priorityStyle = priorityConfig[priority]
 
   return (
-    <Card className={`overflow-hidden transition-all hover:shadow-md ${
+    <Card className={`group relative overflow-hidden transition-all duration-200 hover:shadow-lg ${
       slaStatus === "critical" 
-        ? "border-l-[6px] border-l-red-600 bg-red-50 dark:bg-red-950/30" 
+        ? "ring-2 ring-red-500 shadow-red-100 dark:shadow-red-950" 
         : slaStatus === "warning"
-        ? "border-l-[6px] border-l-amber-500 bg-amber-50 dark:bg-amber-950/30"
+        ? "ring-2 ring-amber-400 shadow-amber-100 dark:shadow-amber-950"
         : priority === "urgent"
-        ? "border-l-[6px] border-l-red-500"
-        : priority === "high"
-        ? "border-l-[6px] border-l-amber-500"
-        : "border-l-[1px] border-l-border"
+        ? "ring-1 ring-red-400"
+        : "hover:ring-1 hover:ring-primary/20"
     }`}>
-      {/* Top Status Bar */}
-      {(slaStatus === "critical" || priority === "urgent") && (
-        <div className={`px-3 py-1.5 flex items-center gap-1.5 text-xs font-semibold ${
-          slaStatus === "critical" 
-            ? "bg-red-600 text-white animate-pulse" 
-            : "bg-red-500 text-white"
-        }`}>
-          <AlertTriangle className="size-3" />
-          <span>
-            {slaStatus === "critical" && order.status === "pending" 
-              ? `URGENT: Confirm Now! (${age}m old)`
-              : slaStatus === "critical" && order.status === "ready"
-              ? `URGENT: Serve Now! (${age}m waiting)`
-              : `HIGH PRIORITY ORDER`}
+      {/* Colored Left Border Indicator */}
+      <div className={`absolute left-0 top-0 bottom-0 w-1 ${
+        slaStatus === "critical" || priority === "urgent"
+          ? "bg-gradient-to-b from-red-500 to-red-600"
+          : slaStatus === "warning" || priority === "high"
+          ? "bg-gradient-to-b from-amber-400 to-amber-500"
+          : isPaid
+          ? "bg-gradient-to-b from-emerald-400 to-emerald-500"
+          : order.status === "ready"
+          ? "bg-gradient-to-b from-emerald-400 to-emerald-500"
+          : order.status === "preparing"
+          ? "bg-gradient-to-b from-amber-400 to-amber-500"
+          : "bg-gradient-to-b from-blue-400 to-blue-500"
+      }`} />
+
+      {/* Urgent Alert Banner */}
+      {slaStatus === "critical" && (
+        <div className="bg-gradient-to-r from-red-600 to-red-700 px-4 py-2 flex items-center gap-2 text-white animate-pulse">
+          <AlertTriangle className="size-4 shrink-0" />
+          <span className="text-xs font-bold uppercase tracking-wide">
+            {order.status === "pending" 
+              ? `Urgent: Confirm Immediately`
+              : order.status === "ready"
+              ? `Urgent: Serve Now`
+              : `High Priority Action Required`}
           </span>
         </div>
       )}
 
-      <CardContent className="p-3">
-        {/* Header: Table Number (HERO) + Timer */}
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <div className="flex-1">
-            {/* Table Number or Take-Out - LARGEST */}
+      <CardContent className="p-4">
+        {/* Header Section - Table & Time */}
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex-1 min-w-0">
+            {/* Table Number / Take-Out */}
             {order.tables ? (
-              <h2 className="text-2xl font-black tracking-tight">
-                {order.tables.label}
-              </h2>
+              <div className="flex items-baseline gap-2">
+                <h2 className="text-3xl font-black tracking-tight text-foreground">
+                  {order.tables.label}
+                </h2>
+                {order.tables.zone && (
+                  <span className="text-xs font-medium text-muted-foreground">
+                    {order.tables.zone}
+                  </span>
+                )}
+              </div>
             ) : (
-              <h2 className="text-2xl font-black tracking-tight text-emerald-600 dark:text-emerald-400">
+              <h2 className="text-3xl font-black tracking-tight bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent">
                 Take-Out
               </h2>
             )}
-            {/* Customer Name - Secondary */}
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {order.customer_name || "Guest"}
+            {/* Customer Name */}
+            <p className="text-sm font-semibold text-foreground/80 mt-1 truncate">
+              {order.customer_name || "Walk-in Guest"}
             </p>
           </div>
 
-          <div className="flex flex-col items-end gap-1.5">
-            <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-bold ${
+          {/* Time Badge - Prominent */}
+          <div className={`flex flex-col items-end gap-1.5 shrink-0`}>
+            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm ${
               slaStatus === "critical" 
-                ? "bg-red-600 text-white shadow-lg animate-pulse" 
+                ? "bg-red-600 text-white ring-2 ring-red-400" 
                 : slaStatus === "warning"
-                ? "bg-amber-500 text-white shadow-lg"
-                : "bg-muted text-foreground"
+                ? "bg-amber-500 text-white ring-2 ring-amber-300"
+                : "bg-muted/80 text-foreground"
             }`}>
-              {slaStatus === "critical" && <AlertTriangle className="size-4" />}
-              <Timer className="size-3" />
-              <span className="tabular-nums">{age}</span>
-              <span className="text-[10px]">m</span>
+              <Timer className="size-4" />
+              <span className="tabular-nums">
+                {age >= 60 ? `${Math.floor(age / 60)}h ${age % 60}m` : `${age}m`}
+              </span>
             </div>
-            {/* Priority Badge */}
-            {priority !== "normal" && (
-              <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold ${
-                priority === "urgent" 
-                  ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                  : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-              }`}>
-                {priorityStyle.icon}
-                {priorityStyle.label}
-              </div>
-            )}
           </div>
         </div>
 
-        {/* Status Badge + Amount */}
-        <div className="flex items-center justify-between gap-2 mb-2">
-          <Badge className={`${config?.color ?? "bg-gray-100"} text-xs px-2 py-0.5`}>
-            <span className="mr-1.5">{config?.icon}</span>
-            <span className="font-semibold">{config?.label}</span>
-          </Badge>
+        {/* Status Row - Compact & Clean */}
+        <div className="flex items-center gap-2 mb-3 flex-wrap">
+          {/* Status Badge */}
+          {!isPaid && (
+            <Badge className={`${config?.color ?? "bg-gray-100"} px-2.5 py-1 text-xs font-semibold`}>
+              {config?.icon}
+              <span className="ml-1.5">{config?.label}</span>
+            </Badge>
+          )}
           
-          <div className="text-right">
-            <div className="text-xl font-bold text-primary tabular-nums">
-              {formatCurrency(Number(order.total))}
-            </div>
-            <div className="text-xs text-muted-foreground">
-              {order.order_items?.length ?? 0} items
-            </div>
+          {/* Priority Badge */}
+          {priority !== "normal" && (
+            <Badge className={`px-2.5 py-1 text-xs font-semibold ${
+              priority === "urgent" 
+                ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+            }`}>
+              {priorityStyle.icon}
+              <span className="ml-1">{priorityStyle.label}</span>
+            </Badge>
+          )}
+          
+          {/* Add-On Badge */}
+          {order.order_type === "additional" && (
+            <Badge className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 px-2.5 py-1 text-xs font-semibold">
+              <Plus className="size-3" />
+              <span className="ml-1">Add-On</span>
+            </Badge>
+          )}
+
+          {/* Item Count */}
+          <div className="ml-auto flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <ClipboardList className="size-3.5" />
+            <span>{order.order_items?.length ?? 0} items</span>
           </div>
         </div>
 
-        {/* Payment Status */}
+        {/* Payment Status - Green Banner */}
         {isPaid && (
-          <div className="mb-2 flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800">
-            <CreditCard className="size-3 text-emerald-600 dark:text-emerald-400" />
-            <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-              Paid - {order.payment_method === "cash" 
+          <div className="mb-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-950/30 dark:to-emerald-900/30 border border-emerald-200 dark:border-emerald-800">
+            <CreditCard className="size-4 text-emerald-600 dark:text-emerald-400" />
+            <span className="text-sm font-bold text-emerald-700 dark:text-emerald-300">
+              Paid via {order.payment_method === "cash" 
                 ? "Cash"
                 : order.payment_method === "card"
                 ? "Card"
@@ -1304,20 +1431,20 @@ function WaiterOrderCard({
                 ? "GCash"
                 : order.payment_method === "maya"
                 ? "Maya"
-                : "Paid"}
+                : "Payment"}
             </span>
           </div>
         )}
 
         {/* Special Requests */}
         {order.special_requests && (
-          <div className="mb-2 flex items-start gap-1.5 px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
-            <AlertCircle className="size-3 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+          <div className="mb-3 flex items-start gap-2 px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
+            <AlertCircle className="size-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-semibold text-blue-700 dark:text-blue-300">
-                Special Request:
+              <p className="text-xs font-bold text-blue-700 dark:text-blue-300 mb-0.5">
+                Special Request
               </p>
-              <p className="text-xs text-blue-600 dark:text-blue-400 line-clamp-2">
+              <p className="text-xs text-blue-600/90 dark:text-blue-400/90 line-clamp-2">
                 {order.special_requests}
               </p>
             </div>
@@ -1325,7 +1452,7 @@ function WaiterOrderCard({
         )}
 
         {/* Action Buttons */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 mt-4">
           {isPending && !isClaimedByMe ? (
             <Button
               onClick={(e) => {
@@ -1333,18 +1460,17 @@ function WaiterOrderCard({
                 onAssist()
               }}
               disabled={assisting || pending}
-              className="flex-1 h-9 text-sm font-semibold bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
-              size="default"
+              className="flex-1 h-10 text-sm font-semibold shadow-sm bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
             >
               {assisting ? (
                 <>
-                  <Loader2 className="size-4 animate-spin" />
-                  <span className="ml-2">Taking Order...</span>
+                  <Loader2 className="size-4 animate-spin mr-2" />
+                  Taking Order...
                 </>
               ) : (
                 <>
-                  <Bell className="size-4" />
-                  <span className="ml-2">Take This Order</span>
+                  <Bell className="size-4 mr-2" />
+                  Take This Order
                 </>
               )}
             </Button>
@@ -1356,11 +1482,10 @@ function WaiterOrderCard({
                   onView()
                 }}
                 variant="outline"
-                className="flex-1 h-9 text-sm font-semibold"
-                size="default"
+                className="flex-1 h-10 text-sm font-semibold shadow-sm hover:bg-accent"
               >
-                <Eye className="size-4" />
-                <span className="ml-2">View Details</span>
+                <Eye className="size-4 mr-2" />
+                View Details
               </Button>
               {next && !isPaid && (
                 <Button

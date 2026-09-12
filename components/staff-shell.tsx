@@ -214,6 +214,7 @@ export function StaffShell({
   restaurantName,
   restaurantTagline,
   restaurantLogo,
+  searchElement,
 }: {
   profile: Profile
   items: NavItem[]
@@ -222,6 +223,7 @@ export function StaffShell({
   restaurantName?: string
   restaurantTagline?: string
   restaurantLogo?: string | null
+  searchElement?: React.ReactNode
 }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
@@ -283,17 +285,19 @@ export function StaffShell({
           </div>
 
           <div className="hidden flex-1 md:flex md:max-w-md">
-            <div className="relative w-full">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search orders, tables, menu..."
-                className="h-9 pl-8 text-sm"
-                aria-label="Global search"
-              />
-              <kbd className="pointer-events-none absolute right-2 top-1/2 hidden -translate-y-1/2 select-none rounded border border-border bg-muted px-1.5 font-mono text-[0.65rem] text-muted-foreground sm:inline-block">
-                /
-              </kbd>
-            </div>
+            {searchElement || (
+              <div className="relative w-full">
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search orders, tables, menu..."
+                  className="h-9 pl-8 text-sm"
+                  aria-label="Global search"
+                />
+                <kbd className="pointer-events-none absolute right-2 top-1/2 hidden -translate-y-1/2 select-none rounded border border-border bg-muted px-1.5 font-mono text-[0.65rem] text-muted-foreground sm:inline-block">
+                  /
+                </kbd>
+              </div>
+            )}
           </div>
 
           <ThemeToggle />

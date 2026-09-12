@@ -264,7 +264,16 @@ export async function getWaiterTables() {
     .order("label")
 
   if (error) return { error: error.message }
-  return { tables: data }
+  
+  // Transform data to add active_orders (orders that are not completed or cancelled)
+  const tablesWithActiveOrders = data?.map(table => ({
+    ...table,
+    active_orders: table.orders?.filter(
+      (order: any) => order.status !== 'completed' && order.status !== 'cancelled'
+    ) || []
+  }))
+  
+  return { tables: tablesWithActiveOrders }
 }
 
 // ============================================================

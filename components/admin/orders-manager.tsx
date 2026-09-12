@@ -15,6 +15,7 @@ import {
   Utensils,
   CalendarDays,
   RefreshCw,
+  Plus,
 } from "lucide-react"
 import { PageHeader } from "@/components/page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -71,7 +72,7 @@ const PAYMENT_STYLES: Record<PaymentStatus, { label: string; variant: "default" 
 export function OrdersManager({ orders }: { orders: OrderWithItems[] }) {
   const router = useRouter()
   const [search, setSearch] = useState("")
-  const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all")
+  const [statusFilter, setStatusFilter] = useState<OrderStatus | "all" | "addon">("all")
   const [paymentFilter, setPaymentFilter] = useState<PaymentStatus | "all">("all")
   const [dateStart, setDateStart] = useState<Date | null>(null)
   const [dateEnd, setDateEnd] = useState<Date | null>(null)
@@ -80,8 +81,13 @@ export function OrdersManager({ orders }: { orders: OrderWithItems[] }) {
 
   const filtered = useMemo(() => {
     return orders.filter((o) => {
-      // Status filter
-      if (statusFilter !== "all" && o.status !== statusFilter) return false
+      // Add-On filter
+      if (statusFilter === "addon") {
+        if (o.order_type !== "additional") return false
+      } else if (statusFilter !== "all") {
+        // Status filter
+        if (o.status !== statusFilter) return false
+      }
       
       // Payment filter
       if (paymentFilter !== "all" && o.payment_status !== paymentFilter) return false
@@ -113,10 +119,15 @@ export function OrdersManager({ orders }: { orders: OrderWithItems[] }) {
   }, [orders, search, statusFilter, paymentFilter, dateStart, dateEnd])
 
   const counts = useMemo(() => {
-    const c: Record<OrderStatus, number> = {
-      pending: 0, confirmed: 0, preparing: 0, ready: 0, served: 0, completed: 0, cancelled: 0,
+    const c: Record<string, number> = {
+      pending: 0, confirmed: 0, preparing: 0, ready: 0, served: 0, completed: 0, cancelled: 0, addon: 0,
     }
-    for (const o of orders) c[o.status]++
+    for (const o of orders) {
+      c[o.status]++
+      if (o.order_type === "additional") {
+        c["addon"]++
+      }
+    }
     return c
   }, [orders])
 
@@ -160,9 +171,12 @@ export function OrdersManager({ orders }: { orders: OrderWithItems[] }) {
       />
 
       {/* Status summary */}
-      <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-7">
-        {ORDER_STATUSES.map((status) => {
-          const s = STATUS_STYLES[status]
+      <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-8">
+        {[...ORDER_STATUSES.slice(0, 6), "addon", ORDER_STATUSES[6]].map((status) => {
+          const isAddon = status === "addon"
+          const s = isAddon 
+            ? { label: "Add-On", className: "bg-indigo-500/10 text-indigo-700 dark:text-indigo-400", dot: "bg-indigo-500" }
+            : STATUS_STYLES[status as OrderStatus]
           const active = statusFilter === status
           
           // Active button gets colored background based on status with high-contrast text
@@ -187,6 +201,9 @@ export function OrdersManager({ orders }: { orders: OrderWithItems[] }) {
               case "completed":
                 activeClass = "border-green-700 bg-green-600/20 text-green-900 dark:text-green-200 ring-2 ring-green-600/30"
                 break
+              case "addon":
+                activeClass = "border-indigo-600 bg-indigo-500/20 text-indigo-900 dark:text-indigo-200 ring-2 ring-indigo-500/30"
+                break
               case "cancelled":
                 activeClass = "border-rose-600 bg-rose-500/20 text-rose-900 dark:text-rose-200 ring-2 ring-rose-500/30"
                 break
@@ -196,7 +213,7 @@ export function OrdersManager({ orders }: { orders: OrderWithItems[] }) {
           return (
             <button
               key={status}
-              onClick={() => setStatusFilter(active ? "all" : status)}
+              onClick={() => setStatusFilter(active ? "all" : status as any)}
               className={`flex items-center justify-between rounded-lg border px-3 py-2 text-left text-sm transition-all ${
                 active ? activeClass : "hover:bg-muted/40"
               }`}
@@ -206,7 +223,7 @@ export function OrdersManager({ orders }: { orders: OrderWithItems[] }) {
                 <span className="font-medium">{s.label}</span>
               </span>
               <span className={`font-semibold tabular-nums ${active ? "" : "text-muted-foreground"}`}>
-                {counts[status]}
+                {counts[status as string] ?? 0}
               </span>
             </button>
           )
@@ -293,6 +310,11 @@ export function OrdersManager({ orders }: { orders: OrderWithItems[] }) {
                         <span className="text-sm font-medium">
                           {order.tables?.label ?? "Take-Out"}{order.tables?.zone ? ` • ${order.tables.zone}` : ""}
                         </span>
+                        {order.order_type === "additional" && (
+                          <Badge className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400 text-xs">
+                            <Plus className="mr-1 size-3" /> Add-On
+                          </Badge>
+                        )}
                         <Badge variant={pay.variant} className="text-xs">
                           {pay.label}
                         </Badge>
@@ -355,20 +377,25 @@ function OrderDetailDialog({
             <DialogHeader>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  <DialogTitle className="flex items-center gap-2">
+                  <DialogTitle className="flex items-center gap-2 flex-wrap">
                     <Receipt className="size-4" />
                     Order #{order.order_number.toString().slice(-6)}
                   </DialogTitle>
                   <DialogDescription className="mt-1">
                     {formatDateTime(order.created_at)} • {relativeTime(order.created_at)}
                   </DialogDescription>
-                  <div className="mt-2">
+                  <div className="mt-2 flex items-center gap-2 flex-wrap">
                     <span
                       className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_STYLES[order.status].className}`}
                     >
                       <span className={`size-1.5 rounded-full ${STATUS_STYLES[order.status].dot}`} />
                       {STATUS_STYLES[order.status].label}
                     </span>
+                    {order.order_type === "additional" && (
+                      <Badge className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400">
+                        <Plus className="mr-1 size-3" /> Add-On
+                      </Badge>
+                    )}
                   </div>
                 </div>
               </div>

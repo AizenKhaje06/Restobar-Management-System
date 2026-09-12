@@ -281,20 +281,25 @@ export function PosTablesClient({
   }
 
   return (
-    <StaffShell profile={profile} items={NAV_ITEMS} title="Tables">
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search by table label, code, or zone..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-      </div>
-
-      {/* Table Status Filter Cards - 5 in 1 row */}
+    <>
+      <StaffShell 
+        profile={profile} 
+        items={NAV_ITEMS} 
+        title="Tables"
+        searchElement={
+          <div className="relative w-full">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search by table label, code, or zone..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-9 pl-8 text-sm"
+              aria-label="Search tables"
+            />
+          </div>
+        }
+      >
+        {/* Table Status Filter Cards - 5 in 1 row */}
       <div className="mb-4 grid gap-2 grid-cols-5">
         <button
           onClick={() => setTableStatusFilter("all")}
@@ -918,6 +923,7 @@ export function PosTablesClient({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </StaffShell>
+      </StaffShell>
+    </>
   )
 }

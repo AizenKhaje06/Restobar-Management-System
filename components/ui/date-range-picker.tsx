@@ -16,12 +16,14 @@ interface DateRangePickerProps {
   onRangeChange: (startDate: Date | null, endDate: Date | null) => void
   initialStartDate?: Date | null
   initialEndDate?: Date | null
+  className?: string
 }
 
 export function DateRangePicker({ 
   onRangeChange, 
   initialStartDate = null, 
-  initialEndDate = null 
+  initialEndDate = null,
+  className = "",
 }: DateRangePickerProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [startDate, setStartDate] = useState<Date | null>(initialStartDate)
@@ -43,7 +45,7 @@ export function DateRangePicker({
       setTempStartDate(date)
       setTempEndDate(null)
     } else {
-      // Complete the range
+      // Complete the range (2nd click)
       if (date >= tempStartDate) {
         setTempEndDate(date)
       } else {
@@ -80,6 +82,10 @@ export function DateRangePicker({
   const formatDateRange = () => {
     if (!startDate) return "Select date range"
     if (!endDate) return formatDate(startDate)
+    // If start and end dates are the same, show as single date
+    if (startDate.toDateString() === endDate.toDateString()) {
+      return formatDate(startDate)
+    }
     return `${formatDate(startDate)} - ${formatDate(endDate)}`
   }
 
@@ -92,7 +98,7 @@ export function DateRangePicker({
       <Button
         variant="outline"
         size="sm"
-        className="h-9 gap-2"
+        className={`h-9 gap-2 ${className}`}
         onClick={() => setIsOpen(true)}
       >
         <Calendar className="size-4" />
@@ -109,19 +115,17 @@ export function DateRangePicker({
       </Button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-[800px]">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Select Date Range</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="sm:max-w-[800px] max-h-[95vh] overflow-hidden p-3 sm:p-6">
+          <DialogHeader className="pb-1">
+            <DialogTitle className="text-lg sm:text-xl font-bold">Select Date Range</DialogTitle>
+            <DialogDescription className="mt-0.5 text-xs sm:text-sm">
               Click on a start date, then click on an end date to select your range
             </DialogDescription>
-          </DialogHeader>
-
-          <div className="py-4">
-            {/* Selected range display */}
+            
+            {/* Selected range display - moved up to header area */}
             {tempStartDate && (
-              <div className="mb-4 rounded-lg border bg-blue-50 dark:bg-blue-950/20 p-3 text-center">
-                <p className="text-sm font-medium text-blue-900 dark:text-blue-200">
+              <div className="mt-1.5 rounded-lg border bg-blue-50 dark:bg-blue-950/20 p-2 text-center">
+                <p className="text-xs sm:text-sm font-medium text-blue-900 dark:text-blue-200">
                   {tempEndDate ? (
                     <>
                       <span className="font-semibold">{formatDate(tempStartDate)}</span>
@@ -138,9 +142,11 @@ export function DateRangePicker({
                 </p>
               </div>
             )}
+          </DialogHeader>
 
+          <div className="py-0.5">
             {/* Two-month calendar view */}
-            <div className="grid gap-6 sm:grid-cols-2">
+            <div className="grid gap-2 sm:gap-6 sm:grid-cols-2">
               <CalendarMonth
                 month={currentMonth}
                 startDate={tempStartDate}
@@ -166,24 +172,21 @@ export function DateRangePicker({
             </div>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="ghost"
-              onClick={handleClear}
-              disabled={!tempStartDate && !tempEndDate}
-            >
-              Clear
-            </Button>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={handleCancel}>
-                Cancel
-              </Button>
+          <DialogFooter className="gap-2 sm:gap-0 pt-1.5">
+            <div className="flex items-center justify-between w-full">
               <Button 
                 onClick={handleApply}
                 disabled={!tempStartDate}
                 className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
               >
                 Apply
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={handleClear}
+                disabled={!tempStartDate && !tempEndDate}
+              >
+                Clear
               </Button>
             </div>
           </DialogFooter>
@@ -255,7 +258,7 @@ function CalendarMonth({
     <div className="space-y-3">
       {/* Month header */}
       <div className="flex items-center justify-between">
-        {onPrevMonth && (
+        {onPrevMonth ? (
           <Button
             variant="ghost"
             size="sm"
@@ -266,9 +269,11 @@ function CalendarMonth({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </Button>
+        ) : (
+          <div className="h-8 w-8" /> // Invisible placeholder for balance
         )}
         <h3 className="flex-1 text-center text-sm font-semibold">{monthName}</h3>
-        {onNextMonth && (
+        {onNextMonth ? (
           <Button
             variant="ghost"
             size="sm"
@@ -279,6 +284,8 @@ function CalendarMonth({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </Button>
+        ) : (
+          <div className="h-8 w-8" /> // Invisible placeholder for balance
         )}
         {!onPrevMonth && !onNextMonth && <div className="w-8" />}
       </div>
