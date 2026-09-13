@@ -379,8 +379,8 @@ function CreateSessionModal({
     e.preventDefault()
     setError("")
     if (!name.trim()) return
-    if (!/^\d{4}$/.test(accessCode)) {
-      setError("Access code must be exactly 4 digits")
+    if (!/^\d{6}$/.test(accessCode)) {
+      setError("Access code must be exactly 6 digits")
       return
     }
     if (accessCode !== confirmCode) {
@@ -552,8 +552,8 @@ function JoinSessionModal({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError("")
-    if (!/^\d{4}$/.test(accessCode)) {
-      setError("Please enter the 4-digit access code")
+    if (!/^\d{6}$/.test(accessCode)) {
+      setError("Please enter the 6-digit access code")
       return
     }
     setLoading(true)
