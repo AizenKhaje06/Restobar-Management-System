@@ -11,8 +11,6 @@ import {
   AlertCircle,
   Loader2,
   UtensilsCrossed,
-  Grid3x3,
-  Sparkles,
   ChevronLeft,
   Receipt,
 } from "lucide-react"
@@ -167,25 +165,23 @@ export function WaiterAddonOrderModal({
           {/* Modal Container - Rounded on larger screens */}
           <div className="w-full h-full flex flex-col bg-white dark:bg-gray-950 rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-800">
             {/* Header */}
-            <div className="flex-shrink-0 border-b bg-gradient-to-br from-indigo-50 via-blue-50 to-sky-50 dark:from-indigo-950/40 dark:via-blue-950/40 dark:to-sky-950/40">
-              <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-indigo-100 dark:border-indigo-900/30">
+            <div className="flex-shrink-0 border-b bg-slate-50 dark:bg-slate-900/50">
+              <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className="flex items-center justify-center size-10 rounded-xl bg-gradient-to-br from-indigo-600 to-blue-600 shadow-lg shadow-indigo-500/30 flex-shrink-0">
-                    <Plus className="size-5 text-white" strokeWidth={2.5} />
+                  <div className="flex items-center justify-center size-10 rounded-lg bg-slate-900 dark:bg-slate-100 flex-shrink-0">
+                    <Plus className="size-5 text-white dark:text-slate-900" strokeWidth={2.5} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+                    <h2 className="text-lg font-bold text-foreground">
                       Add Items
-                      <Sparkles className="size-4 text-indigo-600 dark:text-indigo-400" />
                     </h2>
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                       <Badge variant="outline" className="font-semibold text-xs px-2 py-0">
-                        <Grid3x3 className="size-3 mr-1" />
                         {tableName}
                       </Badge>
                       <span className="text-xs text-muted-foreground">·</span>
                       <span className="text-xs text-muted-foreground font-medium">
-                        #{orderNumber}
+                        Order #{orderNumber}
                       </span>
                     </div>
                   </div>
@@ -196,7 +192,7 @@ export function WaiterAddonOrderModal({
                   variant="ghost"
                   size="icon"
                   onClick={() => onOpenChange(false)}
-                  className="rounded-full size-10 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 flex-shrink-0"
+                  className="rounded-lg size-10 hover:bg-slate-100 dark:hover:bg-slate-800 flex-shrink-0"
                 >
                   <X className="size-5" />
                 </Button>
@@ -210,14 +206,14 @@ export function WaiterAddonOrderModal({
                   placeholder="Search menu items..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-10 h-11 bg-white dark:bg-gray-950 border-gray-200 dark:border-gray-800 focus-visible:ring-indigo-500 shadow-sm"
+                  className="pl-10 h-11 bg-white dark:bg-gray-950 border-slate-200 dark:border-slate-800 focus-visible:ring-slate-400 shadow-sm"
                 />
               </div>
             </div>
           </div>
 
           {/* Categories */}
-          <div className="flex-shrink-0 bg-white dark:bg-gray-950 border-b">
+          <div className="flex-shrink-0 bg-white dark:bg-gray-950 border-b border-slate-200 dark:border-slate-800">
             <div className="overflow-x-auto scrollbar-hide px-4 py-3">
               <div className="flex gap-2 min-w-max">
                 {categories.map((cat, index) => (
@@ -225,16 +221,13 @@ export function WaiterAddonOrderModal({
                     key={`category-${index}-${cat}`}
                     onClick={() => setSelectedCategory(cat)}
                     className={cn(
-                      "px-4 py-2 rounded-full font-semibold text-sm transition-all duration-200 whitespace-nowrap capitalize",
+                      "px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 whitespace-nowrap capitalize border-2",
                       selectedCategory === cat
-                        ? "bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-lg shadow-indigo-500/30 scale-105"
-                        : "bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800"
+                        ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-900 dark:border-slate-100"
+                        : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
                     )}
                   >
                     {cat}
-                    {selectedCategory === cat && (
-                      <span className="ml-1.5">✨</span>
-                    )}
                   </button>
                 ))}
               </div>
@@ -361,21 +354,16 @@ export function WaiterAddonOrderModal({
 
           {/* Floating Cart Button */}
           {cart.length > 0 && (
-            <div className="absolute bottom-4 left-4 right-4 z-50 animate-in slide-in-from-bottom-4 duration-500">
+            <div className="absolute bottom-4 left-4 right-4 z-50">
               <Button
                 size="lg"
                 onClick={() => setShowCartModal(true)}
-                className="w-full h-14 px-6 rounded-2xl shadow-2xl shadow-indigo-500/30 bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-600 hover:from-indigo-700 hover:via-blue-700 hover:to-indigo-700 border-2 border-white/20 backdrop-blur-sm group relative overflow-hidden"
+                className="w-full h-14 px-6 rounded-lg shadow-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-900 border font-semibold"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                
-                <div className="relative flex items-center justify-center gap-3 w-full">
-                  <div className="relative">
-                    <ShoppingCart className="size-5" />
-                    <span className="absolute -top-1 -right-1 size-2 bg-white rounded-full animate-ping" />
-                  </div>
+                <div className="flex items-center justify-center gap-3 w-full">
+                  <ShoppingCart className="size-5" />
                   <span className="font-bold text-base">Review Order</span>
-                  <Badge className="bg-white text-indigo-600 border-0 font-extrabold text-base px-2.5 py-0.5">
+                  <Badge className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white border-0 font-bold text-base px-2.5 py-0.5">
                     {cartItemCount}
                   </Badge>
                 </div>
@@ -395,26 +383,25 @@ export function WaiterAddonOrderModal({
           {/* Modal Container - Rounded on larger screens */}
           <div className="w-full h-full flex flex-col bg-white dark:bg-gray-950 rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-800">
             {/* Header */}
-            <div className="flex-shrink-0 border-b bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-emerald-950/40 dark:via-green-950/40 dark:to-teal-950/40">
+            <div className="flex-shrink-0 border-b bg-slate-50 dark:bg-slate-900/50">
               <div className="flex items-center gap-3 px-4 pt-4 pb-4">
                 {/* Back Button */}
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setShowCartModal(false)}
-                  className="rounded-full size-10 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 flex-shrink-0"
+                  className="rounded-lg size-10 hover:bg-slate-100 dark:hover:bg-slate-800 flex-shrink-0"
                 >
                   <ChevronLeft className="size-5" />
                 </Button>
 
                 <div className="flex-1 min-w-0">
                   <h2 className="text-xl font-bold flex items-center gap-2 text-foreground">
-                    <ShoppingCart className="size-6 text-emerald-600 dark:text-emerald-400" />
+                    <ShoppingCart className="size-6" />
                     Order Review
                   </h2>
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
                     <Badge variant="outline" className="font-semibold text-xs">
-                      <Grid3x3 className="size-3 mr-1" />
                       {tableName}
                     </Badge>
                     <span className="text-xs text-muted-foreground">·</span>
@@ -427,11 +414,11 @@ export function WaiterAddonOrderModal({
 
             {/* Cart Summary Bar */}
             <div className="px-4 pb-3">
-              <div className="flex items-center justify-between px-4 py-2 rounded-xl bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm border border-emerald-200 dark:border-emerald-900/30">
+              <div className="flex items-center justify-between px-4 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
                 <span className="text-sm font-semibold text-foreground">
                   {cartItemCount} {cartItemCount === 1 ? 'Item' : 'Items'}
                 </span>
-                <span className="text-base font-bold text-emerald-600 dark:text-emerald-400">
+                <span className="text-base font-bold text-foreground">
                   {formatCurrency(cartTotal.total)}
                 </span>
               </div>
@@ -439,14 +426,13 @@ export function WaiterAddonOrderModal({
           </div>
 
           {/* Cart Items - Scrollable */}
-          <div className="flex-1 overflow-y-auto bg-gradient-to-br from-gray-50/50 to-white dark:from-gray-950 dark:to-gray-900">
+          <div className="flex-1 overflow-y-auto bg-slate-50/50 dark:bg-slate-950">
             <div className="p-4 space-y-3">
               {/* Cart Items List */}
               {cart.map((item, index) => (
                 <div
                   key={item.id}
-                  className="group rounded-2xl border-2 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-md transition-all duration-200 animate-in slide-in-from-left"
-                  style={{ animationDelay: `${index * 50}ms` }}
+                  className="group rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-md transition-all duration-200"
                 >
                   <div className="flex items-center gap-4">
                     {/* Item Info */}
@@ -462,23 +448,23 @@ export function WaiterAddonOrderModal({
                       </div>
                     </div>
 
-                    {/* Quantity Controls - Enhanced */}
-                    <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
+                    {/* Quantity Controls */}
+                    <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="size-8 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600"
+                        className="size-8 rounded-md hover:bg-slate-200 dark:hover:bg-slate-700"
                         onClick={() => updateQuantity(item.id, -1)}
                       >
                         <Minus className="size-3.5" strokeWidth={3} />
                       </Button>
-                      <span className="font-extrabold text-lg w-10 text-center text-foreground">
+                      <span className="font-bold text-lg w-10 text-center text-foreground">
                         {item.quantity}
                       </span>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="size-8 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/30 hover:text-emerald-600"
+                        className="size-8 rounded-md hover:bg-slate-200 dark:hover:bg-slate-700"
                         onClick={() => updateQuantity(item.id, 1)}
                       >
                         <Plus className="size-3.5" strokeWidth={3} />
@@ -486,14 +472,14 @@ export function WaiterAddonOrderModal({
                     </div>
 
                     {/* Item Total */}
-                    <div className="font-extrabold text-base text-emerald-600 dark:text-emerald-400 min-w-[80px] text-right">
+                    <div className="font-bold text-base text-foreground min-w-[80px] text-right">
                       {formatCurrency(item.price * item.quantity)}
                     </div>
                   </div>
                 </div>
               ))}
 
-              {/* Order Notes Section - Enhanced */}
+              {/* Order Notes Section */}
               <div className="pt-2">
                 <label className="text-sm font-bold mb-2.5 block text-foreground flex items-center gap-2">
                   <Receipt className="size-4" />
@@ -505,14 +491,14 @@ export function WaiterAddonOrderModal({
                   value={orderNotes}
                   onChange={(e) => setOrderNotes(e.target.value)}
                   rows={3}
-                  className="resize-none bg-white dark:bg-gray-950 border-2 focus-visible:ring-emerald-500 rounded-xl"
+                  className="resize-none bg-white dark:bg-slate-950 border focus-visible:ring-slate-400 rounded-lg"
                 />
               </div>
 
-              {/* Totals Card - Premium Design */}
-              <div className="rounded-2xl border-2 border-emerald-200 dark:border-emerald-900/50 bg-gradient-to-br from-emerald-50/50 via-green-50/30 to-teal-50/50 dark:from-emerald-950/30 dark:via-green-950/20 dark:to-teal-950/30 p-4 space-y-3">
+              {/* Totals Card */}
+              <div className="rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-4 space-y-3">
                 <h3 className="font-bold text-sm text-foreground flex items-center gap-2 mb-3">
-                  <Receipt className="size-4 text-emerald-600 dark:text-emerald-400" />
+                  <Receipt className="size-4" />
                   Payment Breakdown
                 </h3>
                 
@@ -525,11 +511,11 @@ export function WaiterAddonOrderModal({
                     <span className="text-muted-foreground font-medium">Tax (12%)</span>
                     <span className="font-bold text-foreground">{formatCurrency(cartTotal.tax)}</span>
                   </div>
-                  <div className="h-px bg-gradient-to-r from-transparent via-emerald-300 dark:via-emerald-700 to-transparent" />
+                  <div className="h-px bg-slate-200 dark:bg-slate-800" />
                   <div className="flex justify-between items-center pt-1">
-                    <span className="font-extrabold text-base text-foreground">Total Amount</span>
+                    <span className="font-bold text-base text-foreground">Total Amount</span>
                     <div className="text-right">
-                      <div className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-green-600 dark:from-emerald-400 dark:to-green-400">
+                      <div className="text-2xl font-bold text-foreground">
                         {formatCurrency(cartTotal.total)}
                       </div>
                     </div>
@@ -538,9 +524,9 @@ export function WaiterAddonOrderModal({
               </div>
 
               {/* Info Banner */}
-              <div className="rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 p-3">
-                <p className="text-xs text-blue-900 dark:text-blue-300 flex items-start gap-2">
-                  <span className="text-blue-600 dark:text-blue-400 text-sm">ℹ️</span>
+              <div className="rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3">
+                <p className="text-xs text-slate-700 dark:text-slate-300 flex items-start gap-2">
+                  <AlertCircle className="size-4 text-slate-600 dark:text-slate-400 mt-0.5 shrink-0" />
                   <span>
                     This order will be automatically confirmed and sent to the kitchen immediately.
                   </span>
@@ -550,18 +536,18 @@ export function WaiterAddonOrderModal({
           </div>
 
           {/* Action Footer */}
-          <div className="flex-shrink-0 border-t bg-white/80 dark:bg-gray-950/80 backdrop-blur-sm p-4 flex gap-3">
+          <div className="flex-shrink-0 border-t bg-white dark:bg-slate-950 p-4 flex gap-3">
             <Button
               variant="outline"
               onClick={() => setShowCartModal(false)}
-              className="flex-1 h-12 font-semibold rounded-xl border-2"
+              className="flex-1 h-12 font-semibold rounded-lg"
             >
               <ChevronLeft className="size-4 mr-1.5" />
               Back to Menu
             </Button>
             <Button
               onClick={() => setShowConfirmDialog(true)}
-              className="flex-1 h-12 font-bold rounded-xl shadow-lg shadow-emerald-500/30 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700"
+              className="flex-1 h-12 font-bold rounded-lg bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-900"
             >
               <CheckCircle2 className="size-5 mr-2" />
               Confirm Order
@@ -571,21 +557,18 @@ export function WaiterAddonOrderModal({
         </DialogContent>
       </Dialog>
 
-      {/* Confirmation Dialog - Enterprise Grade */}
+      {/* Confirmation Dialog */}
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <DialogContent className="max-w-md w-[calc(100%-2rem)] p-0 gap-0 overflow-hidden sm:rounded-xl">
-          {/* Success Header with Gradient & Animation */}
+        <DialogContent className="max-w-md w-[calc(100%-2rem)] p-0 gap-0 overflow-hidden sm:rounded-lg">
+          {/* Header */}
           <div className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 via-green-500/20 to-teal-500/20" />
+            <div className="absolute inset-0 bg-slate-50 dark:bg-slate-900" />
             
             <div className="relative px-6 pt-6 pb-5">
-              {/* Success Icon - Large and Prominent */}
+              {/* Icon */}
               <div className="flex justify-center mb-4">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-emerald-500 blur-xl opacity-30 animate-pulse" />
-                  <div className="relative flex items-center justify-center size-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 shadow-lg animate-in zoom-in-95">
-                    <CheckCircle2 className="size-9 text-white" strokeWidth={2.5} />
-                  </div>
+                <div className="relative flex items-center justify-center size-16 rounded-lg bg-slate-900 dark:bg-slate-100">
+                  <CheckCircle2 className="size-9 text-white dark:text-slate-900" strokeWidth={2.5} />
                 </div>
               </div>
 
@@ -599,16 +582,13 @@ export function WaiterAddonOrderModal({
               </div>
             </div>
 
-            <div className="h-1 bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500" />
+            <div className="h-px bg-slate-200 dark:bg-slate-800" />
           </div>
 
           {/* Order Summary Content */}
           <div className="px-6 py-5 space-y-4">
             {/* Table & Order Info */}
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200 dark:border-blue-900/50">
-              <div className="flex items-center justify-center size-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex-shrink-0">
-                <Grid3x3 className="size-5 text-blue-600 dark:text-blue-400" />
-              </div>
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold text-muted-foreground uppercase">Adding to</p>
                 <p className="font-bold text-sm text-foreground">
@@ -622,12 +602,12 @@ export function WaiterAddonOrderModal({
               <p className="text-sm font-bold mb-2.5 text-foreground">
                 {cartItemCount} {cartItemCount === 1 ? 'Item' : 'Items'}:
               </p>
-              <div className="rounded-xl bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-950 border-2 border-gray-200 dark:border-gray-800 overflow-hidden">
-                <div className="divide-y divide-gray-200 dark:divide-gray-800">
+              <div className="rounded-lg bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 overflow-hidden">
+                <div className="divide-y divide-slate-200 dark:divide-slate-800">
                   {cart.map((item, index) => (
                     <div
                       key={item.id}
-                      className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors"
+                      className="flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors"
                     >
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div className="flex items-center justify-center size-8 rounded-lg bg-gradient-to-br from-indigo-600 to-blue-600 text-white font-bold text-sm shadow-sm flex-shrink-0">
@@ -645,10 +625,10 @@ export function WaiterAddonOrderModal({
                 </div>
                 
                 {/* Total Bar */}
-                <div className="bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-950/50 dark:to-green-950/50 border-t-2 border-emerald-200 dark:border-emerald-900/50 px-4 py-3">
+                <div className="bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-4 py-3">
                   <div className="flex justify-between items-center">
-                    <span className="font-extrabold text-sm text-foreground">Order Total</span>
-                    <span className="text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-green-600 dark:from-emerald-400 dark:to-green-400">
+                    <span className="font-bold text-sm text-foreground">Order Total</span>
+                    <span className="text-xl font-bold text-foreground">
                       {formatCurrency(cartTotal.total)}
                     </span>
                   </div>
@@ -657,9 +637,9 @@ export function WaiterAddonOrderModal({
             </div>
 
             {/* Status Info */}
-            <div className="rounded-xl bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900/50 p-3">
-              <p className="text-xs text-green-900 dark:text-green-300 flex items-start gap-2">
-                <span className="text-green-600 dark:text-green-400 text-sm flex-shrink-0">✓</span>
+            <div className="rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3">
+              <p className="text-xs text-slate-700 dark:text-slate-300 flex items-start gap-2">
+                <CheckCircle2 className="size-4 text-slate-600 dark:text-slate-400 mt-0.5 flex-shrink-0" />
                 <span>
                   Order will be <strong className="font-bold">auto-confirmed</strong> and sent directly to the kitchen.
                 </span>
@@ -668,19 +648,19 @@ export function WaiterAddonOrderModal({
           </div>
 
           {/* Action Footer */}
-          <div className="border-t bg-white/80 dark:bg-gray-950/80 backdrop-blur-sm p-6 pt-4 flex gap-3">
+          <div className="border-t bg-white dark:bg-slate-950 p-6 pt-4 flex gap-3">
             <Button
               variant="outline"
               onClick={() => setShowConfirmDialog(false)}
               disabled={submitting}
-              className="flex-1 h-11 font-semibold rounded-xl border-2"
+              className="flex-1 h-11 font-semibold rounded-lg"
             >
               Cancel
             </Button>
             <Button
               onClick={handleConfirm}
               disabled={submitting}
-              className="flex-1 h-11 font-bold rounded-xl shadow-lg shadow-emerald-500/30 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700"
+              className="flex-1 h-11 font-bold rounded-lg bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-900"
             >
               {submitting ? (
                 <>
