@@ -1,6 +1,8 @@
 name = "restobar-management-system"
 compatibility_date = "2026-09-13"
-pages_build_output_dir = ".vercel/output/static"
+
+[assets]
+directory = ".vercel/output/static"
 
 # Environment variables for Cloudflare Pages
 [vars]
