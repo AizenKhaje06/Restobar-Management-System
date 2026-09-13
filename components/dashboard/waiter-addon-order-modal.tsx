@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import React, { useState, useMemo } from "react"
 import {
   Plus,
   Minus,
@@ -75,6 +75,16 @@ export function WaiterAddonOrderModal({
   const [orderNotes, setOrderNotes] = useState("")
   const [submitting, setSubmitting] = useState(false)
 
+  // Swipe gesture state
+  const [touchStart, setTouchStart] = useState<number | null>(null)
+  const [touchEnd, setTouchEnd] = useState<number | null>(null)
+
+  // Ref for category buttons container
+  const categoryRefs = React.useRef<Map<string, HTMLButtonElement>>(new Map())
+
+  // Minimum swipe distance (in px)
+  const minSwipeDistance = 50
+
   // Get unique categories from menu items
   const categories = useMemo(() => {
     // Extract unique category names from menu items
@@ -97,6 +107,58 @@ export function WaiterAddonOrderModal({
       return matchesSearch && matchesCategory
     })
   }, [menuItems, search, selectedCategory])
+
+  // Handle category navigation
+  const navigateCategory = (direction: 'next' | 'prev') => {
+    const currentIndex = categories.indexOf(selectedCategory)
+    let newCategory: string
+    
+    if (direction === 'next') {
+      const nextIndex = (currentIndex + 1) % categories.length
+      newCategory = categories[nextIndex]
+    } else {
+      const prevIndex = currentIndex === 0 ? categories.length - 1 : currentIndex - 1
+      newCategory = categories[prevIndex]
+    }
+    
+    setSelectedCategory(newCategory)
+    
+    // Auto-scroll to show the active category button
+    setTimeout(() => {
+      const buttonElement = categoryRefs.current.get(newCategory)
+      if (buttonElement) {
+        buttonElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+          inline: 'center'
+        })
+      }
+    }, 100)
+  }
+
+  // Touch event handlers
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null)
+    setTouchStart(e.targetTouches[0].clientX)
+  }
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX)
+  }
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return
+    
+    const distance = touchStart - touchEnd
+    const isLeftSwipe = distance > minSwipeDistance
+    const isRightSwipe = distance < -minSwipeDistance
+
+    if (isLeftSwipe) {
+      navigateCategory('next')
+    } else if (isRightSwipe) {
+      navigateCategory('prev')
+    }
+  }
 
   // Cart totals
   const cartTotal = useMemo(() => {
@@ -219,6 +281,11 @@ export function WaiterAddonOrderModal({
                 {categories.map((cat, index) => (
                   <button
                     key={`category-${index}-${cat}`}
+                    ref={(el) => {
+                      if (el) {
+                        categoryRefs.current.set(cat, el)
+                      }
+                    }}
                     onClick={() => setSelectedCategory(cat)}
                     className={cn(
                       "px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 whitespace-nowrap capitalize border-2",
@@ -232,10 +299,22 @@ export function WaiterAddonOrderModal({
                 ))}
               </div>
             </div>
+            
+            {/* Swipe Indicator - Mobile Only */}
+            <div className="flex justify-center pb-2 sm:hidden">
+              <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                {categories.indexOf(selectedCategory) + 1} / {categories.length}
+              </div>
+            </div>
           </div>
 
           {/* Menu Items Grid */}
-          <div className="flex-1 overflow-y-auto bg-gradient-to-br from-gray-50/50 to-white dark:from-gray-950 dark:to-gray-900">
+          <div 
+            className="flex-1 overflow-y-auto bg-gradient-to-br from-gray-50/50 to-white dark:from-gray-950 dark:to-gray-900"
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+          >
             <div className="p-3 sm:p-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {filteredItems.map((item) => {
