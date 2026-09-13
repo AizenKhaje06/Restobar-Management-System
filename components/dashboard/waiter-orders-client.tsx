@@ -930,6 +930,10 @@ export function WaiterOrdersClient({
             )
             setAssistModalOrder(updated as any)
           }}
+          onAddMenuItems={() => {
+            // Open addon modal instead of embedded menu
+            handleOpenAddonModal(assistModalOrder as any)
+          }}
         />
       )}
 

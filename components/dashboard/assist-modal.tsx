@@ -35,6 +35,7 @@ interface AssistModalProps {
   profile: Profile
   onConfirmed: (orderId: string) => void
   onOrderUpdated: (order: WaiterOrderForModal) => void
+  onAddMenuItems?: () => void // Optional callback to open external addon modal
 }
 
 export interface WaiterOrderForModal {
@@ -486,6 +487,7 @@ export function AssistModal({
   profile,
   onConfirmed,
   onOrderUpdated,
+  onAddMenuItems, // New prop
 }: AssistModalProps) {
   const [updatingItem, setUpdatingItem] = useState<string | null>(null)
   const [confirming, setConfirming] = useState(false)
@@ -640,7 +642,13 @@ export function AssistModal({
           {/* Add Order Button — fixed */}
           <div className="px-4 sm:px-6 py-3 border-b shrink-0">
             <Button
-              onClick={() => setShowMenuModal(true)}
+              onClick={() => {
+                if (onAddMenuItems) {
+                  onAddMenuItems() // Use external addon modal
+                } else {
+                  setShowMenuModal(true) // Fallback to embedded modal
+                }
+              }}
               className="w-full h-11 sm:h-12 text-sm sm:text-base gap-2 bg-emerald-600 hover:bg-emerald-700"
             >
               <Plus className="size-5" />
