@@ -688,23 +688,43 @@ function MenuItemCard({
   item: MenuItem
   onAdd: (item: MenuItem) => void
 }) {
+  const isUnavailable = !item.is_available
+  
   return (
-    <div className="group relative overflow-hidden rounded-xl border bg-card transition-all hover:shadow-md hover:border-primary/30 flex flex-row min-h-[140px]">
+    <div className={`group relative overflow-hidden rounded-xl border bg-card transition-all flex flex-row min-h-[140px] ${
+      isUnavailable ? 'opacity-60' : 'hover:shadow-md hover:border-primary/30'
+    }`}>
       {/* Left — image */}
       {item.image_url && (
-        <div className="w-36 sm:w-44 shrink-0 overflow-hidden bg-muted">
+        <div className="w-36 sm:w-44 shrink-0 overflow-hidden bg-muted relative">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={item.image_url}
             alt={item.name}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            className={`h-full w-full object-cover transition-transform duration-300 ${
+              isUnavailable ? 'grayscale' : 'group-hover:scale-105'
+            }`}
           />
+          {isUnavailable && (
+            <div className="absolute top-2 left-2">
+              <Badge variant="destructive" className="text-[10px] px-1.5 py-0.5">
+                Unavailable
+              </Badge>
+            </div>
+          )}
         </div>
       )}
       {/* No image placeholder */}
       {!item.image_url && (
-        <div className="w-20 sm:w-28 shrink-0 flex items-center justify-center bg-muted">
+        <div className="w-20 sm:w-28 shrink-0 flex items-center justify-center bg-muted relative">
           <UtensilsCrossed className="size-8 text-muted-foreground/40" />
+          {isUnavailable && (
+            <div className="absolute top-2 left-2">
+              <Badge variant="destructive" className="text-[10px] px-1.5 py-0.5">
+                Unavailable
+              </Badge>
+            </div>
+          )}
         </div>
       )}
 

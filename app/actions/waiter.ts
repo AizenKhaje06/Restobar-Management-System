@@ -390,7 +390,6 @@ export async function getWaiterMenu() {
         *,
         category:categories(name)
       `)
-      .eq("is_available", true)
       .order("name"),
   ])
 

@@ -172,7 +172,6 @@ export async function getCustomerMenu() {
     supabase
       .from("menu_items")
       .select("*")
-      .eq("is_available", true)
       .order("name"),
   ])
 
