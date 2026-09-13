@@ -39,6 +39,7 @@ export function QRCodesManager({ tables }: { tables: TableWithWaiter[] }) {
   const [origin, setOrigin] = useState("")
   const [showRegenerateDialog, setShowRegenerateDialog] = useState(false)
   const [regeneratingTable, setRegeneratingTable] = useState<string | null>(null)
+  const [regeneratingAll, setRegeneratingAll] = useState(false)
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState("")
 
@@ -66,11 +67,13 @@ export function QRCodesManager({ tables }: { tables: TableWithWaiter[] }) {
 
   const confirmRegenerateAll = () => {
     setShowRegenerateDialog(false)
+    setRegeneratingAll(true)
     startTransition(async () => {
       for (const t of tables) {
         await generateTableQRAction(t.id)
       }
       router.refresh()
+      setRegeneratingAll(false)
       setToastMessage(`Successfully regenerated ${tables.length} QR codes!`)
       setShowToast(true)
       setTimeout(() => setShowToast(false), 5000)
@@ -140,7 +143,7 @@ export function QRCodesManager({ tables }: { tables: TableWithWaiter[] }) {
                   setTimeout(() => setShowToast(false), 4000)
                 })
               }}
-              pending={regeneratingTable === table.id}
+              pending={regeneratingTable === table.id || regeneratingAll}
             />
           ))}
         </div>
