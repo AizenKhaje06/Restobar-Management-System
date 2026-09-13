@@ -116,8 +116,14 @@ export function MenuManager({
 
   const onToggleAvailability = (item: ItemWithCategory) => {
     startTransition(async () => {
-      await toggleMenuItemAvailabilityAction(item.id, !item.is_available)
-      router.refresh()
+      try {
+        await toggleMenuItemAvailabilityAction(item.id, !item.is_available)
+        // Small delay to let React finish state updates before refresh
+        await new Promise(resolve => setTimeout(resolve, 100))
+        router.refresh()
+      } catch (error) {
+        console.error('Failed to toggle availability:', error)
+      }
     })
   }
 

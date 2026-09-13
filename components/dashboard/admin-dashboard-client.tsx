@@ -100,6 +100,11 @@ export function AdminDashboardClient({
   const [refreshing, setRefreshing] = useState(false)
   const [currentTime, setCurrentTime] = useState<string>("")
   const [todayLabel, setTodayLabel] = useState("")
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     const update = () => {
@@ -306,7 +311,9 @@ export function AdminDashboardClient({
                             <Badge variant={pay.variant} className="text-xs">
                               {pay.label}
                             </Badge>
-                            <span className="text-xs text-muted-foreground">• {relativeTime(order.created_at)}</span>
+                            {mounted && (
+                              <span className="text-xs text-muted-foreground">• {relativeTime(order.created_at)}</span>
+                            )}
                           </div>
                           <div className="mt-0.5 text-xs text-muted-foreground">
                             {order.order_items?.length ?? 0} items • {formatTime(order.created_at)}
