@@ -11,6 +11,7 @@ import {
   UtensilsCrossed,
   CheckCircle2,
   AlertCircle,
+  ShoppingCart,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -86,7 +87,9 @@ export interface MenuBrowserModalProps {
   open: boolean
   onClose: () => void
   orderId: string
+  tableId?: string | null // Add table ID for add-on order creation
   onItemAdded: (item: MenuItem) => void
+  onAddonOrderCreated?: (orderId: string) => void // New callback for add-on order created
   getMenu: () => Promise<{
     categories: MenuCategory[]
     menuItems: MenuItem[]
@@ -100,6 +103,11 @@ export interface MenuBrowserModalProps {
     quantity: number
     notes?: string
   }) => Promise<{ error?: string }>
+  createAddonOrder?: (input: {
+    main_order_id: string
+    table_id: string
+    items: { menu_item_id: string; name: string; price: number; quantity: number; notes?: string }[]
+  }) => Promise<{ error?: string; success?: boolean; order_id?: string }>
 }
 
 const STATUS_CONFIG: Record<OrderStatus, { label: string; color: string }> = {
@@ -118,9 +126,12 @@ export function MenuBrowserModal({
   open,
   onClose,
   orderId,
+  tableId,
   onItemAdded,
+  onAddonOrderCreated,
   getMenu,
   addItem,
+  createAddonOrder,
 }: MenuBrowserModalProps) {
   const [categories, setCategories] = useState<MenuCategory[]>([])
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
@@ -128,6 +139,8 @@ export function MenuBrowserModal({
   const [activeCategory, setActiveCategory] = useState<string>("all")
   const [search, setSearch] = useState("")
   const [addingItem, setAddingItem] = useState<string | null>(null)
+  const [cart, setCart] = useState<Array<{ item: MenuItem; quantity: number }>>([])
+  const [creatingAddon, setCreatingAddon] = useState(false)
 
   useEffect(() => {
     if (!open) return
@@ -141,6 +154,13 @@ export function MenuBrowserModal({
     })
   }, [open, getMenu])
 
+  // Reset cart when modal closes
+  useEffect(() => {
+    if (!open) {
+      setCart([])
+    }
+  }, [open])
+
   const filteredItems = menuItems.filter((item) => {
     const matchesCategory = activeCategory === "all" || item.category_id === activeCategory
     const matchesSearch = !search || item.name.toLowerCase().includes(search.toLowerCase())
@@ -150,6 +170,33 @@ export function MenuBrowserModal({
   const handleAddItem = useCallback(
     async (item: MenuItem) => {
       if (addingItem === item.id) return // Prevent double-click
+      
+      // If createAddonOrder function is provided, just add to cart (batch mode)
+      if (createAddonOrder) {
+        setCart((prev) => {
+          const existing = prev.find((c) => c.item.id === item.id)
+          if (existing) {
+            return prev.map((c) =>
+              c.item.id === item.id ? { ...c, quantity: c.quantity + 1 } : c
+            )
+          }
+          return [...prev, { item, quantity: 1 }]
+        })
+        return
+      }
+      
+      // Legacy mode: add item immediately to existing order
+      // Add to cart immediately for visual feedback
+      setCart((prev) => {
+        const existing = prev.find((c) => c.item.id === item.id)
+        if (existing) {
+          return prev.map((c) =>
+            c.item.id === item.id ? { ...c, quantity: c.quantity + 1 } : c
+          )
+        }
+        return [...prev, { item, quantity: 1 }]
+      })
+      
       setAddingItem(item.id)
       try {
         const result = await addItem({
@@ -160,6 +207,16 @@ export function MenuBrowserModal({
           quantity: 1,
         })
         if (result?.error) {
+          // Remove from cart on error
+          setCart((prev) => {
+            const existing = prev.find((c) => c.item.id === item.id)
+            if (existing && existing.quantity === 1) {
+              return prev.filter((c) => c.item.id !== item.id)
+            }
+            return prev.map((c) =>
+              c.item.id === item.id ? { ...c, quantity: c.quantity - 1 } : c
+            )
+          })
           alert(result.error)
           return
         }
@@ -168,120 +225,252 @@ export function MenuBrowserModal({
         setAddingItem(null)
       }
     },
-    [orderId, onItemAdded, addItem, addingItem]
+    [orderId, onItemAdded, addItem, addingItem, createAddonOrder]
   )
+
+  const handleDoneAdding = useCallback(async () => {
+    if (!createAddonOrder || !tableId || cart.length === 0) {
+      onClose()
+      return
+    }
+
+    setCreatingAddon(true)
+    try {
+      const result = await createAddonOrder({
+        main_order_id: orderId,
+        table_id: tableId,
+        items: cart.map(c => ({
+          menu_item_id: c.item.id,
+          name: c.item.name,
+          price: c.item.price,
+          quantity: c.quantity,
+        }))
+      })
+
+      if (result?.error) {
+        alert(result.error)
+        return
+      }
+
+      if (result?.success && result.order_id) {
+        // Notify parent that add-on order was created
+        onAddonOrderCreated?.(result.order_id)
+        // Notify for each item added (for compatibility)
+        cart.forEach(c => onItemAdded(c.item))
+      }
+
+      onClose()
+    } finally {
+      setCreatingAddon(false)
+    }
+  }, [createAddonOrder, tableId, orderId, cart, onClose, onItemAdded, onAddonOrderCreated])
+
+  const cartTotal = cart.reduce((sum, c) => sum + c.item.price * c.quantity, 0)
+  const cartItemCount = cart.reduce((sum, c) => sum + c.quantity, 0)
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent
-        className="w-full sm:w-[90vw] md:max-w-4xl lg:max-w-5xl xl:max-w-6xl max-h-[95vh] sm:max-h-[90vh] p-0 gap-0 overflow-hidden flex flex-col"
-        style={{ height: "min(90vh, 800px)" }}
+        className="w-full sm:w-[95vw] md:max-w-6xl lg:max-w-7xl max-h-[95vh] sm:max-h-[90vh] p-0 gap-0 overflow-hidden flex flex-col"
+        style={{ height: "min(90vh, 900px)" }}
       >
-        {/* Header — fixed, never overlaps */}
+        {/* Header */}
         <div className="border-b px-4 sm:px-6 py-3 sm:py-4 shrink-0">
-          <h2 className="text-lg sm:text-xl font-bold">Select Menu Items</h2>
+          <h2 className="text-lg sm:text-xl font-bold">Add Items to Order</h2>
           <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-            Tap an item to add it to the order
+            Select items from the menu to add to the order
           </p>
         </div>
 
-        {/* Search — fixed */}
-        <div className="px-4 sm:px-6 py-3 border-b shrink-0">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-            <Input
-              placeholder="Search menu..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 h-10 w-full"
-            />
-          </div>
-        </div>
-
-        {/* Category Tabs — fixed, horizontally scrollable */}
-        <div className="flex gap-2 px-4 sm:px-6 py-3 overflow-x-auto shrink-0 border-b scrollbar-none">
-          <button
-            onClick={() => setActiveCategory("all")}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors shrink-0 ${
-              activeCategory === "all"
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:bg-muted/80"
-            }`}
-          >
-            All
-          </button>
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setActiveCategory(cat.id)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors shrink-0 ${
-                activeCategory === cat.id
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80"
-              }`}
-            >
-              {cat.name}
-            </button>
-          ))}
-        </div>
-
-        {/* Menu Grid — scrollable, responsive columns */}
-        <div className="flex-1 min-h-0 overflow-y-auto">
-          {loading ? (
-            <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="rounded-lg border p-4 animate-pulse h-28 bg-muted/30"
+        {/* Split Layout: Menu (left) + Cart (right) */}
+        <div className="flex-1 min-h-0 flex flex-col md:flex-row">
+          {/* LEFT: Menu Items */}
+          <div className="flex-1 flex flex-col min-h-0 border-r">
+            {/* Search */}
+            <div className="px-4 sm:px-6 py-3 border-b shrink-0">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                <Input
+                  placeholder="Search menu..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-10 h-10 w-full"
                 />
-              ))}
+              </div>
             </div>
-          ) : filteredItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-muted-foreground">
-              <UtensilsCrossed className="size-10 opacity-30 mb-3" />
-              <p className="text-base font-medium">No items found</p>
-            </div>
-          ) : (
-            <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {filteredItems.map((item) => (
+
+            {/* Category Tabs */}
+            <div className="flex gap-2 px-4 sm:px-6 py-3 overflow-x-auto shrink-0 border-b scrollbar-none">
+              <button
+                onClick={() => setActiveCategory("all")}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors shrink-0 ${
+                  activeCategory === "all"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                }`}
+              >
+                All
+              </button>
+              {categories.map((cat) => (
                 <button
-                  key={item.id}
-                  onClick={() => handleAddItem(item)}
-                  disabled={addingItem === item.id}
-                  className="group rounded-lg border bg-card p-3 sm:p-4 flex flex-col text-left transition-all hover:border-primary hover:shadow-sm active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed min-h-[100px]"
+                  key={cat.id}
+                  onClick={() => setActiveCategory(cat.id)}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors shrink-0 ${
+                    activeCategory === cat.id
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  }`}
                 >
-                  <div className="flex-1 mb-2">
-                    <h3 className="font-semibold text-sm sm:text-base leading-snug line-clamp-2">
-                      {item.name}
-                    </h3>
-                    {item.description && (
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2 hidden sm:block">
-                        {item.description}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center justify-between gap-2 mt-auto">
-                    <span className="text-sm sm:text-base font-bold text-primary">
-                      {formatCurrency(item.price)}
-                    </span>
-                    <div
-                      className={`size-8 rounded-full flex items-center justify-center transition-colors ${
-                        addingItem === item.id
-                          ? "bg-emerald-600 text-white"
-                          : "bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white"
-                      }`}
-                    >
-                      {addingItem === item.id ? (
-                        <Loader2 className="size-4 animate-spin" />
-                      ) : (
-                        <Plus className="size-4" />
-                      )}
-                    </div>
-                  </div>
+                  {cat.name}
                 </button>
               ))}
             </div>
-          )}
+
+            {/* Menu Grid */}
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              {loading ? (
+                <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="rounded-lg border p-4 animate-pulse h-28 bg-muted/30"
+                    />
+                  ))}
+                </div>
+              ) : filteredItems.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-muted-foreground">
+                  <UtensilsCrossed className="size-10 opacity-30 mb-3" />
+                  <p className="text-base font-medium">No items found</p>
+                </div>
+              ) : (
+                <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {filteredItems.map((item) => {
+                    const inCart = cart.find((c) => c.item.id === item.id)
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => handleAddItem(item)}
+                        disabled={addingItem === item.id}
+                        className="group relative rounded-lg border bg-card p-3 sm:p-4 flex flex-col text-left transition-all hover:border-primary hover:shadow-md active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed min-h-[100px]"
+                      >
+                        {inCart && (
+                          <div className="absolute -top-2 -right-2 size-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold shadow-lg">
+                            {inCart.quantity}
+                          </div>
+                        )}
+                        <div className="flex-1 mb-2">
+                          <h3 className="font-semibold text-sm sm:text-base leading-snug line-clamp-2">
+                            {item.name}
+                          </h3>
+                          {item.description && (
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2 hidden sm:block">
+                              {item.description}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between gap-2 mt-auto">
+                          <span className="text-sm sm:text-base font-bold text-primary">
+                            {formatCurrency(item.price)}
+                          </span>
+                          <div
+                            className={`size-8 rounded-full flex items-center justify-center transition-colors ${
+                              addingItem === item.id
+                                ? "bg-emerald-600 text-white"
+                                : "bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white"
+                            }`}
+                          >
+                            {addingItem === item.id ? (
+                              <Loader2 className="size-4 animate-spin" />
+                            ) : (
+                              <Plus className="size-4" />
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* RIGHT: Current Order Cart */}
+          <div className="w-full md:w-80 lg:w-96 flex flex-col min-h-0 bg-muted/20">
+            {/* Cart Header */}
+            <div className="px-4 py-3 border-b bg-card shrink-0">
+              <h3 className="font-bold text-base">Current Order</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {cartItemCount} item{cartItemCount !== 1 ? "s" : ""} added
+              </p>
+            </div>
+
+            {/* Cart Items */}
+            <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-2">
+              {cart.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground py-12">
+                  <ShoppingCart className="size-12 opacity-30 mb-3" />
+                  <p className="text-sm font-medium">No items in cart</p>
+                  <p className="text-xs mt-1">Click menu items to add</p>
+                </div>
+              ) : (
+                cart.map((cartItem) => (
+                  <div
+                    key={cartItem.item.id}
+                    className="rounded-lg border bg-card p-3 space-y-1"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold leading-tight">
+                          {cartItem.item.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {formatCurrency(cartItem.item.price)} each
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <span className="text-xs font-medium text-muted-foreground">
+                          ×{cartItem.quantity}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between pt-1 border-t">
+                      <span className="text-xs text-muted-foreground">Subtotal</span>
+                      <span className="text-sm font-bold text-primary">
+                        {formatCurrency(cartItem.item.price * cartItem.quantity)}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Cart Footer - Total */}
+            <div className="px-4 py-4 border-t bg-card shrink-0 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-base">Total</span>
+                <span className="text-xl font-bold text-primary">
+                  {formatCurrency(cartTotal)}
+                </span>
+              </div>
+              <Button
+                onClick={handleDoneAdding}
+                className="w-full h-10 bg-emerald-600 hover:bg-emerald-700"
+                disabled={cart.length === 0 || creatingAddon}
+              >
+                {creatingAddon ? (
+                  <>
+                    <Loader2 className="size-4 mr-2 animate-spin" />
+                    Creating Add-On Order...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="size-4 mr-2" />
+                    Done Adding Items
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

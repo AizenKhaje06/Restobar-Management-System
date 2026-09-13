@@ -46,7 +46,7 @@ export function LoginForm() {
     }
 
     // Successful login - wait a moment for session to settle
-    await new Promise(resolve => setTimeout(resolve, 300))
+    await new Promise(resolve => setTimeout(resolve, 100))
 
     // Fetch the user's profile to determine their role
     const supabase = createClient()
@@ -71,15 +71,14 @@ export function LoginForm() {
           dest 
         })
         
-        router.push(dest)
-        router.refresh()
+        // Use window.location.href for full page reload - ensures session is properly loaded
+        window.location.href = dest
         return
       }
     }
 
     // Fallback: redirect to root page (will auto-redirect based on session)
-    router.push(next || "/")
-    router.refresh()
+    window.location.href = next || "/"
   }
 
   return (

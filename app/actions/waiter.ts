@@ -122,6 +122,7 @@ export async function assistWaiterOrder(orderId: string) {
 // ============================================================
 // CONFIRM ORDER TO KITCHEN
 // After assist + customer review, finalize the order
+// Goes directly to "preparing" status (skips "confirmed")
 // ============================================================
 export async function confirmWaiterOrder(orderId: string) {
   const supabase = await createClient()
@@ -132,7 +133,7 @@ export async function confirmWaiterOrder(orderId: string) {
 
   const { error } = await supabase
     .from("orders")
-    .update({ status: "confirmed" as OrderStatus })
+    .update({ status: "preparing" as OrderStatus }) // Direct to kitchen!
     .eq("id", orderId)
 
   if (error) return { error: error.message }
@@ -155,7 +156,7 @@ export async function confirmWaiterOrder(orderId: string) {
     p_action: "order.confirmed",
     p_entity: "order",
     p_entity_id: orderId,
-    p_detail: { waiter_id: profile.id, waiter_name: profile.full_name, action: "confirmed_to_kitchen" },
+    p_detail: { waiter_id: profile.id, waiter_name: profile.full_name, action: "sent_to_kitchen" },
   })
 
   revalidatePath("/waiter")
@@ -385,14 +386,23 @@ export async function getWaiterMenu() {
       .order("sort_order"),
     supabase
       .from("menu_items")
-      .select("*")
+      .select(`
+        *,
+        category:categories(name)
+      `)
       .eq("is_available", true)
       .order("name"),
   ])
 
+  // Transform menu items to include category name
+  const transformedMenuItems = (menuItems.data ?? []).map((item: any) => ({
+    ...item,
+    category: item.category?.name || "Uncategorized",
+  }))
+
   return {
     categories: categories.data ?? [],
-    menuItems: menuItems.data ?? [],
+    menuItems: transformedMenuItems,
   }
 }
 
