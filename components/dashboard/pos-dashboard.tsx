@@ -14,6 +14,7 @@ import {
   Banknote,
   Smartphone,
   AlertCircle,
+  UtensilsCrossed,
 } from "lucide-react"
 import { StaffShell, type NavItem } from "@/components/staff-shell"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -337,26 +338,41 @@ export function PosDashboard({
               No menu items found. Add items in Admin &rarr; Menu first.
             </div>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-6">
               {filteredMenu.map((item) => (
                 <Card
                   key={item.id}
-                  className="cursor-pointer transition-colors hover:bg-muted/50"
+                  className="group cursor-pointer overflow-hidden transition-all hover:shadow-lg hover:scale-[1.02] flex flex-col"
                   onClick={() => addToCart(item)}
                 >
-                  <CardContent className="p-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <h3 className="font-medium">{item.name}</h3>
-                        {item.description && (
-                          <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
-                            {item.description}
-                          </p>
-                        )}
+                  {/* Image */}
+                  <div className="relative aspect-square overflow-hidden bg-muted">
+                    {item.image_url ? (
+                      <img
+                        src={item.image_url}
+                        alt={item.name}
+                        className="h-full w-full object-cover transition-transform group-hover:scale-110"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-muted to-muted/50">
+                        <UtensilsCrossed className="size-12 text-muted-foreground/30" />
                       </div>
-                      <span className="shrink-0 font-semibold text-primary">
-                        {formatCurrency(item.price)}
-                      </span>
+                    )}
+                    {/* Price Badge */}
+                    <div className="absolute bottom-2 right-2 rounded-full bg-background/95 px-2 py-0.5 shadow-lg backdrop-blur-sm">
+                      <span className="font-bold text-xs text-primary">{formatCurrency(item.price)}</span>
+                    </div>
+                  </div>
+                  
+                  {/* Content */}
+                  <CardContent className="p-2 pb-2.5 flex-1 flex flex-col">
+                    <h3 className="font-semibold text-xs leading-tight line-clamp-2 mb-1">{item.name}</h3>
+                    <div className="min-h-[2rem] flex items-start">
+                      {item.description && (
+                        <p className="text-[10px] text-muted-foreground leading-snug">
+                          {item.description}
+                        </p>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
