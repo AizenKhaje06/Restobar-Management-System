@@ -85,13 +85,9 @@ const STATUS_CONFIG: Record<OrderStatus, { label: string; color: string; icon: R
 }
 
 const NEXT_STATUS: Partial<Record<OrderStatus, OrderStatus>> = {
-  // Waiters can only:
-  // 1. Confirm pending orders → Goes directly to Preparing (sent to kitchen)
-  // 2. Mark "Ready" orders as "Served"
-  pending: "preparing",  // Skip "confirmed", go straight to kitchen
+  // Waiters can only mark "Ready" orders as "Served"
+  // Kitchen/POS handles all other status changes
   ready: "served",
-  // Kitchen/Chef handles: preparing → ready
-  // POS/Admin handles: served → completed (paid)
 }
 
 const STATUS_ACTION: Record<OrderStatus, { label: string; icon: React.ReactNode }> = {
