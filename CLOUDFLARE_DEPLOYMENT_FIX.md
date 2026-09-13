@@ -11,68 +11,71 @@ which was not found.
 - The actual worker name is `restobar-management-system`
 - This configuration is set in the Cloudflare Dashboard (remote config)
 
-## Solution
+## Solution for Cloudflare Pages
 
-### Option 1: Remove Service Binding (Recommended)
-1. Go to Cloudflare Dashboard
-2. Navigate to **Workers & Pages**
-3. Click on `restobar-management-system` worker
-4. Go to **Settings** → **Variables**
-5. Scroll to **Service Bindings** section
-6. **Delete** the `WORKER_SELF_REFERENCE` binding
-7. Click **Save**
-8. Try deploying again
+### ✅ Correct Setup (No wrangler.toml needed!)
 
-### Option 2: Update Service Binding Name
-If you need the service binding:
-1. Follow steps 1-5 above
-2. **Edit** the `WORKER_SELF_REFERENCE` binding
-3. Change the worker reference from `lumiere-restaurant-management` to `restobar-management-system`
-4. Click **Save**
-5. Try deploying again
+Cloudflare Pages **automatically detects Next.js** projects. You don't need a `wrangler.toml` file.
 
-### Option 3: Create wrangler.toml (Override Remote Config)
-Create a `wrangler.toml` file in the project root:
+**Steps to deploy via Cloudflare Pages:**
 
-```toml
-name = "restobar-management-system"
-main = ".vercel/output/static/_worker.js"
-compatibility_date = "2026-09-13"
-workers_dev = false
-preview_urls = false
+1. **Go to Cloudflare Dashboard**
+   - https://dash.cloudflare.com
+   - Navigate to **Workers & Pages** → **Create application** → **Pages**
 
-[observability]
-enabled = false
+2. **Connect to Git**
+   - Choose **Connect to Git**
+   - Select your GitHub repository: `Restobar-Management-System`
+   - Click **Begin setup**
 
-[observability.logs]
-enabled = false
+3. **Configure Build Settings**
+   ```
+   Framework preset: Next.js
+   Build command: npm run build
+   Build output directory: .next
+   Root directory: (leave empty)
+   ```
 
-# Remove or comment out service bindings if not needed
-# [[services]]
-# binding = "WORKER_SELF_REFERENCE"
-# service = "restobar-management-system"
+4. **Environment Variables**
+   Add these in the **Environment variables** section:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL = https://szfvjfvukicjmuxogglt.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY = sb_publishable_F0YFhnyT82KlMNny7t3hUg_i89JPklS
+   ```
+   
+   **Important:** Add the **private** environment variables too:
+   ```
+   SUPABASE_SERVICE_ROLE_KEY = (your service role key from .env.local)
+   NEXT_PUBLIC_RESTAURANT_NAME = Lydias Lechon
+   ```
 
-# Environment variables
-[vars]
-NEXT_PUBLIC_SUPABASE_URL = "https://szfvjfvukicjmuxogglt.supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_F0YFhnyT82KlMNny7t3hUg_i89JPklS"
-```
+5. **Save and Deploy**
+   - Click **Save and Deploy**
+   - Cloudflare Pages will automatically build and deploy your app
 
-## Additional Notes
+### If Service Binding Error Persists
 
-### Why Service Bindings Exist
-Service bindings allow one Worker to call another Worker directly. If you don't need this feature (most Next.js apps don't), you can safely remove it.
+Go to your Pages project → **Settings** → **Functions** → **Bindings**
+- Remove any `WORKER_SELF_REFERENCE` bindings if they exist
 
-### Compatibility Date Warning
-The warning about compatibility_date difference (`2026-09-13` vs `2026-09-11`) is minor and won't cause deployment failure.
+### Build Output Directory
 
-## Quick Fix Steps
-**Easiest solution - Remove via Dashboard:**
+For Next.js on Cloudflare Pages, the build output should be:
+- **`.next`** (default Next.js output)
 
-1. Open: https://dash.cloudflare.com
-2. Go to: Workers & Pages → restobar-management-system → Settings
-3. Find: Service Bindings section
-4. Delete: WORKER_SELF_REFERENCE
-5. Save and redeploy
+NOT `.vercel/output/static` - that's for Vercel deployments only.
 
-This should resolve the deployment error immediately.
+## Notes
+
+- **No wrangler.toml needed** - Cloudflare Pages handles everything automatically
+- The service binding error was from old remote configuration
+- After proper setup, deployments should work smoothly
+- Use the Cloudflare Pages dashboard for all configuration
+
+## Quick Summary
+
+1. ❌ Don't use `wrangler.toml` for Pages
+2. ✅ Use Cloudflare Pages dashboard for configuration  
+3. ✅ Build output: `.next`
+4. ✅ Framework: Next.js (auto-detected)
+5. ✅ Set environment variables in dashboard
