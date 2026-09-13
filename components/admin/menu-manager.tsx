@@ -50,6 +50,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { formatCurrency } from "@/lib/constants"
 import type { Category, MenuItem } from "@/lib/types"
+import { compressImage } from "@/lib/image-compression"
 import {
   createCategoryAction,
   updateCategoryAction,
@@ -59,41 +60,6 @@ import {
   deleteMenuItemAction,
   toggleMenuItemAvailabilityAction,
 } from "@/app/actions/admin"
-
-// Compress image client-side before upload (max 800px, 75% JPEG quality)
-async function compressImage(file: File, maxDim = 800, quality = 0.75): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    const url = URL.createObjectURL(file)
-    img.onload = () => {
-      URL.revokeObjectURL(url)
-      let { width, height } = img
-      if (width > maxDim || height > maxDim) {
-        const ratio = Math.min(maxDim / width, maxDim / height)
-        width = Math.round(width * ratio)
-        height = Math.round(height * ratio)
-      }
-      const canvas = document.createElement("canvas")
-      canvas.width = width
-      canvas.height = height
-      const ctx = canvas.getContext("2d")!
-      ctx.drawImage(img, 0, 0, width, height)
-      canvas.toBlob(
-        (blob) => {
-          if (blob) resolve(blob)
-          else reject(new Error("Compression failed"))
-        },
-        "image/jpeg",
-        quality
-      )
-    }
-    img.onerror = () => {
-      URL.revokeObjectURL(url)
-      reject(new Error("Failed to load image"))
-    }
-    img.src = url
-  })
-}
 
 type ItemWithCategory = MenuItem & { category: Category | null }
 
@@ -712,14 +678,19 @@ function ItemFormDialog({
       URL.revokeObjectURL(imagePreview)
     }
 
-    // Compress image client-side
+    // Compress image client-side with better settings
     setCompressing(true)
     try {
-      const compressed = await compressImage(file)
-      const compressedFile = new File([compressed], `menu-${Date.now()}.jpg`, { type: "image/jpeg" })
-      setCompressedSize(compressedFile.size)
-      setImageFile(compressedFile)
-      setImagePreview(URL.createObjectURL(compressedFile))
+      // Use WebP format with 85% quality for optimal size/quality balance
+      const compressed = await compressImage(file, {
+        maxWidth: 1200,
+        maxHeight: 1200,
+        quality: 0.85,
+        outputFormat: 'image/webp',
+      })
+      setCompressedSize(compressed.size)
+      setImageFile(compressed)
+      setImagePreview(URL.createObjectURL(compressed))
     } catch {
       // Fallback to original if compression fails
       console.warn("Image compression failed, using original")
