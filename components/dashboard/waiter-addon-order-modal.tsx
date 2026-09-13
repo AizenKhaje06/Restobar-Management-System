@@ -316,8 +316,11 @@ export function WaiterAddonOrderModal({
             onTouchEnd={onTouchEnd}
           >
             <div className="p-3 sm:p-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {filteredItems.map((item) => {
+              <div 
+                key={selectedCategory} 
+                className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-in fade-in duration-300"
+              >
+                {filteredItems.map((item, index) => {
                   const cartItem = cart.find((c) => c.id === item.id)
                   const isInCart = !!cartItem
                   const isUnavailable = !item.is_available
@@ -325,7 +328,11 @@ export function WaiterAddonOrderModal({
                   return (
                     <div
                       key={item.id}
-                      className={`group relative overflow-hidden rounded-xl border bg-card transition-all flex flex-row min-h-[140px] ${
+                      style={{ 
+                        animationDelay: `${index * 30}ms`,
+                        animationFillMode: 'backwards'
+                      }}
+                      className={`group relative overflow-hidden rounded-xl border bg-card transition-all flex flex-row min-h-[140px] animate-in fade-in slide-in-from-bottom-2 duration-200 ${
                         isUnavailable ? 'opacity-60' : 'hover:shadow-md hover:border-primary/30'
                       }`}
                     >
