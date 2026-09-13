@@ -156,6 +156,19 @@ export function PosOrdersClient({
       return false
     }
     
+    // Hide SERVED MAIN orders if there are active additional orders for the same table
+    if (o.order_type === "initial" && o.status === "served" && o.table_id) {
+      const hasActiveAddons = orders.some(
+        (other) =>
+          other.table_id === o.table_id &&
+          other.order_type === "additional" &&
+          other.status !== "served" &&
+          other.status !== "completed" &&
+          other.status !== "cancelled"
+      )
+      if (hasActiveAddons) return false // Hide served main order, show only active add-ons
+    }
+    
     // Add-On filter: only show orders with order_type === 'additional'
     if (tab === "addon") {
       if (o.order_type !== "additional") return false

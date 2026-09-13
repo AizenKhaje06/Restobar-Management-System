@@ -451,6 +451,19 @@ export function WaiterOrdersClient({
         return false
       }
       
+      // Hide SERVED MAIN orders if there are active additional orders for the same table
+      if (o.order_type === "initial" && o.status === "served" && o.table_id) {
+        const hasActiveAddons = orders.some(
+          (other) =>
+            other.table_id === o.table_id &&
+            other.order_type === "additional" &&
+            other.status !== "served" &&
+            other.status !== "completed" &&
+            other.status !== "cancelled"
+        )
+        if (hasActiveAddons) return false // Hide served main order, show only active add-ons
+      }
+      
       // Hide paid/completed orders from ACTIVE view (waiter's job is done)
       if (tab === "all" && (o.payment_status === "paid" || o.status === "completed")) {
         return false
