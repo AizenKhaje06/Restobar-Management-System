@@ -422,10 +422,8 @@ function TableCard({
           
           {/* Actions menu */}
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="icon" variant="ghost" className="size-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                <MoreVertical className="size-4" />
-              </Button>
+            <DropdownMenuTrigger className="inline-flex items-center justify-center size-8 rounded-md hover:bg-accent hover:text-accent-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+              <MoreVertical className="size-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={onEdit}>
