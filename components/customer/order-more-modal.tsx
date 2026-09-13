@@ -57,9 +57,9 @@ export function OrderMoreModal({
   const [submitting, setSubmitting] = useState(false)
   const [successOrder, setSuccessOrder] = useState<number | null>(null)
 
-  // Filter menu items
+  // Filter menu items - include unavailable items
   const filteredItems = useMemo(() => {
-    let result = menuItems.filter(item => item.is_available)
+    let result = menuItems
     
     if (search) {
       const q = search.toLowerCase()
@@ -255,49 +255,79 @@ export function OrderMoreModal({
 
             {/* Menu Items Grid */}
             <div className="grid gap-3 sm:grid-cols-2">
-              {filteredItems.map(item => (
-                <Card key={item.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      {item.image_url ? (
-                        <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted shrink-0">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={item.image_url}
-                            alt={item.name}
-                            className="w-full h-full object-cover"
-                          />
+              {filteredItems.map(item => {
+                const isUnavailable = !item.is_available
+                
+                return (
+                  <Card 
+                    key={item.id} 
+                    className={`overflow-hidden transition-shadow ${
+                      isUnavailable 
+                        ? 'opacity-60' 
+                        : 'hover:shadow-md'
+                    }`}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        {/* Image with unavailable badge */}
+                        <div className="relative">
+                          {isUnavailable && (
+                            <div className="absolute -top-1 -left-1 z-10">
+                              <Badge className="bg-red-600 text-white border-0 shadow-lg px-1.5 py-0 text-[10px] font-bold">
+                                Unavailable
+                              </Badge>
+                            </div>
+                          )}
+                          {item.image_url ? (
+                            <div className={`w-16 h-16 rounded-lg overflow-hidden bg-muted shrink-0 ${
+                              isUnavailable ? 'grayscale' : ''
+                            }`}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={item.image_url}
+                                alt={item.name}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div className={`w-16 h-16 rounded-lg bg-muted flex items-center justify-center shrink-0 ${
+                              isUnavailable ? 'grayscale' : ''
+                            }`}>
+                              <UtensilsCrossed className="size-6 text-muted-foreground/40" />
+                            </div>
+                          )}
                         </div>
-                      ) : (
-                        <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                          <UtensilsCrossed className="size-6 text-muted-foreground/40" />
-                        </div>
-                      )}
-                      
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-sm truncate">{item.name}</h4>
-                        {item.description && (
-                          <p className="text-xs text-muted-foreground line-clamp-1">
-                            {item.description}
-                          </p>
-                        )}
-                        <div className="flex items-center gap-2 mt-2">
-                          <p className="font-bold text-primary tabular-nums">
-                            ₱{item.price.toLocaleString("en-PH", { minimumFractionDigits: 2 })}
-                          </p>
-                          <Button
-                            size="sm"
-                            className="h-7 px-3 ml-auto"
-                            onClick={() => handleAddToCart(item)}
-                          >
-                            <Plus className="size-3.5" />
-                          </Button>
+                        
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-sm truncate">{item.name}</h4>
+                          {item.description && (
+                            <p className="text-xs text-muted-foreground line-clamp-1">
+                              {item.description}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-2 mt-2">
+                            <p className="font-bold text-primary tabular-nums">
+                              ₱{item.price.toLocaleString("en-PH", { minimumFractionDigits: 2 })}
+                            </p>
+                            <Button
+                              size="sm"
+                              className="h-7 px-3 ml-auto"
+                              onClick={() => handleAddToCart(item)}
+                              disabled={isUnavailable}
+                            >
+                              {isUnavailable ? (
+                                <span className="text-xs">Unavailable</span>
+                              ) : (
+                                <Plus className="size-3.5" />
+                              )}
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                )
+              })}
             </div>
 
             {filteredItems.length === 0 && (
