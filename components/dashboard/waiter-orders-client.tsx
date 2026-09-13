@@ -451,19 +451,6 @@ export function WaiterOrdersClient({
         return false
       }
       
-      // Hide SERVED MAIN orders if there are active additional orders for the same table
-      if (o.order_type === "initial" && o.status === "served" && o.table_id) {
-        const hasActiveAddons = orders.some(
-          (other) =>
-            other.table_id === o.table_id &&
-            other.order_type === "additional" &&
-            other.status !== "served" &&
-            other.status !== "completed" &&
-            other.status !== "cancelled"
-        )
-        if (hasActiveAddons) return false // Hide served main order, show only active add-ons
-      }
-      
       // Hide paid/completed orders from ACTIVE view (waiter's job is done)
       if (tab === "all" && (o.payment_status === "paid" || o.status === "completed")) {
         return false
@@ -583,32 +570,16 @@ export function WaiterOrdersClient({
   )
 
   // Count unique TABLES with served orders that will actually be displayed
-  // (excludes served main orders if table has active add-ons)
   const completeCount = useMemo(() => {
-    const uniqueTables = new Set<string>()
-    dateFilteredOrders.forEach(o => {
-      if (o.status === "served" && o.table_id) {
-        // If this is a served main order, check if table has active add-ons
-        if (o.order_type === "initial") {
-          const hasActiveAddons = dateFilteredOrders.some(
-            (other) =>
-              other.table_id === o.table_id &&
-              other.order_type === "additional" &&
-              other.status !== "served" &&
-              other.status !== "completed" &&
-              other.status !== "cancelled"
-          )
-          // Only count if no active add-ons (will be displayed)
-          if (!hasActiveAddons) {
-            uniqueTables.add(o.table_id)
-          }
-        } else {
-          // Add-on orders always counted (they're displayed)
-          uniqueTables.add(o.table_id)
-        }
+    return dateFilteredOrders.filter(o => {
+      // Count all served orders EXCEPT served add-ons (they're hidden from list)
+      if (o.status === "served") {
+        // Exclude served add-on orders (they're combined in the detail view)
+        if (o.order_type === "additional") return false
+        return true
       }
-    })
-    return uniqueTables.size
+      return false
+    }).length
   }, [dateFilteredOrders])
 
   // Count urgent orders (based on priority) - filtered by date
@@ -1738,14 +1709,14 @@ function WaiterOrderCard({
         </div>
       )}
 
-      <CardContent className={priority === "urgent" || priority === "high" || slaStatus === "critical" || slaStatus === "warning" ? "p-4" : "p-3.5"}>
+      <CardContent className="p-4">
         {/* Header Section - Table & Time */}
         <div className={`flex items-start justify-between gap-2 ${priority === "urgent" || priority === "high" || slaStatus === "critical" || slaStatus === "warning" ? "mb-3" : "mb-1"}`}>
           <div className="flex-1 min-w-0">
             {/* Table Number / Take-Out */}
             {order.tables ? (
               <div className="flex items-baseline gap-2">
-                <h2 className={`font-black tracking-tight text-foreground ${priority === "urgent" || priority === "high" || slaStatus === "critical" || slaStatus === "warning" ? "text-3xl" : "text-2xl"}`}>
+                <h2 className={`font-black tracking-tight text-foreground ${priority === "urgent" || priority === "high" || slaStatus === "critical" || slaStatus === "warning" ? "text-3xl" : "text-[28px]"}`}>
                   {order.tables.label}
                 </h2>
                 {order.tables.zone && (
@@ -1755,7 +1726,7 @@ function WaiterOrderCard({
                 )}
               </div>
             ) : (
-              <h2 className={`font-black tracking-tight bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent ${priority === "urgent" || priority === "high" || slaStatus === "critical" || slaStatus === "warning" ? "text-3xl" : "text-2xl"}`}>
+              <h2 className={`font-black tracking-tight bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent ${priority === "urgent" || priority === "high" || slaStatus === "critical" || slaStatus === "warning" ? "text-3xl" : "text-[28px]"}`}>
                 Take-Out
               </h2>
             )}
