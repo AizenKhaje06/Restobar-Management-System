@@ -50,11 +50,32 @@ export function QRCodesManager({ tables }: { tables: TableWithWaiter[] }) {
   }, [])
 
   const filtered = useMemo(() => {
-    if (!search) return tables
-    const q = search.toLowerCase()
-    return tables.filter(
-      (t) => t.label.toLowerCase().includes(q) || (t.zone ?? "").toLowerCase().includes(q),
-    )
+    let result = tables
+    
+    if (search) {
+      const q = search.toLowerCase()
+      result = result.filter(
+        (t) => t.label.toLowerCase().includes(q) || (t.zone ?? "").toLowerCase().includes(q),
+      )
+    }
+    
+    // Sort alphabetically by label (chronological order)
+    return result.sort((a, b) => {
+      const labelA = a.label.toLowerCase()
+      const labelB = b.label.toLowerCase()
+      
+      // Extract numbers from labels if they exist (e.g., "T-1", "A-10")
+      const numA = parseInt(labelA.match(/\d+/)?.[0] || '0')
+      const numB = parseInt(labelB.match(/\d+/)?.[0] || '0')
+      
+      // If both have numbers, sort by number
+      if (numA && numB && labelA.replace(/\d+/, '') === labelB.replace(/\d+/, '')) {
+        return numA - numB
+      }
+      
+      // Otherwise, sort alphabetically
+      return labelA.localeCompare(labelB)
+    })
   }, [tables, search])
 
   const onPrint = () => {
