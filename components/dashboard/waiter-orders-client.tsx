@@ -128,7 +128,7 @@ export function WaiterOrdersClient({
   const supabase = createClient()
   const [orders, setOrders] = useState(initialOrders)
   const [search, setSearch] = useState("")
-  const [tab, setTab] = useState<OrderStatus | "all" | "addon" | "urgent">("all")
+  const [tab, setTab] = useState<OrderStatus | "all" | "complete" | "urgent">("all")
   const [dateStart, setDateStart] = useState<Date | null>(null)
   const [dateEnd, setDateEnd] = useState<Date | null>(null)
   const [selectedOrder, setSelectedOrder] = useState<WaiterOrder | null>(null)
@@ -469,9 +469,9 @@ export function WaiterOrdersClient({
         return false
       }
       
-      // Add-On filter
-      if (tab === "addon") {
-        if (o.order_type !== "additional") return false
+      // COMPLETE filter - show all served orders (ready for payment)
+      if (tab === "complete") {
+        if (o.status !== "served") return false
       } else if (tab === "urgent") {
         // Urgent filter - show orders with urgent priority
         if (getOrderPriority(o) !== "urgent") return false
@@ -513,14 +513,14 @@ export function WaiterOrdersClient({
 
     // Apply sorting
     result.sort((a, b) => {
-      // ALWAYS put paid/completed orders at the bottom
-      const aIsPaid = a.payment_status === "paid" || a.status === "completed"
-      const bIsPaid = b.payment_status === "paid" || b.status === "completed"
+      // PRIORITY 1: ALWAYS put paid/completed/served orders at the bottom (in ACTIVE tab)
+      const aIsBottom = a.payment_status === "paid" || a.status === "completed" || a.status === "served"
+      const bIsBottom = b.payment_status === "paid" || b.status === "completed" || b.status === "served"
       
-      if (aIsPaid && !bIsPaid) return 1 // a goes down
-      if (!aIsPaid && bIsPaid) return -1 // b goes down
+      if (aIsBottom && !bIsBottom) return 1 // a goes down
+      if (!aIsBottom && bIsBottom) return -1 // b goes down
       
-      // Both paid or both unpaid, apply normal sorting
+      // If both are at bottom (both served/paid), or both are active, apply secondary sorting
       switch (sortBy) {
         case "priority": {
           const priorityOrder = { urgent: 3, high: 2, normal: 1 }
@@ -577,14 +577,39 @@ export function WaiterOrdersClient({
   const counts = dateFilteredOrders.reduce(
     (acc, o) => {
       acc[o.status] = (acc[o.status] ?? 0) + 1
-      // Count add-on orders (exclude served ones since they're hidden from list)
-      if (o.order_type === "additional" && o.status !== "served") {
-        acc["addon"] = (acc["addon"] ?? 0) + 1
-      }
       return acc
     },
     {} as Record<string, number>
   )
+
+  // Count unique TABLES with served orders that will actually be displayed
+  // (excludes served main orders if table has active add-ons)
+  const completeCount = useMemo(() => {
+    const uniqueTables = new Set<string>()
+    dateFilteredOrders.forEach(o => {
+      if (o.status === "served" && o.table_id) {
+        // If this is a served main order, check if table has active add-ons
+        if (o.order_type === "initial") {
+          const hasActiveAddons = dateFilteredOrders.some(
+            (other) =>
+              other.table_id === o.table_id &&
+              other.order_type === "additional" &&
+              other.status !== "served" &&
+              other.status !== "completed" &&
+              other.status !== "cancelled"
+          )
+          // Only count if no active add-ons (will be displayed)
+          if (!hasActiveAddons) {
+            uniqueTables.add(o.table_id)
+          }
+        } else {
+          // Add-on orders always counted (they're displayed)
+          uniqueTables.add(o.table_id)
+        }
+      }
+    })
+    return uniqueTables.size
+  }, [dateFilteredOrders])
 
   // Count urgent orders (based on priority) - filtered by date
   const urgentCount = useMemo(() => {
@@ -860,20 +885,20 @@ export function WaiterOrdersClient({
           <div className="mt-1 text-2xl font-bold">{urgentCount}</div>
         </button>
 
-        {/* ADD-ON - Show additional orders */}
+        {/* COMPLETE - Show all served orders ready for payment */}
         <button
-          onClick={() => setTab("addon")}
+          onClick={() => setTab("complete")}
           className={`rounded-lg border p-3 text-left transition-all ${
-            tab === "addon"
-              ? "border-indigo-600 bg-indigo-500/20 text-indigo-900 dark:text-indigo-200 ring-2 ring-indigo-500/30"
+            tab === "complete"
+              ? "border-green-600 bg-green-500/20 text-green-900 dark:text-green-200 ring-2 ring-green-500/30"
               : "bg-card hover:bg-muted/40"
           }`}
         >
           <div className="flex items-center gap-2">
-            <Plus className="size-4 text-indigo-500" />
-            <div className="text-xs text-muted-foreground uppercase font-semibold">ADD-ON</div>
+            <CheckCircle2 className="size-4 text-green-500" />
+            <div className="text-xs text-muted-foreground uppercase font-semibold">COMPLETE</div>
           </div>
-          <div className="mt-1 text-2xl font-bold">{counts["addon"] ?? 0}</div>
+          <div className="mt-1 text-2xl font-bold">{completeCount}</div>
         </button>
       </div>
 
@@ -1673,7 +1698,9 @@ function WaiterOrderCard({
   const priorityStyle = priorityConfig[priority]
 
   return (
-    <Card className={`group relative overflow-hidden transition-all duration-200 hover:shadow-lg ${
+    <Card 
+      onClick={onView}
+      className={`group relative overflow-hidden transition-all duration-200 hover:shadow-lg cursor-pointer ${
       slaStatus === "critical" 
         ? "ring-2 ring-red-500 shadow-red-100 dark:shadow-red-950" 
         : slaStatus === "warning"
@@ -1765,17 +1792,8 @@ function WaiterOrderCard({
             </Badge>
           )}
           
-          {/* Priority Badge */}
-          {priority !== "normal" && (
-            <Badge className={`px-2.5 py-1 text-xs font-semibold ${
-              priority === "urgent" 
-                ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
-                : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
-            }`}>
-              {priorityStyle.icon}
-              <span className="ml-1">{priorityStyle.label}</span>
-            </Badge>
-          )}
+          {/* Priority Badge - Hidden (already shown in banner) */}
+          {/* Removed: Redundant with HIGH PRIORITY banner at top */}
           
           {/* Add-On Badge */}
           {order.order_type === "additional" && (
@@ -1850,17 +1868,6 @@ function WaiterOrderCard({
             </Button>
           ) : (
             <>
-              <Button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onView()
-                }}
-                variant="outline"
-                className="flex-1 h-10 text-sm font-semibold shadow-sm hover:bg-accent"
-              >
-                <Eye className="size-4 mr-2" />
-                View Details
-              </Button>
               {next && !isPaid && (
                 <Button
                   onClick={(e) => {
