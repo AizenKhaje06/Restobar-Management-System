@@ -425,7 +425,6 @@ function TableCard({
             <DropdownMenuTrigger asChild>
               <Button size="icon" variant="ghost" className="size-8 opacity-0 group-hover:opacity-100 transition-opacity">
                 <MoreVertical className="size-4" />
-                <span className="sr-only">Menu</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
