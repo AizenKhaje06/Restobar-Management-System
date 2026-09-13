@@ -130,11 +130,12 @@ export function PosTablesClient({
   const filtered = tables.filter((t) => {
     const session = sessionByTable[t.id]
     const isOccupied = !!session
+    const isActuallyAvailable = !isOccupied && t.status !== "unavailable" && t.status !== "reserved"
     
     // Table status filter
     if (tableStatusFilter !== "all") {
       if (tableStatusFilter === "occupied" && !isOccupied) return false
-      if (tableStatusFilter === "available" && (isOccupied || t.status !== "available")) return false
+      if (tableStatusFilter === "available" && !isActuallyAvailable) return false
       if (tableStatusFilter === "reserved" && t.status !== "reserved") return false
       if (tableStatusFilter === "unavailable" && t.status !== "unavailable") return false
     }
@@ -161,14 +162,16 @@ export function PosTablesClient({
     let unavailable = 0
     
     for (const t of tables) {
-      if (sessionByTable[t.id]) {
+      const hasSession = !!sessionByTable[t.id]
+      if (hasSession) {
         occupied++
-      } else if (t.status === "available") {
-        available++
       } else if (t.status === "reserved") {
         reserved++
       } else if (t.status === "unavailable") {
         unavailable++
+      } else {
+        // Not occupied, not reserved, not unavailable = available
+        available++
       }
     }
     
@@ -391,58 +394,7 @@ export function PosTablesClient({
       </div>
 
       {/* Order Status Summary Cards */}
-      <div className="mb-6 grid gap-2 sm:grid-cols-3 lg:grid-cols-7">
-        {Object.entries(ORDER_STATUS_CONFIG).map(([status, config]) => {
-          const count = orderStatusCounts[status] ?? 0
-          const active = orderStatusFilter === status
-          
-          // Active button gets colored highlight with ring
-          let activeClass = "border-border"
-          if (active) {
-            switch(status) {
-              case "pending":
-                activeClass = "border-amber-600 bg-amber-500/20 text-amber-900 dark:text-amber-200 ring-2 ring-amber-500/30"
-                break
-              case "confirmed":
-                activeClass = "border-cyan-600 bg-cyan-500/20 text-cyan-900 dark:text-cyan-200 ring-2 ring-cyan-500/30"
-                break
-              case "preparing":
-                activeClass = "border-blue-600 bg-blue-500/20 text-blue-900 dark:text-blue-200 ring-2 ring-blue-500/30"
-                break
-              case "ready":
-                activeClass = "border-emerald-600 bg-emerald-500/20 text-emerald-900 dark:text-emerald-200 ring-2 ring-emerald-500/30"
-                break
-              case "served":
-                activeClass = "border-purple-600 bg-purple-500/20 text-purple-900 dark:text-purple-200 ring-2 ring-purple-500/30"
-                break
-              case "completed":
-                activeClass = "border-green-700 bg-green-600/20 text-green-900 dark:text-green-200 ring-2 ring-green-600/30"
-                break
-              case "cancelled":
-                activeClass = "border-rose-600 bg-rose-500/20 text-rose-900 dark:text-rose-200 ring-2 ring-rose-500/30"
-                break
-            }
-          }
-          
-          return (
-            <button
-              key={status}
-              onClick={() => setOrderStatusFilter(active ? "all" : status)}
-              className={`flex items-center justify-between rounded-lg border px-3 py-2 text-left text-sm transition-all ${
-                active ? activeClass : "hover:bg-muted/40"
-              }`}
-            >
-              <span className="flex items-center gap-2">
-                <span className={`size-1.5 rounded-full ${config.dot}`} />
-                <span className="font-medium">{config.label}</span>
-              </span>
-              <span className={`font-semibold tabular-nums ${active ? "" : "text-muted-foreground"}`}>
-                {count}
-              </span>
-            </button>
-          )
-        })}
-      </div>
+      {/* Removed - not needed for table management */}
 
       {/* Tables grid */}
       {filtered.length === 0 ? (
@@ -454,15 +406,22 @@ export function PosTablesClient({
           {filtered.map((table) => {
             const session = sessionByTable[table.id]
             const isOccupied = !!session
+            const isAvailable = !isOccupied && table.status !== "unavailable" && table.status !== "reserved"
+            const isReserved = !isOccupied && table.status === "reserved"
+            
             return (
               <button
                 key={table.id}
                 onClick={() => isOccupied && openTableAccount(table.id)}
                 disabled={!isOccupied}
-                className={`text-left rounded-xl border bg-card p-4 transition-all ${
+                className={`text-left rounded-xl border p-4 transition-all ${
                   isOccupied
-                    ? "hover:border-primary hover:shadow-md cursor-pointer"
-                    : "opacity-60 cursor-not-allowed"
+                    ? "bg-card hover:border-primary hover:shadow-md cursor-pointer"
+                    : isAvailable
+                      ? "border-emerald-300 dark:border-emerald-700 bg-gradient-to-br from-emerald-50 to-teal-50/50 dark:from-emerald-950/30 dark:to-teal-950/20 hover:from-emerald-100 hover:to-teal-100/50 dark:hover:from-emerald-950/40 dark:hover:to-teal-950/30 cursor-not-allowed shadow-sm"
+                      : isReserved
+                        ? "border-blue-300 dark:border-blue-700 bg-gradient-to-br from-blue-50 to-cyan-50/50 dark:from-blue-950/30 dark:to-cyan-950/20 cursor-not-allowed shadow-sm"
+                        : "bg-card opacity-60 cursor-not-allowed"
                 }`}
               >
                 <div className="flex items-start justify-between mb-2">
@@ -470,7 +429,13 @@ export function PosTablesClient({
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                       {table.zone ?? "Restaurant"}
                     </p>
-                    <p className="text-2xl font-black text-primary mt-0.5">
+                    <p className={`text-2xl font-black mt-0.5 ${
+                      isAvailable 
+                        ? "text-emerald-600 dark:text-emerald-500" 
+                        : isReserved
+                          ? "text-blue-600 dark:text-blue-500"
+                          : "text-primary"
+                    }`}>
                       {table.label}
                     </p>
                   </div>
@@ -479,8 +444,16 @@ export function PosTablesClient({
                       <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
                         <Lock className="size-3 mr-1" /> Occupied
                       </Badge>
+                    ) : table.status === "reserved" ? (
+                      <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                        <Clock className="size-3 mr-1" /> Reserved
+                      </Badge>
+                    ) : table.status === "unavailable" ? (
+                      <Badge className="bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400">
+                        <XCircle className="size-3 mr-1" /> Unavailable
+                      </Badge>
                     ) : (
-                      <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">
+                      <Badge className="bg-emerald-500 text-white dark:bg-emerald-600 shadow-sm">
                         <Unlock className="size-3 mr-1" /> Available
                       </Badge>
                     )}

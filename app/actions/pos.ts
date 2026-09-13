@@ -14,11 +14,35 @@ export async function createPosOrder(input: {
   customer_name?: string | null
   items: { menu_item_id: string; name: string; price: number; quantity: number; notes?: string }[]
   notes?: string | null
+  force_create?: boolean // Flag to bypass warning
 }) {
   const supabase = await createClient()
   const profile = await getSessionProfile()
 
   if (!input.items.length) return { error: "Order must have at least one item" }
+
+  // BUSINESS RULE: Check if table already has an active main order
+  if (input.table_id && !input.force_create) {
+    const { data: existingOrders } = await supabase
+      .from("orders")
+      .select("id, order_number, order_type, customer_name")
+      .eq("table_id", input.table_id)
+      .neq("status", "completed")
+      .neq("status", "cancelled")
+      .neq("payment_status", "paid")
+
+    // If table has existing main order, return warning
+    const mainOrder = existingOrders?.find(o => o.order_type !== "additional")
+    if (mainOrder) {
+      return { 
+        warning: true,
+        message: `This table already has an active order #${mainOrder.order_number}${mainOrder.customer_name ? ` for ${mainOrder.customer_name}` : ''}.`,
+        existingOrderId: mainOrder.id,
+        existingOrderNumber: mainOrder.order_number,
+        suggestion: "Would you like to add these items to the existing order instead?"
+      }
+    }
+  }
 
   const taxRate = await getTaxRate()
   const subtotal = input.items.reduce((s, i) => s + i.price * i.quantity, 0)
@@ -74,6 +98,78 @@ export async function createPosOrder(input: {
   revalidatePath("/pos/orders")
   return { success: true, order_id: order.id }
 }
+
+// ============================================================
+// CREATE ADD-ON ORDER (for existing table orders)
+// ============================================================
+export async function createPosAddonOrder(input: {
+  main_order_id: string
+  table_id: string
+  items: { menu_item_id: string; name: string; price: number; quantity: number; notes?: string }[]
+}) {
+  const supabase = await createClient()
+  const profile = await getSessionProfile()
+
+  if (!profile) return { error: "Not authenticated" }
+  if (!["pos", "admin"].includes(profile.role)) return { error: "Not authorized" }
+  if (!input.items.length) return { error: "Add-on order must have at least one item" }
+
+  const taxRate = await getTaxRate()
+  const subtotal = input.items.reduce((s, i) => s + i.price * i.quantity, 0)
+  const tax = Math.round(subtotal * taxRate * 100) / 100
+  const total = Math.round((subtotal + tax) * 100) / 100
+
+  // Get table info from main order
+  const { data: mainOrder } = await supabase
+    .from("orders")
+    .select("table_id")
+    .eq("id", input.main_order_id)
+    .single()
+
+  // Create add-on order
+  const { data: order, error: orderErr } = await supabase
+    .from("orders")
+    .insert({
+      table_id: input.table_id,
+      order_type: "additional",
+      status: "preparing", // Add-ons go straight to preparing
+      payment_status: "unpaid",
+      subtotal,
+      tax,
+      total,
+      created_by: profile.id,
+      assisted_by: profile.id,
+    })
+    .select()
+    .single()
+  if (orderErr) return { error: orderErr.message }
+
+  // Insert order items
+  const { error: itemsErr } = await supabase.from("order_items").insert(
+    input.items.map((i) => ({
+      order_id: order.id,
+      menu_item_id: i.menu_item_id || null,
+      name: i.name,
+      unit_price: i.price,
+      quantity: i.quantity,
+      notes: i.notes ?? null,
+      status: "pending" as OrderStatus,
+    }))
+  )
+  if (itemsErr) return { error: itemsErr.message }
+
+  // Log activity
+  await supabase.rpc("log_activity", {
+    p_action: "order.addon_created",
+    p_entity: "order",
+    p_entity_id: order.id,
+    p_detail: { total, item_count: input.items.length, table_id: input.table_id, main_order_id: input.main_order_id },
+  })
+
+  revalidatePath("/pos/orders")
+  return { success: true, order_id: order.id, order_number: order.order_number }
+}
+
 
 // ============================================================
 // UPDATE ORDER STATUS (POS / kitchen)

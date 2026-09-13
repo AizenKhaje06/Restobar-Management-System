@@ -26,20 +26,14 @@ export async function GET(request: Request) {
     .eq("status", "active")
     .maybeSingle()
 
-  // Get unpaid orders — by session_id if active, else fallback to table_id
-  let query = supabase
+  // Get all unpaid orders for this table (including add-ons from any session)
+  const { data: orders, error } = await supabase
     .from("orders")
-    .select("id, order_number, table_id, session_id, customer_name, status, payment_status, subtotal, tax, total, created_at, order_items(id, name, unit_price, quantity)")
+    .select("id, order_number, table_id, session_id, customer_name, status, payment_status, subtotal, tax, total, created_at, order_type, order_items(id, name, unit_price, quantity)")
+    .eq("table_id", tableId)
     .in("payment_status", ["unpaid", "pending"])
     .order("created_at", { ascending: true })
 
-  if (session?.id) {
-    query = query.eq("session_id", session.id)
-  } else {
-    query = query.eq("table_id", tableId)
-  }
-
-  const { data: orders, error } = await query
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }

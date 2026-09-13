@@ -2,6 +2,10 @@
 
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
+import { checkRateLimit, createRateLimitError, RATE_LIMITS } from "@/lib/rate-limit"
+import { validateUsername, validatePassword, validateName, validatePhone } from "@/lib/validation"
+import { headers } from "next/headers"
 import type {
   OrderStatus,
   PaymentMethod,
@@ -389,7 +393,22 @@ export async function createStaffAccountAction(formData: FormData) {
     return { error: "Only administrators can create staff accounts" }
   }
 
-  // Extract and validate form data
+  // ✅ NEW: Rate limiting for staff creation
+  const headersList = await headers()
+  const clientIp = headersList.get('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1'
+  
+  const rateLimit = checkRateLimit({
+    identifier: `${clientIp}:${user.id}`,
+    action: 'staff_create',
+    maxAttempts: RATE_LIMITS.STAFF_CREATE.maxAttempts,
+    windowMs: RATE_LIMITS.STAFF_CREATE.windowMs,
+  })
+
+  if (!rateLimit.allowed) {
+    return { error: createRateLimitError(rateLimit.retryAfter!) }
+  }
+
+  // Extract form data
   const username = ((formData.get("username") as string) || "").trim().toLowerCase()
   const password = (formData.get("password") as string) || ""
   const full_name = ((formData.get("full_name") as string) || "").trim() || null
@@ -397,18 +416,31 @@ export async function createStaffAccountAction(formData: FormData) {
   const address = ((formData.get("address") as string) || "").trim() || null
   const role = (formData.get("role") as string) || "waiter"
 
-  // Validation
-  if (!username) return { error: "Username is required" }
-  if (username.length < 3 || username.length > 20) {
-    return { error: "Username must be 3-20 characters" }
+  // ✅ NEW: Enhanced validation
+  const usernameValidation = validateUsername(username)
+  if (!usernameValidation.valid) {
+    return { error: usernameValidation.error }
   }
-  if (!/^[a-z0-9_]+$/.test(username)) {
-    return { error: "Username can only contain letters, numbers, and underscores" }
+
+  const passwordValidation = validatePassword(password)
+  if (!passwordValidation.valid) {
+    return { error: passwordValidation.error }
   }
-  if (!password) return { error: "Password is required" }
-  if (password.length < 8) {
-    return { error: "Password must be at least 8 characters" }
+
+  if (full_name) {
+    const nameValidation = validateName(full_name, "Full name")
+    if (!nameValidation.valid) {
+      return { error: nameValidation.error }
+    }
   }
+
+  if (phone) {
+    const phoneValidation = validatePhone(phone)
+    if (!phoneValidation.valid) {
+      return { error: phoneValidation.error }
+    }
+  }
+
   if (!["admin", "pos", "waiter"].includes(role)) {
     return { error: "Invalid role" }
   }
@@ -438,20 +470,21 @@ export async function createStaffAccountAction(formData: FormData) {
     return { error: "An error occurred. Please try a different username." }
   }
 
-  // Create auth user using signUp (this works without service role key)
-  const { data: authData, error: authError } = await supabase.auth.signUp({
+  // ✅ CREATE USER WITH ADMIN CLIENT (bypasses email confirmation)
+  const adminClient = createAdminClient()
+  
+  const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
     email: internalEmail,
     password: password,
-    options: {
-      data: {
-        full_name,
-        role,
-      },
-      emailRedirectTo: undefined, // No email confirmation needed
+    email_confirm: true, // ← Bypass email confirmation
+    user_metadata: {
+      full_name,
+      role,
     },
   })
 
   if (authError || !authData.user) {
+    console.error("[createStaffAccount] Auth error:", authError)
     return { error: authError?.message || "Failed to create account" }
   }
 
@@ -469,9 +502,11 @@ export async function createStaffAccountAction(formData: FormData) {
     .eq("id", authData.user.id)
 
   if (profileError) {
-    // Note: Can't easily rollback auth user without admin API
-    // But profile will be created by trigger, so we just update it
-    console.error("Profile update failed:", profileError)
+    console.error("[createStaffAccount] Profile update failed:", profileError)
+    
+    // Rollback: Delete the auth user we just created
+    await adminClient.auth.admin.deleteUser(authData.user.id)
+    
     return { error: "Failed to create profile: " + profileError.message }
   }
 

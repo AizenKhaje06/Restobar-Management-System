@@ -27,6 +27,8 @@ import {
   Users,
   CalendarDays,
   Plus,
+  Receipt,
+  ShoppingBag,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -55,14 +57,17 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { AssistModal, type WaiterOrderForModal } from "@/components/dashboard/assist-modal"
+import { WaiterAddonOrderModal } from "@/components/dashboard/waiter-addon-order-modal"
 import { formatCurrency, formatTime, formatDateTime } from "@/lib/constants"
 import { createClient } from "@/lib/supabase/client"
 import type { Profile, OrderWithItems, OrderStatus } from "@/lib/types"
+import { cn } from "@/lib/utils"
 import {
   updateWaiterOrderStatus,
   assistWaiterOrder,
   confirmWaiterOrder,
   getWaiterTables,
+  getWaiterMenu,
 } from "@/app/actions/waiter"
 import { signOut } from "@/app/actions/auth"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -81,15 +86,16 @@ const STATUS_CONFIG: Record<OrderStatus, { label: string; color: string; icon: R
 
 const NEXT_STATUS: Partial<Record<OrderStatus, OrderStatus>> = {
   // Waiters can only:
-  // 1. Confirm pending orders (via Assist Modal)
+  // 1. Confirm pending orders → Goes directly to Preparing (sent to kitchen)
   // 2. Mark "Ready" orders as "Served"
+  pending: "preparing",  // Skip "confirmed", go straight to kitchen
   ready: "served",
-  // Kitchen/Chef handles: confirmed → preparing → ready
+  // Kitchen/Chef handles: preparing → ready
   // POS/Admin handles: served → completed (paid)
 }
 
 const STATUS_ACTION: Record<OrderStatus, { label: string; icon: React.ReactNode }> = {
-  pending:   { label: "Confirm",        icon: <CheckCircle2 className="size-3.5" /> },
+  pending:   { label: "Send to Kitchen",  icon: <ChefHat className="size-3.5" /> },
   confirmed: { label: "Start Preparing", icon: <ChefHat className="size-3.5" /> },
   preparing: { label: "Mark Ready",      icon: <CheckCircle2 className="size-3.5" /> },
   ready:     { label: "Mark Served",     icon: <UtensilsCrossed className="size-3.5" /> },
@@ -105,6 +111,7 @@ interface WaiterOrder extends Omit<OrderWithItems, 'tables' | 'payment_status'> 
   special_requests?: string | null
   assisted_by_profile?: { id: string; full_name: string | null; username: string } | null
   served_by_profile?: { id: string; full_name: string | null; username: string } | null
+  session_id?: string | null
 }
 
 export function WaiterOrdersClient({
@@ -125,6 +132,7 @@ export function WaiterOrdersClient({
   const [dateStart, setDateStart] = useState<Date | null>(null)
   const [dateEnd, setDateEnd] = useState<Date | null>(null)
   const [selectedOrder, setSelectedOrder] = useState<WaiterOrder | null>(null)
+  const [relatedOrders, setRelatedOrders] = useState<WaiterOrder[]>([]) // For combined view
   const [pending, setPending] = useState<string | null>(null)
   const [assisting, setAssisting] = useState<string | null>(null)
   const [confirming, setConfirming] = useState<string | null>(null)
@@ -135,6 +143,12 @@ export function WaiterOrdersClient({
   const [tables, setTables] = useState<any[]>([])
   const [loadingTables, setLoadingTables] = useState(false)
   const [tableStatusFilter, setTableStatusFilter] = useState<"all" | "available" | "occupied" | "reserved" | "unavailable">("all")
+
+  // Add-on order modal
+  const [showAddonModal, setShowAddonModal] = useState(false)
+  const [addonModalOrder, setAddonModalOrder] = useState<WaiterOrder | null>(null)
+  const [menuData, setMenuData] = useState<{ categories: any[]; menuItems: any[] }>({ categories: [], menuItems: [] })
+  const [loadingMenu, setLoadingMenu] = useState(false)
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   
@@ -235,15 +249,145 @@ export function WaiterOrdersClient({
         alert(result.error)
         return
       }
+      // After confirmation, order goes directly to "preparing" (sent to kitchen)
       setOrders((prev) =>
-        prev.map((o) => (o.id === order.id ? { ...o, status: "confirmed" } : o))
+        prev.map((o) => (o.id === order.id ? { ...o, status: "preparing" } : o))
       )
-      setSelectedOrder((prev) => (prev ? { ...prev, status: "confirmed" } : null))
-      toast.success("Order confirmed! Sent to kitchen.")
     } finally {
       setConfirming(null)
     }
   }, [])
+
+  // Handle opening add-on order modal
+  const handleOpenAddonModal = useCallback(async (order: WaiterOrder) => {
+    if (!order.table_id) return
+    
+    setAddonModalOrder(order)
+    setShowAddonModal(true)
+    
+    // Fetch menu data if not already loaded
+    if (menuData.menuItems.length === 0 && !loadingMenu) {
+      setLoadingMenu(true)
+      try {
+        const data = await getWaiterMenu()
+        console.log('Menu data fetched:', data) // Debug log
+        setMenuData(data)
+        
+        if (data.menuItems.length === 0) {
+          toast.error("No menu items available. Please add items to the menu first.")
+        }
+      } catch (error) {
+        console.error('Error fetching menu:', error) // Debug log
+        toast.error("Failed to load menu")
+      } finally {
+        setLoadingMenu(false)
+      }
+    }
+  }, [menuData.menuItems.length, loadingMenu])
+
+  // Handle creating add-on order
+  const handleCreateAddonOrder = useCallback(async (items: any[], notes: string) => {
+    if (!addonModalOrder || !addonModalOrder.table_id) {
+      throw new Error("No table selected")
+    }
+
+    // Create the add-on order via Supabase
+    const orderData = {
+      table_id: addonModalOrder.table_id,
+      session_id: addonModalOrder.session_id,
+      customer_name: addonModalOrder.customer_name,
+      status: "confirmed" as const,
+      payment_status: "unpaid" as const,
+      order_type: "additional",
+      assisted_by: profile.id,
+      notes,
+      subtotal: items.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    }
+
+    const tax = orderData.subtotal * 0.12
+    const total = orderData.subtotal + tax
+
+    const { data: newOrder, error: orderError } = await supabase
+      .from("orders")
+      .insert([{ ...orderData, tax, total }])
+      .select()
+      .single()
+
+    if (orderError) throw orderError
+
+    // Create order items
+    const orderItems = items.map((item) => ({
+      order_id: newOrder.id,
+      menu_item_id: item.id,
+      name: item.name,
+      unit_price: item.price,
+      quantity: item.quantity,
+      notes: item.notes || null,
+      status: "pending",
+    }))
+
+    const { error: itemsError } = await supabase
+      .from("order_items")
+      .insert(orderItems)
+
+    if (itemsError) throw itemsError
+
+    // Refresh orders list
+    const { data: updatedOrders } = await supabase
+      .from("orders")
+      .select(`
+        *,
+        tables(label, zone, assigned_waiter),
+        order_items(*),
+        assisted_by_profile:profiles!orders_assisted_by_fkey(id, username, full_name),
+        served_by_profile:profiles!orders_served_by_fkey(id, username, full_name)
+      `)
+      .order("created_at", { ascending: false })
+
+    if (updatedOrders) {
+      setOrders(updatedOrders as WaiterOrder[])
+    }
+  }, [addonModalOrder, profile.id, supabase])
+
+  // Fetch all related orders for the same table/session (for combined view)
+  const fetchRelatedOrders = useCallback(async (order: WaiterOrder) => {
+    if (!order.table_id) return [order] // Take-out: only show this order
+    
+    // If viewing an add-on order, show only that add-on order
+    if (order.order_type === "additional") {
+      return [order]
+    }
+    
+    // If viewing main order, show combined view (all orders for table)
+    const { data } = await supabase
+      .from("orders")
+      .select(`
+        *,
+        tables(label, zone, assigned_waiter),
+        order_items(*),
+        assisted_by_profile:profiles!orders_assisted_by_fkey(id, username, full_name),
+        served_by_profile:profiles!orders_served_by_fkey(id, username, full_name)
+      `)
+      .eq("table_id", order.table_id)
+      .neq("status", "cancelled")
+      .neq("payment_status", "paid")
+      .order("created_at", { ascending: true })
+    
+    return (data as WaiterOrder[]) || [order]
+  }, [supabase])
+
+  // Handle viewing order details with combined view
+  const handleViewOrderDetails = useCallback(async (order: WaiterOrder) => {
+    setSelectedOrder(order)
+    
+    // Fetch related orders for combined view
+    if (order.table_id) {
+      const related = await fetchRelatedOrders(order)
+      setRelatedOrders(related)
+    } else {
+      setRelatedOrders([order]) // Take-out: only show this order
+    }
+  }, [fetchRelatedOrders])
 
   // Calculate time elapsed for order (in minutes)
   const getOrderAge = useCallback((createdAt: string): number => {
@@ -302,6 +446,16 @@ export function WaiterOrdersClient({
   // Smart sorting with priority
   const sortedAndFiltered = useMemo(() => {
     let result = orders.filter((o) => {
+      // Hide served add-on orders from the list (they'll show in combined view)
+      if (o.order_type === "additional" && o.status === "served") {
+        return false
+      }
+      
+      // Hide paid/completed orders from ACTIVE view (waiter's job is done)
+      if (tab === "all" && (o.payment_status === "paid" || o.status === "completed")) {
+        return false
+      }
+      
       // Add-On filter
       if (tab === "addon") {
         if (o.order_type !== "additional") return false
@@ -410,8 +564,8 @@ export function WaiterOrdersClient({
   const counts = dateFilteredOrders.reduce(
     (acc, o) => {
       acc[o.status] = (acc[o.status] ?? 0) + 1
-      // Count add-on orders
-      if (o.order_type === "additional") {
+      // Count add-on orders (exclude served ones since they're hidden from list)
+      if (o.order_type === "additional" && o.status !== "served") {
         acc["addon"] = (acc["addon"] ?? 0) + 1
       }
       return acc
@@ -424,7 +578,14 @@ export function WaiterOrdersClient({
     return dateFilteredOrders.filter(o => getOrderPriority(o) === "urgent").length
   }, [dateFilteredOrders, getOrderPriority])
 
-  const activeTabCount = dateFilteredOrders.length
+  // Active count excludes paid/completed orders (waiter's job is done)
+  const activeTabCount = useMemo(() => {
+    return dateFilteredOrders.filter(o => 
+      o.payment_status !== "paid" && 
+      o.status !== "completed" &&
+      !(o.order_type === "additional" && o.status === "served") // Also exclude served add-ons
+    ).length
+  }, [dateFilteredOrders])
 
   const handleLogout = async () => {
     setIsLoggingOut(true)
@@ -432,6 +593,16 @@ export function WaiterOrdersClient({
       await signOut()
       // signOut() will automatically redirect to /login
     } catch (error) {
+      // Next.js redirect() throws NEXT_REDIRECT error - this is expected behavior
+      // Check if it's a redirect error (which means logout was successful)
+      if (error && typeof error === 'object' && 'digest' in error) {
+        const digest = (error as { digest?: string }).digest
+        if (digest?.includes('NEXT_REDIRECT')) {
+          // This is a successful redirect, not an actual error
+          return
+        }
+      }
+      // Only show error toast for actual errors
       setIsLoggingOut(false)
       toast.error("Failed to logout. Please try again.")
     }
@@ -485,8 +656,8 @@ export function WaiterOrdersClient({
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Simple Header - No Sidebar */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      {/* Header - Consistent Brand Colors */}
+      <header className="sticky top-0 z-50 w-full border-b bg-black dark:bg-gradient-to-r dark:from-yellow-600 dark:via-amber-500 dark:to-yellow-400 shadow-lg">
         <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Logo & Brand */}
           <div className="flex items-center gap-3">
@@ -497,22 +668,22 @@ export function WaiterOrdersClient({
                 className="h-8 w-auto object-contain rounded-md"
               />
             ) : (
-              <UtensilsCrossed className="size-6 text-primary" />
+              <UtensilsCrossed className="size-6 text-white" />
             )}
             <div className="flex flex-col">
-              <h1 className="text-lg font-bold leading-none">{restaurantName}</h1>
-              <p className="text-xs text-muted-foreground">Waiter: {profile.full_name || profile.username}</p>
+              <h1 className="text-lg font-bold leading-none text-white">{restaurantName}</h1>
+              <p className="text-xs text-white/80">Waiter: {profile.full_name || profile.username}</p>
             </div>
           </div>
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Button variant="ghost" size="sm" onClick={() => window.location.reload()}>
+            <ThemeToggle className="text-white hover:bg-white/10" />
+            <Button variant="ghost" size="sm" onClick={() => window.location.reload()} className="text-white hover:bg-white/10">
               <RefreshCw className="size-4" />
               <span className="ml-2 hidden sm:inline">Refresh</span>
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => setShowLogoutDialog(true)}>
+            <Button variant="ghost" size="sm" onClick={() => setShowLogoutDialog(true)} className="text-white hover:bg-white/10">
               <LogOut className="size-4" />
               <span className="ml-2 hidden sm:inline">Logout</span>
             </Button>
@@ -713,7 +884,7 @@ export function WaiterOrdersClient({
                       // Open POS assist modal
                       setAssistModalOrder(order as unknown as WaiterOrderForModal)
                     } else {
-                      setSelectedOrder(order)
+                      handleViewOrderDetails(order) // Use new handler for combined view
                     }
                   }}
                   onStatusUpdate={(s) => handleStatusUpdate(order, s)}
@@ -753,133 +924,323 @@ export function WaiterOrdersClient({
         />
       )}
 
-      {/* Order Detail Dialog (for non-pending or non-claimed orders) */}
+      {/* Add-On Order Modal - Enterprise POS Style */}
+      {addonModalOrder && (
+        <WaiterAddonOrderModal
+          open={showAddonModal}
+          onOpenChange={setShowAddonModal}
+          tableId={addonModalOrder.table_id || ""}
+          tableName={addonModalOrder.tables?.label || "Unknown Table"}
+          orderNumber={String(addonModalOrder.order_number)}
+          menuItems={menuData.menuItems}
+          onConfirm={handleCreateAddonOrder}
+        />
+      )}
+
+      {/* Order Detail Dialog (for non-pending or non-claimed orders) - Enterprise Grade */}
       <Dialog
         open={!!selectedOrder && !assistModalOrder}
         onOpenChange={(o) => !o && setSelectedOrder(null)}
       >
-        <DialogContent className="max-w-md w-[calc(100%-2rem)] sm:w-full">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 flex-wrap">
-              Order #{selectedOrder?.order_number}
-              {selectedOrder && (
-                <>
-                  <Badge className={STATUS_CONFIG[selectedOrder.status as OrderStatus]?.color}>
-                    {STATUS_CONFIG[selectedOrder.status as OrderStatus]?.label}
-                  </Badge>
-                  {selectedOrder.order_type === "additional" && (
-                    <Badge className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400">
-                      <Plus className="mr-1 size-3" /> Add-On
-                    </Badge>
-                  )}
-                </>
-              )}
-            </DialogTitle>
-            <p className="text-sm text-muted-foreground">
-              {selectedOrder?.tables?.label ? (
-                selectedOrder.tables.label
-              ) : (
-                <span className="text-emerald-600 dark:text-emerald-400 font-medium">Take-Out</span>
-              )}
-              {selectedOrder?.customer_name && (
-                <> · {selectedOrder.customer_name}</>
-              )}
-            </p>
-          </DialogHeader>
-
+        <DialogContent className="w-screen h-screen sm:w-auto sm:h-auto sm:max-w-2xl sm:max-h-[90vh] max-w-none p-0 sm:p-3 gap-0 flex flex-col">
+          <div className="w-full h-full flex flex-col bg-white dark:bg-gray-950 rounded-none sm:rounded-2xl overflow-hidden">
           {selectedOrder && (
-            <div className="space-y-4">
-              {/* Items */}
-              <div className="rounded-lg bg-muted/30 p-3 space-y-2">
-                {selectedOrder.order_items?.length > 0 ? (
-                  selectedOrder.order_items.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{item.quantity}x</span>
-                        <span>{item.name}</span>
-                        {item.notes && (
-                          <span className="text-xs text-muted-foreground">({item.notes})</span>
+            <>
+              {/* Hero Header with Gradient */}
+              <div className="relative overflow-hidden flex-shrink-0">
+                {/* Background Gradient */}
+                <div className={cn(
+                  "absolute inset-0 opacity-10",
+                  selectedOrder.payment_status === "paid" 
+                    ? "bg-gradient-to-br from-emerald-500 to-green-600"
+                    : selectedOrder.priority === "urgent"
+                    ? "bg-gradient-to-br from-red-500 via-orange-500 to-amber-500"
+                    : Math.floor((Date.now() - new Date(selectedOrder.created_at).getTime()) / (1000 * 60)) >= 30
+                    ? "bg-gradient-to-br from-amber-500 to-orange-600"
+                    : "bg-gradient-to-br from-blue-500 to-indigo-600"
+                )} />
+                
+                <div className="relative p-4 sm:p-6 pb-4 sm:pb-5">
+                  {/* Order Number - Hero Element */}
+                  <div className="mb-3">
+                    <p className="text-xs font-medium text-muted-foreground mb-1">ORDER</p>
+                    <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
+                      #{selectedOrder.order_number}
+                    </h2>
+                  </div>
+
+                  {/* Location & Customer */}
+                  <div className="flex items-center gap-2 mb-4">
+                    {selectedOrder.tables?.label ? (
+                      <div className="flex items-center gap-1.5 text-sm font-semibold">
+                        <Grid3x3 className="size-4" />
+                        <span>{selectedOrder.tables.label}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                        <ShoppingBag className="size-4" />
+                        <span>Take-Out</span>
+                      </div>
+                    )}
+                    {selectedOrder.customer_name && (
+                      <>
+                        <span className="text-muted-foreground">·</span>
+                        <span className="text-sm font-medium text-foreground">
+                          {selectedOrder.customer_name}
+                        </span>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Status Badges Row */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge className={cn(
+                      "font-semibold shadow-sm",
+                      STATUS_CONFIG[selectedOrder.status as OrderStatus]?.color
+                    )}>
+                      {STATUS_CONFIG[selectedOrder.status as OrderStatus]?.label}
+                    </Badge>
+                    
+                    {selectedOrder.order_type === "additional" && (
+                      <Badge className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400 font-semibold shadow-sm">
+                        <Plus className="mr-1 size-3" /> Add-On
+                      </Badge>
+                    )}
+
+                    {selectedOrder.payment_status === "paid" && (
+                      <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 font-semibold shadow-sm">
+                        <CheckCircle2 className="mr-1 size-3" /> Paid
+                      </Badge>
+                    )}
+
+                    {/* Time Badge */}
+                    <Badge variant="outline" className="ml-auto font-semibold">
+                      <Clock className="mr-1 size-3" />
+                      {(() => {
+                        const elapsed = Math.floor(
+                          (Date.now() - new Date(selectedOrder.created_at).getTime()) / (1000 * 60)
+                        )
+                        const hours = Math.floor(elapsed / 60)
+                        const mins = elapsed % 60
+                        return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`
+                      })()}
+                    </Badge>
+                  </div>
+
+                  {/* Created Date - Subtle */}
+                  <p className="text-xs text-muted-foreground mt-3">
+                    {formatDateTime(selectedOrder.created_at)}
+                  </p>
+                </div>
+
+                {/* Bottom Border Accent */}
+                <div className={cn(
+                  "h-1",
+                  selectedOrder.payment_status === "paid"
+                    ? "bg-gradient-to-r from-emerald-500 to-green-600"
+                    : selectedOrder.priority === "urgent"
+                    ? "bg-gradient-to-r from-red-500 via-orange-500 to-amber-500"
+                    : Math.floor((Date.now() - new Date(selectedOrder.created_at).getTime()) / (1000 * 60)) >= 30
+                    ? "bg-gradient-to-r from-amber-500 to-orange-600"
+                    : "bg-gradient-to-r from-blue-500 to-indigo-600"
+                )} />
+              </div>
+
+              {/* Scrollable Content Area - Combined View */}
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5">
+                {/* All Orders for this Table */}
+                {relatedOrders.map((order, orderIndex) => {
+                  const isMainOrder = order.order_type !== "additional"
+                  const totalItems = order.order_items?.length || 0
+                  
+                  return (
+                    <div key={order.id}>
+                      {/* Order Header */}
+                      <div className="mb-3">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                            ━━ Order #{order.order_number} {isMainOrder ? "(Main)" : "(Add-On)"} ━━
+                          </h3>
+                          <Badge variant="secondary" className="text-xs">
+                            {totalItems} {totalItems === 1 ? 'item' : 'items'}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Badge className={cn("text-xs", STATUS_CONFIG[order.status as OrderStatus]?.color)}>
+                            {order.status === "served" && "✓ "}
+                            {STATUS_CONFIG[order.status as OrderStatus]?.label}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {formatDateTime(order.created_at)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Order Items */}
+                      <div className="rounded-lg border bg-muted/20 divide-y mb-4">
+                        {order.order_items && order.order_items.length > 0 ? (
+                          order.order_items.map((item) => (
+                            <div key={item.id} className="p-3 flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="inline-flex items-center justify-center size-6 rounded bg-primary/10 text-primary text-xs font-bold">
+                                    {item.quantity}
+                                  </span>
+                                  <span className="font-medium text-sm text-foreground">{item.name}</span>
+                                </div>
+                                {item.notes && (
+                                  <p className="text-xs text-muted-foreground pl-8 mt-0.5">
+                                    Note: {item.notes}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                <p className="font-semibold text-sm">
+                                  {formatCurrency(Number(item.unit_price) * item.quantity)}
+                                </p>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="p-4 text-center">
+                            <p className="text-sm text-muted-foreground">No items</p>
+                          </div>
                         )}
                       </div>
-                      <span className="text-muted-foreground">
-                        {formatCurrency(Number(item.unit_price) * item.quantity)}
-                      </span>
                     </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">No items</p>
+                  )
+                })}
+
+                {/* Combined Payment Summary */}
+                <div className="rounded-lg border bg-gradient-to-br from-muted/30 to-muted/10 p-4">
+                  <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                    <Receipt className="size-4" />
+                    Total Payment Summary
+                  </h3>
+                  <div className="space-y-2">
+                    {(() => {
+                      const combinedSubtotal = relatedOrders.reduce((sum, o) => sum + Number(o.subtotal), 0)
+                      const combinedTax = relatedOrders.reduce((sum, o) => sum + Number(o.tax), 0)
+                      const combinedTotal = relatedOrders.reduce((sum, o) => sum + Number(o.total), 0)
+                      
+                      return (
+                        <>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Subtotal</span>
+                            <span className="font-medium">{formatCurrency(combinedSubtotal)}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Tax</span>
+                            <span className="font-medium">{formatCurrency(combinedTax)}</span>
+                          </div>
+                          <div className="pt-2 mt-2 border-t flex items-center justify-between">
+                            <span className="font-semibold">Total Amount</span>
+                            <span className="text-xl font-bold text-primary">
+                              {formatCurrency(combinedTotal)}
+                            </span>
+                          </div>
+                        </>
+                      )
+                    })()}
+                  </div>
+                </div>
+
+                {/* Service Staff Section */}
+                {(selectedOrder.assisted_by_profile || selectedOrder.served_by_profile) && (
+                  <div className="rounded-lg border bg-blue-50/50 dark:bg-blue-950/20 p-4">
+                    <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                      <Users className="size-4" />
+                      Service Staff
+                    </h3>
+                    <div className="space-y-2.5">
+                      {selectedOrder.assisted_by_profile && (
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center justify-center size-8 rounded-full bg-blue-100 dark:bg-blue-900/30">
+                            <Users className="size-4 text-blue-600 dark:text-blue-400" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Assisted by</p>
+                            <p className="text-xs font-semibold text-foreground truncate">
+                              {selectedOrder.assisted_by_profile.full_name || selectedOrder.assisted_by_profile.username}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">
+                              {formatDateTime(selectedOrder.created_at)}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      {selectedOrder.served_by_profile && (
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center justify-center size-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30">
+                            <UtensilsCrossed className="size-4 text-emerald-600 dark:text-emerald-400" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Served by</p>
+                            <p className="text-xs font-semibold text-foreground truncate">
+                              {selectedOrder.served_by_profile.full_name || selectedOrder.served_by_profile.username}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">
+                              {formatDateTime(selectedOrder.updated_at)}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
 
-              {/* Totals */}
-              <div className="border-t pt-3 space-y-1.5 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span>{formatCurrency(Number(selectedOrder.subtotal))}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Tax</span>
-                  <span>{formatCurrency(Number(selectedOrder.tax))}</span>
-                </div>
-                <div className="flex justify-between font-semibold border-t pt-1.5">
-                  <span>Total</span>
-                  <span className="text-primary">{formatCurrency(Number(selectedOrder.total))}</span>
-                </div>
+              {/* Action Footer */}
+              <div className="flex-shrink-0 border-t bg-muted/30 p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setSelectedOrder(null)}
+                  className="flex-1"
+                >
+                  Close
+                </Button>
+                
+                {/* Add Order Button - Only show if order is not completed/cancelled/paid */}
+                {selectedOrder.status !== "completed" && 
+                 selectedOrder.status !== "cancelled" && 
+                 selectedOrder.payment_status !== "paid" && 
+                 selectedOrder.table_id && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSelectedOrder(null) // Close detail modal first
+                      handleOpenAddonModal(selectedOrder)
+                    }}
+                    className="flex-1 font-semibold"
+                  >
+                    <Plus className="size-4" />
+                    <span className="ml-1.5 hidden sm:inline">Add Order</span>
+                    <span className="ml-1.5 sm:hidden">Add</span>
+                  </Button>
+                )}
+
+                {NEXT_STATUS[selectedOrder.status as OrderStatus] && (
+                  <Button
+                    onClick={() =>
+                      handleStatusUpdate(selectedOrder, NEXT_STATUS[selectedOrder.status as OrderStatus]!)
+                    }
+                    disabled={pending === selectedOrder.id}
+                    className="flex-1 font-semibold shadow-sm"
+                  >
+                    {pending === selectedOrder.id ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      STATUS_ACTION[selectedOrder.status as OrderStatus]?.icon
+                    )}
+                    <span className="ml-2">
+                      {STATUS_ACTION[selectedOrder.status as OrderStatus]?.label}
+                    </span>
+                  </Button>
+                )}
               </div>
-
-              <p className="text-xs text-muted-foreground">
-                {formatDateTime(selectedOrder.created_at)}
-              </p>
-
-              {/* Waiter Information */}
-              {(selectedOrder.assisted_by_profile || selectedOrder.served_by_profile) && (
-                <div className="rounded-lg border bg-muted/20 p-3 space-y-2">
-                  <p className="text-xs font-semibold text-muted-foreground">Service Staff:</p>
-                  {selectedOrder.assisted_by_profile && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Users className="size-3.5 text-blue-600 dark:text-blue-400" />
-                      <span className="text-muted-foreground">Assisted by:</span>
-                      <span className="font-medium">
-                        {selectedOrder.assisted_by_profile.full_name || selectedOrder.assisted_by_profile.username}
-                      </span>
-                    </div>
-                  )}
-                  {selectedOrder.served_by_profile && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <UtensilsCrossed className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-                      <span className="text-muted-foreground">Served by:</span>
-                      <span className="font-medium">
-                        {selectedOrder.served_by_profile.full_name || selectedOrder.served_by_profile.username}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            </>
           )}
-
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setSelectedOrder(null)}>
-              Close
-            </Button>
-            {selectedOrder && NEXT_STATUS[selectedOrder.status as OrderStatus] && (
-              <Button
-                onClick={() =>
-                  handleStatusUpdate(selectedOrder, NEXT_STATUS[selectedOrder.status as OrderStatus]!)
-                }
-                disabled={pending === selectedOrder.id}
-              >
-                {pending === selectedOrder.id ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  STATUS_ACTION[selectedOrder.status as OrderStatus]?.icon
-                )}
-                <span className="ml-1.5">
-                  {STATUS_ACTION[selectedOrder.status as OrderStatus]?.label}
-                </span>
-              </Button>
-            )}
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -1197,12 +1558,12 @@ export function WaiterOrdersClient({
             </div>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="flex flex-row justify-between gap-3">
             <Button
               variant="outline"
               onClick={() => setShowLogoutDialog(false)}
               disabled={isLoggingOut}
-              className="flex-1 sm:flex-none"
+              className="h-9"
             >
               <X className="size-4 mr-2" />
               Cancel
@@ -1210,7 +1571,7 @@ export function WaiterOrdersClient({
             <Button
               onClick={confirmLogout}
               disabled={isLoggingOut}
-              className="flex-1 sm:flex-none bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800"
+              className="h-9 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800"
             >
               {isLoggingOut ? (
                 <>
