@@ -366,7 +366,7 @@ export function TablesManager({
 }
 
 // ============================================================
-// Table card
+// Table card - Enhanced UI/UX
 // ============================================================
 function TableCard({
   table,
@@ -391,83 +391,122 @@ function TableCard({
     setCurrentStatus(newStatus)
     onStatusChange(newStatus)
   }
+  
   return (
-    <Card className={`overflow-hidden transition-all hover:shadow-sm ${s.border}`}>
+    <Card className={`group overflow-hidden transition-all hover:shadow-md ${s.border} relative`}>
+      {/* Status color strip on top */}
+      <div className={`h-1 w-full ${s.dot.replace('size-1.5 rounded-full', '')}`} />
+      
       <CardContent className="p-4">
-        <div className="mb-3 flex items-start justify-between">
-          <div className="flex items-center gap-2">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted">
-              <Armchair className="size-4" />
+        {/* Header: Table Label + Actions */}
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {/* Icon with status color */}
+            <div className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${s.className} transition-transform group-hover:scale-105`}>
+              <Armchair className="size-5" />
             </div>
             <div>
-              <div className="text-base font-semibold leading-none">{table.label}</div>
-              <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                <Users className="size-3" />
-                {table.seats} {table.seats === 1 ? "seat" : "seats"}
-                {table.zone && <span>• {table.zone}</span>}
-              </div>
+              <h3 className="text-lg font-bold leading-none tracking-tight">{table.label}</h3>
+              <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                <Users className="size-3.5" />
+                {table.seats} {table.seats === 1 ? "Seat" : "Seats"}
+                {table.zone && (
+                  <>
+                    <span className="text-muted-foreground/50">•</span>
+                    <span className="text-xs">{table.zone}</span>
+                  </>
+                )}
+              </p>
             </div>
           </div>
+          
+          {/* Actions menu */}
           <DropdownMenu>
-            <DropdownMenuTrigger
-              render={<Button size="icon-xs" variant="ghost" />}
-            >
-              <MoreVertical className="size-3.5" />
-              <span className="sr-only">Menu</span>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon" variant="ghost" className="size-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                <MoreVertical className="size-4" />
+                <span className="sr-only">Menu</span>
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={onEdit}>
-                <Edit3 className="size-3.5" />
-                Edit
+                <Edit3 className="size-4 mr-2" />
+                Edit Details
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onRegenerateQR} disabled={pending}>
-                <QrCode className="size-3.5" />
+                <QrCode className="size-4 mr-2" />
                 Regenerate QR
               </DropdownMenuItem>
               <DropdownMenuItem variant="destructive" onClick={onDelete}>
-                <Trash2 className="size-3.5" />
-                Delete
+                <Trash2 className="size-4 mr-2" />
+                Delete Table
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
 
-        <Badge variant="outline" className={`mb-3 ${s.className}`}>
-          <span className={`mr-1.5 size-1.5 rounded-full ${s.dot}`} />
-          {s.label}
-        </Badge>
+        {/* Status Badge - Larger and more prominent */}
+        <div className="mb-3">
+          <Badge variant="outline" className={`${s.className} text-xs font-semibold px-3 py-1`}>
+            <span className={`mr-2 size-2 rounded-full ${s.dot} animate-pulse`} />
+            {s.label}
+          </Badge>
+        </div>
 
+        {/* Notes section - Better visibility */}
         {table.notes && (
-          <p className="mb-3 line-clamp-2 rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
-            {table.notes}
-          </p>
+          <div className="mb-3 rounded-lg border bg-muted/30 p-3">
+            <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+              💬 {table.notes}
+            </p>
+          </div>
         )}
 
-        <div className="space-y-2">
-          <div>
-            <Label className="text-xs text-muted-foreground">Status</Label>
-            <Select
-              value={currentStatus}
-              onValueChange={handleStatusChange}
-              disabled={pending}
-            >
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="available">Available</SelectItem>
-                <SelectItem value="occupied">Occupied</SelectItem>
-                <SelectItem value="reserved">Reserved</SelectItem>
-                <SelectItem value="unavailable">Unavailable</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Status selector - Enhanced design */}
+        <div className="space-y-2 pt-2 border-t">
+          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            Quick Status Change
+          </Label>
+          <Select
+            value={currentStatus}
+            onValueChange={handleStatusChange}
+            disabled={pending}
+          >
+            <SelectTrigger className="h-9 text-sm font-medium">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="available">
+                <span className="flex items-center gap-2">
+                  <span className="size-2 rounded-full bg-emerald-500" />
+                  Available
+                </span>
+              </SelectItem>
+              <SelectItem value="occupied">
+                <span className="flex items-center gap-2">
+                  <span className="size-2 rounded-full bg-red-500" />
+                  Occupied
+                </span>
+              </SelectItem>
+              <SelectItem value="reserved">
+                <span className="flex items-center gap-2">
+                  <span className="size-2 rounded-full bg-amber-500" />
+                  Reserved
+                </span>
+              </SelectItem>
+              <SelectItem value="unavailable">
+                <span className="flex items-center gap-2">
+                  <span className="size-2 rounded-full bg-gray-400" />
+                  Unavailable
+                </span>
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </CardContent>
     </Card>
   )
 }
-
 // ============================================================
 // Table form dialog
 // ============================================================
