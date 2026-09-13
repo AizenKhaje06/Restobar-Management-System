@@ -611,9 +611,9 @@ export function AssistModal({
   return (
     <>
       <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="w-full sm:w-[90vw] md:max-w-xl max-h-[95vh] p-0 gap-0 overflow-hidden flex flex-col">
-{/* Header — fixed */}
-          <div className="border-b px-4 sm:px-6 py-3 sm:py-4 shrink-0">
+        <DialogContent className="w-full sm:w-[90vw] md:max-w-xl max-h-[95vh] p-0 gap-0 overflow-hidden flex flex-col rounded-lg">
+          {/* Header — fixed */}
+          <div className="border-b bg-slate-50 dark:bg-slate-900/50 px-4 sm:px-6 py-3 sm:py-4 shrink-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-lg sm:text-xl font-bold truncate">
                 Order #{localOrder.order_number}
@@ -629,7 +629,7 @@ export function AssistModal({
                   {localOrder.tables.zone ? ` (${localOrder.tables.zone})` : ""}
                 </>
               ) : (
-                <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                <span className="text-slate-700 dark:text-slate-300 font-medium">
                   Take-Out
                 </span>
               )}
@@ -649,7 +649,7 @@ export function AssistModal({
                   setShowMenuModal(true) // Fallback to embedded modal
                 }
               }}
-              className="w-full h-11 sm:h-12 text-sm sm:text-base gap-2 bg-emerald-600 hover:bg-emerald-700"
+              className="w-full h-11 sm:h-12 text-sm sm:text-base gap-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-900"
             >
               <Plus className="size-5" />
               Add Menu Items
@@ -671,7 +671,7 @@ export function AssistModal({
                 localOrder.order_items?.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-lg bg-muted/30 border"
+                    className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
                   >
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm sm:text-base leading-tight truncate">
@@ -688,11 +688,11 @@ export function AssistModal({
                     </div>
 
                     {/* Quantity controls */}
-                    <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                    <div className="flex items-center gap-1 sm:gap-2 shrink-0 bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
                       <Button
                         size="icon"
-                        variant="outline"
-                        className="size-8 sm:size-9"
+                        variant="ghost"
+                        className="size-8 sm:size-9 hover:bg-slate-200 dark:hover:bg-slate-700"
                         onClick={() => handleUpdateQty(item.id, item.quantity - 1)}
                         disabled={updatingItem === item.id}
                         aria-label="Decrease quantity"
@@ -708,25 +708,26 @@ export function AssistModal({
                       </span>
                       <Button
                         size="icon"
-                        variant="outline"
-                        className="size-8 sm:size-9"
+                        variant="ghost"
+                        className="size-8 sm:size-9 hover:bg-slate-200 dark:hover:bg-slate-700"
                         onClick={() => handleUpdateQty(item.id, item.quantity + 1)}
                         disabled={updatingItem === item.id}
                         aria-label="Increase quantity"
                       >
                         <Plus className="size-3.5 sm:size-4" />
                       </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="size-8 sm:size-9 text-red-500 hover:text-red-600 hover:bg-red-50"
-                        onClick={() => handleDeleteItem(item.id)}
-                        disabled={updatingItem === item.id}
-                        aria-label="Delete item"
-                      >
-                        <Trash2 className="size-3.5 sm:size-4" />
-                      </Button>
                     </div>
+                    
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="size-8 sm:size-9 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                      onClick={() => handleDeleteItem(item.id)}
+                      disabled={updatingItem === item.id}
+                      aria-label="Delete item"
+                    >
+                      <Trash2 className="size-3.5 sm:size-4" />
+                    </Button>
                   </div>
                 ))
               )}
@@ -750,7 +751,7 @@ export function AssistModal({
           </div>
 
           {/* Footer Actions — fixed */}
-          <div className="flex items-center justify-between gap-2 border-t px-4 sm:px-6 py-3 sm:py-4 shrink-0 bg-muted/20">
+          <div className="flex items-center justify-between gap-2 border-t bg-slate-50 dark:bg-slate-900/50 px-4 sm:px-6 py-3 sm:py-4 shrink-0">
             <div className="text-xs sm:text-sm text-muted-foreground truncate min-w-0 flex-1">
               {localOrder.tables?.label ? (
                 <span>
@@ -766,7 +767,7 @@ export function AssistModal({
               <Button
                 onClick={() => setShowConfirmDialog(true)}
                 disabled={confirming || (localOrder.order_items ?? []).length === 0}
-                className="bg-emerald-600 hover:bg-emerald-700 h-9 sm:h-10 text-xs sm:text-sm"
+                className="bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-900 h-9 sm:h-10 text-xs sm:text-sm"
               >
                 {confirming ? (
                   <Loader2 className="size-4 animate-spin" />
@@ -790,13 +791,13 @@ export function AssistModal({
         addItem={addWaiterOrderItem}
       />
 
-      {/* Enterprise Confirmation Dialog */}
+      {/* Confirmation Dialog */}
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <div className="flex items-center gap-3">
-              <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
-                <ChefHat className="size-6 text-emerald-600 dark:text-emerald-400" />
+              <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-slate-900 dark:bg-slate-100">
+                <ChefHat className="size-6 text-white dark:text-slate-900" />
               </div>
               <div className="flex-1 min-w-0">
                 <DialogTitle className="text-lg font-semibold">
