@@ -582,7 +582,7 @@ export async function createManualOrder(input: {
       customer_name: input.customer_name,
       status: "preparing" as OrderStatus, // Go directly to kitchen
       payment_status: "unpaid",
-      order_type: input.order_type === "dine-in" ? "dine-in" : "take-out",
+      order_type: "initial", // Manual orders are always "initial" type
       assisted_by: profile.id,
       subtotal,
       tax,

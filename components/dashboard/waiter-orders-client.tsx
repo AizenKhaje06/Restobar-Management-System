@@ -756,15 +756,6 @@ export function WaiterOrdersClient({
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={handleOpenCreateOrderModal}
-              className="text-white hover:bg-white/10 gap-2"
-            >
-              <Plus className="size-4" />
-              <span className="hidden sm:inline">New Order</span>
-            </Button>
             <ThemeToggle className="text-white hover:bg-white/10" />
             <Button variant="ghost" size="sm" onClick={() => window.location.reload()} className="text-white hover:bg-white/10">
               <RefreshCw className="size-4" />
@@ -794,27 +785,13 @@ export function WaiterOrdersClient({
             />
           </div>
           
-          {/* Right Side Buttons - Reordered: Time, Date Range, Tables */}
-          <div className="flex flex-row gap-2 items-center w-full sm:w-auto sm:flex-1 sm:justify-end">
-            {/* Sort Dropdown (Time) - First */}
+          {/* Right Side Buttons - Time, Create Order, Tables */}
+          <div className="flex flex-row gap-2 items-center w-full sm:w-auto sm:flex-none sm:ml-auto">
+            {/* Sort Dropdown (Time) */}
             <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
-              <SelectTrigger size="sm" className={`!h-9 py-0 ${
-                dateStart || dateEnd 
-                  ? dateStart && dateEnd && dateStart.toDateString() !== dateEnd.toDateString()
-                    ? 'w-auto min-w-[48px] px-3 sm:w-[165px] sm:px-3' // Date range - icon only on mobile
-                    : 'w-[120px] sm:w-[165px]' // Single date - show text on mobile
-                  : 'w-[165px]'
-              }`}>
-                <ArrowUpDown className={`size-4 ${
-                  dateStart && dateEnd && dateStart.toDateString() !== dateEnd.toDateString() 
-                    ? 'sm:mr-2' 
-                    : 'mr-2'
-                }`} />
-                <span className={
-                  dateStart && dateEnd && dateStart.toDateString() !== dateEnd.toDateString()
-                    ? 'hidden sm:inline'
-                    : ''
-                }>
+              <SelectTrigger size="sm" className="!h-9 py-0 flex-1 sm:w-[130px]">
+                <ArrowUpDown className="size-4 mr-2" />
+                <span>
                   <SelectValue placeholder="Sort by..." />
                 </span>
               </SelectTrigger>
@@ -846,39 +823,26 @@ export function WaiterOrdersClient({
               </SelectContent>
             </Select>
             
-            {/* Date Range Picker - Second */}
-            <DateRangePicker
-              onRangeChange={(start, end) => {
-                setDateStart(start)
-                setDateEnd(end)
-              }}
-              initialStartDate={dateStart}
-              initialEndDate={dateEnd}
-            />
+            {/* Create Order Button - CENTER */}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleOpenCreateOrderModal}
+              className="h-9 flex-1 sm:w-[130px] gap-2 bg-amber-500 hover:bg-amber-600 text-white border-amber-500 hover:border-amber-600"
+            >
+              <Plus className="size-4" />
+              <span>New Order</span>
+            </Button>
             
-            {/* Tables Button - Last */}
+            {/* Tables Button */}
             <Button 
               variant="outline" 
               size="sm" 
               onClick={() => setShowTablesSheet(true)}
-              className={`h-9 ${
-                dateStart || dateEnd
-                  ? dateStart && dateEnd && dateStart.toDateString() !== dateEnd.toDateString()
-                    ? 'w-auto min-w-[48px] px-3 sm:px-4' // Date range - icon only on mobile
-                    : 'w-auto' // Single date - show text on mobile
-                  : ''
-              }`}
+              className="h-9 flex-1 sm:w-[130px] gap-2"
             >
-              <Grid3x3 className={`size-4 ${
-                dateStart && dateEnd && dateStart.toDateString() !== dateEnd.toDateString()
-                  ? 'sm:mr-2'
-                  : 'mr-2'
-              }`} />
-              <span className={
-                dateStart && dateEnd && dateStart.toDateString() !== dateEnd.toDateString()
-                  ? 'hidden sm:inline'
-                  : ''
-              }>Tables</span>
+              <Grid3x3 className="size-4 mr-2" />
+              <span>Tables</span>
             </Button>
           </div>
         </div>
@@ -1396,7 +1360,7 @@ export function WaiterOrdersClient({
                     <div className={`text-lg sm:text-xl font-bold transition-colors ${
                       tableStatusFilter === "available" ? "text-emerald-600 dark:text-emerald-500" : "text-emerald-600"
                     }`}>
-                      {tables.filter(t => t.status === 'available').length}
+                      {tables.filter(t => (!t.active_orders || t.active_orders.length === 0) && t.status !== 'reserved' && t.status !== 'unavailable').length}
                     </div>
                     <div className={`text-[9px] sm:text-[10px] font-medium mt-0.5 transition-colors leading-tight ${
                       tableStatusFilter === "available" ? "text-emerald-600 dark:text-emerald-500" : "text-muted-foreground"
@@ -1417,7 +1381,7 @@ export function WaiterOrdersClient({
                     <div className={`text-lg sm:text-xl font-bold transition-colors ${
                       tableStatusFilter === "occupied" ? "text-blue-600 dark:text-blue-500" : "text-blue-600"
                     }`}>
-                      {tables.filter(t => t.status === 'occupied').length}
+                      {tables.filter(t => t.active_orders && t.active_orders.length > 0).length}
                     </div>
                     <div className={`text-[9px] sm:text-[10px] font-medium mt-0.5 transition-colors leading-tight ${
                       tableStatusFilter === "occupied" ? "text-blue-600 dark:text-blue-500" : "text-muted-foreground"
