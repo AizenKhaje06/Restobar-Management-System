@@ -91,10 +91,9 @@ export function WaiterAddonOrderModal({
     return ["all", ...cats]
   }, [menuItems])
 
-  // Filter menu items
+  // Filter menu items - include unavailable items
   const filteredItems = useMemo(() => {
     return menuItems.filter((item) => {
-      if (!item.is_available) return false
       const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase())
       const matchesCategory = selectedCategory === "all" || item.category === selectedCategory
       return matchesSearch && matchesCategory
@@ -249,26 +248,44 @@ export function WaiterAddonOrderModal({
                 {filteredItems.map((item) => {
                   const cartItem = cart.find((c) => c.id === item.id)
                   const isInCart = !!cartItem
+                  const isUnavailable = !item.is_available
                   
                   return (
                     <button
                       key={item.id}
-                      onClick={() => addToCart(item)}
+                      onClick={() => !isUnavailable && addToCart(item)}
+                      disabled={isUnavailable}
                       className={cn(
                         "group relative rounded-2xl overflow-hidden text-left transition-all duration-300",
                         "bg-white dark:bg-gray-900 border-2",
-                        isInCart
+                        isUnavailable
+                          ? "opacity-60 cursor-not-allowed border-gray-200 dark:border-gray-800"
+                          : isInCart
                           ? "border-indigo-500 shadow-lg shadow-indigo-500/20 scale-[1.02]"
                           : "border-gray-200 dark:border-gray-800 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-md"
                       )}
                     >
+                      {/* Unavailable Badge - Top Left */}
+                      {isUnavailable && (
+                        <div className="absolute top-2 left-2 z-20 animate-in fade-in zoom-in-95 duration-200">
+                          <Badge className="bg-red-600 text-white border-0 shadow-lg px-2 py-0.5 text-xs font-bold">
+                            Unavailable
+                          </Badge>
+                        </div>
+                      )}
+
                       {/* Item Image/Placeholder with Gradient Overlay */}
-                      <div className="relative aspect-square bg-gradient-to-br from-gray-100 via-gray-50 to-white dark:from-gray-800 dark:via-gray-850 dark:to-gray-900 flex items-center justify-center overflow-hidden">
+                      <div className={cn(
+                        "relative aspect-square bg-gradient-to-br from-gray-100 via-gray-50 to-white dark:from-gray-800 dark:via-gray-850 dark:to-gray-900 flex items-center justify-center overflow-hidden",
+                        isUnavailable && "grayscale"
+                      )}>
                         <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />
                         <UtensilsCrossed className="size-16 text-gray-300 dark:text-gray-700 relative z-10" strokeWidth={1.5} />
                         
                         {/* Hover Shimmer Effect */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                        {!isUnavailable && (
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                        )}
                       </div>
 
                       {/* Item Info with Better Typography */}
@@ -280,7 +297,7 @@ export function WaiterAddonOrderModal({
                           <p className="text-lg font-extrabold text-indigo-600 dark:text-indigo-400">
                             {formatCurrency(item.price)}
                           </p>
-                          {isInCart && (
+                          {isInCart && !isUnavailable && (
                             <Badge className="bg-indigo-600 text-white border-0 shadow-md px-2 py-0.5">
                               <Plus className="size-3 mr-0.5" />
                               Add
@@ -290,7 +307,7 @@ export function WaiterAddonOrderModal({
                       </div>
 
                       {/* Quantity Badge - Floating with Animation */}
-                      {cartItem && (
+                      {cartItem && !isUnavailable && (
                         <div className="absolute top-2 right-2 animate-in zoom-in-95 duration-200">
                           <div className="relative">
                             <div className="absolute inset-0 bg-indigo-600 blur-md opacity-50" />
@@ -302,7 +319,7 @@ export function WaiterAddonOrderModal({
                       )}
 
                       {/* Selection Indicator */}
-                      {isInCart && (
+                      {isInCart && !isUnavailable && (
                         <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-600" />
                       )}
                     </button>

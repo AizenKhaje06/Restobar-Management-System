@@ -398,7 +398,6 @@ export async function getPosMenu() {
     supabase
       .from("menu_items")
       .select("*")
-      .eq("is_available", true)
       .order("name"),
   ])
 
@@ -423,7 +422,6 @@ export async function getPosData() {
     supabase
       .from("menu_items")
       .select("*")
-      .eq("is_available", true)
       .order("name"),
     supabase
       .from("tables")

@@ -339,35 +339,53 @@ export function PosDashboard({
             </div>
           ) : (
             <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-6">
-              {filteredMenu.map((item) => (
-                <Card
-                  key={item.id}
-                  className="group cursor-pointer overflow-hidden transition-all hover:shadow-lg hover:scale-[1.02] flex flex-col"
-                  onClick={() => addToCart(item)}
-                >
-                  {/* Image */}
-                  <div className="relative aspect-square overflow-hidden bg-muted">
-                    {item.image_url ? (
-                      <img
-                        src={item.image_url}
-                        alt={item.name}
-                        className="h-full w-full object-cover transition-transform group-hover:scale-110"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-muted to-muted/50">
-                        <UtensilsCrossed className="size-12 text-muted-foreground/30" />
+              {filteredMenu.map((item) => {
+                const isUnavailable = !item.is_available
+                return (
+                  <Card
+                    key={item.id}
+                    className={`group overflow-hidden transition-all flex flex-col ${
+                      isUnavailable 
+                        ? 'opacity-60 cursor-not-allowed' 
+                        : 'cursor-pointer hover:shadow-lg hover:scale-[1.02]'
+                    }`}
+                    onClick={() => !isUnavailable && addToCart(item)}
+                  >
+                    {/* Image */}
+                    <div className="relative aspect-square overflow-hidden bg-muted">
+                      {item.image_url ? (
+                        <img
+                          src={item.image_url}
+                          alt={item.name}
+                          className={`h-full w-full object-cover transition-transform ${
+                            isUnavailable ? 'grayscale' : 'group-hover:scale-110'
+                          }`}
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-muted to-muted/50">
+                          <UtensilsCrossed className="size-12 text-muted-foreground/30" />
+                        </div>
+                      )}
+                      
+                      {/* Unavailable Badge */}
+                      {isUnavailable && (
+                        <div className="absolute top-2 left-2">
+                          <Badge variant="destructive" className="text-[10px] px-1.5 py-0.5">
+                            Unavailable
+                          </Badge>
+                        </div>
+                      )}
+                      
+                      {/* Price Badge */}
+                      <div className="absolute bottom-2 right-2 rounded-full bg-background/95 px-2 py-0.5 shadow-lg backdrop-blur-sm">
+                        <span className="font-bold text-xs text-primary">{formatCurrency(item.price)}</span>
                       </div>
-                    )}
-                    {/* Price Badge */}
-                    <div className="absolute bottom-2 right-2 rounded-full bg-background/95 px-2 py-0.5 shadow-lg backdrop-blur-sm">
-                      <span className="font-bold text-xs text-primary">{formatCurrency(item.price)}</span>
                     </div>
-                  </div>
-                  
-                  {/* Content */}
-                  <CardContent className="p-2 pb-2.5 flex-1 flex flex-col">
-                    <h3 className="font-semibold text-xs leading-tight line-clamp-2 mb-1">{item.name}</h3>
-                    <div className="min-h-[2rem] flex items-start">
+                    
+                    {/* Content */}
+                    <CardContent className="p-2 pb-2.5 flex-1 flex flex-col">
+                      <h3 className="font-semibold text-xs leading-tight line-clamp-2 mb-1">{item.name}</h3>
+                      <div className="min-h-[2rem] flex items-start">
                       {item.description && (
                         <p className="text-[10px] text-muted-foreground leading-snug">
                           {item.description}
@@ -376,7 +394,8 @@ export function PosDashboard({
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              )
+              })}
             </div>
           )}
         </div>
