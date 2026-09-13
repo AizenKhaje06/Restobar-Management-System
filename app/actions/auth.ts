@@ -2,6 +2,8 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
+import { checkRateLimit, createRateLimitError, resetRateLimit, RATE_LIMITS } from "@/lib/rate-limit"
+import { headers } from "next/headers"
 
 export async function signOut() {
   const supabase = await createClient()
@@ -16,6 +18,22 @@ export async function signOut() {
  */
 export async function signInWithUsernameOrEmail(identifier: string, password: string) {
   const supabase = await createClient()
+  
+  // ✅ NEW: Rate limiting for login attempts
+  const headersList = await headers()
+  const clientIp = headersList.get('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1'
+  
+  const rateLimit = checkRateLimit({
+    identifier: clientIp,
+    action: 'login',
+    maxAttempts: RATE_LIMITS.LOGIN.maxAttempts,
+    windowMs: RATE_LIMITS.LOGIN.windowMs,
+  })
+
+  if (!rateLimit.allowed) {
+    console.log('[signIn] Rate limit hit for IP:', clientIp)
+    return { error: createRateLimitError(rateLimit.retryAfter!) }
+  }
   
   let email = identifier.trim()
   
@@ -58,6 +76,9 @@ export async function signInWithUsernameOrEmail(identifier: string, password: st
     console.log('[signIn] Login failed:', error.message)
     return { error: 'Invalid username or password' }
   }
+  
+  // ✅ NEW: Reset rate limit on successful login
+  resetRateLimit('login', clientIp)
   
   console.log('[signIn] Login successful:', data.user?.id)
   

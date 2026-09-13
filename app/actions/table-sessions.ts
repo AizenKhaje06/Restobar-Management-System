@@ -2,6 +2,8 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
+import { checkRateLimit, createRateLimitError, RATE_LIMITS } from "@/lib/rate-limit"
+import { headers } from "next/headers"
 
 // ============================================================
 // TABLE SESSION ACTIONS — customer-side (anonymous)
@@ -69,8 +71,10 @@ export async function createTableSession(input: {
   const supabase = await createClient()
 
   if (!input.customer_name.trim()) return { error: "Customer name is required" }
-  if (!/^\d{4}$/.test(input.access_code)) {
-    return { error: "Access code must be exactly 4 digits" }
+  
+  // ✅ NEW: 6-digit PIN validation
+  if (!/^\d{6}$/.test(input.access_code)) {
+    return { error: "Access code must be exactly 6 digits" }
   }
 
   // Check for existing active session
@@ -114,7 +118,23 @@ export async function joinTableSession(input: {
 }) {
   const supabase = await createClient()
 
-  if (!/^\d{4}$/.test(input.access_code)) {
+  // ✅ NEW: Rate limiting for PIN attempts
+  const headersList = await headers()
+  const clientIp = headersList.get('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1'
+  
+  const rateLimit = checkRateLimit({
+    identifier: `${clientIp}:${input.table_id}`,
+    action: 'pin_join',
+    maxAttempts: RATE_LIMITS.PIN_JOIN.maxAttempts,
+    windowMs: RATE_LIMITS.PIN_JOIN.windowMs,
+  })
+
+  if (!rateLimit.allowed) {
+    return { error: createRateLimitError(rateLimit.retryAfter!) }
+  }
+
+  // ✅ NEW: 6-digit PIN validation
+  if (!/^\d{6}$/.test(input.access_code)) {
     return { error: "Invalid access code format" }
   }
 
