@@ -244,85 +244,105 @@ export function WaiterAddonOrderModal({
           {/* Menu Items Grid */}
           <div className="flex-1 overflow-y-auto bg-gradient-to-br from-gray-50/50 to-white dark:from-gray-950 dark:to-gray-900">
             <div className="p-3 sm:p-4">
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {filteredItems.map((item) => {
                   const cartItem = cart.find((c) => c.id === item.id)
                   const isInCart = !!cartItem
                   const isUnavailable = !item.is_available
                   
                   return (
-                    <button
+                    <div
                       key={item.id}
-                      onClick={() => !isUnavailable && addToCart(item)}
-                      disabled={isUnavailable}
-                      className={cn(
-                        "group relative rounded-2xl overflow-hidden text-left transition-all duration-300",
-                        "bg-white dark:bg-gray-900 border-2",
-                        isUnavailable
-                          ? "opacity-60 cursor-not-allowed border-gray-200 dark:border-gray-800"
-                          : isInCart
-                          ? "border-indigo-500 shadow-lg shadow-indigo-500/20 scale-[1.02]"
-                          : "border-gray-200 dark:border-gray-800 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-md"
-                      )}
+                      className={`group relative overflow-hidden rounded-xl border bg-card transition-all flex flex-row min-h-[140px] ${
+                        isUnavailable ? 'opacity-60' : 'hover:shadow-md hover:border-primary/30'
+                      }`}
                     >
-                      {/* Unavailable Badge - Top Left */}
-                      {isUnavailable && (
-                        <div className="absolute top-2 left-2 z-20 animate-in fade-in zoom-in-95 duration-200">
-                          <Badge className="bg-red-600 text-white border-0 shadow-lg px-2 py-0.5 text-xs font-bold">
-                            Unavailable
-                          </Badge>
-                        </div>
-                      )}
-
-                      {/* Item Image/Placeholder with Gradient Overlay */}
-                      <div className={cn(
-                        "relative aspect-square bg-gradient-to-br from-gray-100 via-gray-50 to-white dark:from-gray-800 dark:via-gray-850 dark:to-gray-900 flex items-center justify-center overflow-hidden",
-                        isUnavailable && "grayscale"
-                      )}>
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />
-                        <UtensilsCrossed className="size-16 text-gray-300 dark:text-gray-700 relative z-10" strokeWidth={1.5} />
-                        
-                        {/* Hover Shimmer Effect */}
-                        {!isUnavailable && (
-                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                        )}
-                      </div>
-
-                      {/* Item Info with Better Typography */}
-                      <div className="p-3">
-                        <h3 className="font-bold text-sm leading-tight line-clamp-2 mb-2 text-foreground">
-                          {item.name}
-                        </h3>
-                        <div className="flex items-center justify-between">
-                          <p className="text-lg font-extrabold text-indigo-600 dark:text-indigo-400">
-                            {formatCurrency(item.price)}
-                          </p>
-                          {isInCart && !isUnavailable && (
-                            <Badge className="bg-indigo-600 text-white border-0 shadow-md px-2 py-0.5">
-                              <Plus className="size-3 mr-0.5" />
-                              Add
-                            </Badge>
+                      {/* Left — image */}
+                      {item.image_url && (
+                        <div className="w-36 sm:w-44 shrink-0 overflow-hidden bg-muted relative">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={item.image_url}
+                            alt={item.name}
+                            className={`h-full w-full object-cover transition-transform duration-300 ${
+                              isUnavailable ? 'grayscale' : 'group-hover:scale-105'
+                            }`}
+                          />
+                          {isUnavailable && (
+                            <div className="absolute top-2 left-2">
+                              <Badge variant="destructive" className="text-[10px] px-1.5 py-0.5">
+                                Unavailable
+                              </Badge>
+                            </div>
+                          )}
+                          {/* Quantity Badge - when in cart */}
+                          {cartItem && !isUnavailable && (
+                            <div className="absolute top-2 right-2 animate-in zoom-in-95 duration-200">
+                              <div className="relative">
+                                <div className="absolute inset-0 bg-indigo-600 blur-md opacity-50" />
+                                <div className="relative bg-gradient-to-br from-indigo-600 to-blue-600 text-white rounded-xl size-8 flex items-center justify-center font-bold text-sm shadow-xl">
+                                  {cartItem.quantity}
+                                </div>
+                              </div>
+                            </div>
                           )}
                         </div>
-                      </div>
-
-                      {/* Quantity Badge - Floating with Animation */}
-                      {cartItem && !isUnavailable && (
-                        <div className="absolute top-2 right-2 animate-in zoom-in-95 duration-200">
-                          <div className="relative">
-                            <div className="absolute inset-0 bg-indigo-600 blur-md opacity-50" />
-                            <div className="relative bg-gradient-to-br from-indigo-600 to-blue-600 text-white rounded-xl size-8 flex items-center justify-center font-bold text-sm shadow-xl">
-                              {cartItem.quantity}
+                      )}
+                      {/* No image placeholder */}
+                      {!item.image_url && (
+                        <div className="w-20 sm:w-28 shrink-0 flex items-center justify-center bg-muted relative">
+                          <UtensilsCrossed className="size-8 text-muted-foreground/40" />
+                          {isUnavailable && (
+                            <div className="absolute top-2 left-2">
+                              <Badge variant="destructive" className="text-[10px] px-1.5 py-0.5">
+                                Unavailable
+                              </Badge>
                             </div>
-                          </div>
+                          )}
+                          {/* Quantity Badge - when in cart */}
+                          {cartItem && !isUnavailable && (
+                            <div className="absolute top-2 right-2 animate-in zoom-in-95 duration-200">
+                              <div className="relative">
+                                <div className="absolute inset-0 bg-indigo-600 blur-md opacity-50" />
+                                <div className="relative bg-gradient-to-br from-indigo-600 to-blue-600 text-white rounded-xl size-8 flex items-center justify-center font-bold text-sm shadow-xl">
+                                  {cartItem.quantity}
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
 
-                      {/* Selection Indicator */}
-                      {isInCart && !isUnavailable && (
-                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-600" />
-                      )}
-                    </button>
+                      {/* Right — text content */}
+                      <div className="p-3 sm:p-4 flex flex-col justify-between flex-1 min-w-0">
+                        <div>
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <h3 className="font-semibold text-sm sm:text-base leading-tight flex-1 min-w-0 truncate">
+                              {item.name}
+                            </h3>
+                            <p className="text-base sm:text-lg font-bold text-primary whitespace-nowrap tabular-nums shrink-0">
+                              {formatCurrency(item.price)}
+                            </p>
+                          </div>
+                          {item.description && (
+                            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                              {item.description}
+                            </p>
+                          )}
+                        </div>
+                        <div className="mt-2">
+                          <Button
+                            size="sm"
+                            className="h-8 w-full sm:w-auto font-medium text-xs"
+                            onClick={() => !isUnavailable && addToCart(item)}
+                            disabled={isUnavailable}
+                          >
+                            <Plus className="mr-1 size-3.5" />
+                            {isUnavailable ? "Unavailable" : isInCart ? "Add More" : "Add"}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
                   )
                 })}
               </div>
