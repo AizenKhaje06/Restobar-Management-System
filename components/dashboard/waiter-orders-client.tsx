@@ -1738,14 +1738,14 @@ function WaiterOrderCard({
         </div>
       )}
 
-      <CardContent className="p-4">
+      <CardContent className={priority === "urgent" || priority === "high" || slaStatus === "critical" || slaStatus === "warning" ? "p-4" : "p-3.5"}>
         {/* Header Section - Table & Time */}
-        <div className="flex items-start justify-between gap-3 mb-3">
+        <div className={`flex items-start justify-between gap-2 ${priority === "urgent" || priority === "high" || slaStatus === "critical" || slaStatus === "warning" ? "mb-3" : "mb-1"}`}>
           <div className="flex-1 min-w-0">
             {/* Table Number / Take-Out */}
             {order.tables ? (
               <div className="flex items-baseline gap-2">
-                <h2 className="text-3xl font-black tracking-tight text-foreground">
+                <h2 className={`font-black tracking-tight text-foreground ${priority === "urgent" || priority === "high" || slaStatus === "critical" || slaStatus === "warning" ? "text-3xl" : "text-2xl"}`}>
                   {order.tables.label}
                 </h2>
                 {order.tables.zone && (
@@ -1755,26 +1755,24 @@ function WaiterOrderCard({
                 )}
               </div>
             ) : (
-              <h2 className="text-3xl font-black tracking-tight bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent">
+              <h2 className={`font-black tracking-tight bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent ${priority === "urgent" || priority === "high" || slaStatus === "critical" || slaStatus === "warning" ? "text-3xl" : "text-2xl"}`}>
                 Take-Out
               </h2>
             )}
-            {/* Customer Name */}
-            <p className="text-sm font-semibold text-foreground/80 mt-1 truncate">
-              {order.customer_name || "Walk-in Guest"}
-            </p>
           </div>
 
           {/* Time Badge - Prominent */}
           <div className={`flex flex-col items-end gap-1.5 shrink-0`}>
-            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm ${
+            <div className={`flex items-center gap-1.5 rounded-lg text-sm font-bold shadow-sm ${
+              priority === "urgent" || priority === "high" || slaStatus === "critical" || slaStatus === "warning" ? "px-3 py-1.5" : "px-2.5 py-1"
+            } ${
               slaStatus === "critical" 
                 ? "bg-red-600 text-white ring-2 ring-red-400" 
                 : slaStatus === "warning"
                 ? "bg-amber-500 text-white ring-2 ring-amber-300"
                 : "bg-muted/80 text-foreground"
             }`}>
-              <Timer className="size-4" />
+              <Timer className={priority === "urgent" || priority === "high" || slaStatus === "critical" || slaStatus === "warning" ? "size-4" : "size-3.5"} />
               <span className="tabular-nums">
                 {age >= 60 ? `${Math.floor(age / 60)}h ${age % 60}m` : `${age}m`}
               </span>
@@ -1783,7 +1781,7 @@ function WaiterOrderCard({
         </div>
 
         {/* Status Row - Compact & Clean */}
-        <div className="flex items-center gap-2 mb-3 flex-wrap">
+        <div className={`flex items-center gap-2 flex-wrap ${priority === "urgent" || priority === "high" || slaStatus === "critical" || slaStatus === "warning" ? "mb-3" : "mb-1"}`}>
           {/* Status Badge */}
           {!isPaid && (
             <Badge className={`${config?.color ?? "bg-gray-100"} px-2.5 py-1 text-xs font-semibold`}>
@@ -1812,9 +1810,13 @@ function WaiterOrderCard({
 
         {/* Payment Status - Green Banner */}
         {isPaid && (
-          <div className="mb-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-950/30 dark:to-emerald-900/30 border border-emerald-200 dark:border-emerald-800">
-            <CreditCard className="size-4 text-emerald-600 dark:text-emerald-400" />
-            <span className="text-sm font-bold text-emerald-700 dark:text-emerald-300">
+          <div className={`flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-950/30 dark:to-emerald-900/30 border border-emerald-200 dark:border-emerald-800 ${
+            priority === "urgent" || priority === "high" || slaStatus === "critical" || slaStatus === "warning" ? "mb-3 px-3 py-2" : "mb-1 px-2.5 py-1.5"
+          }`}>
+            <CreditCard className={priority === "urgent" || priority === "high" || slaStatus === "critical" || slaStatus === "warning" ? "size-4" : "size-3.5"} />
+            <span className={`font-bold text-emerald-700 dark:text-emerald-300 ${
+              priority === "urgent" || priority === "high" || slaStatus === "critical" || slaStatus === "warning" ? "text-sm" : "text-xs"
+            }`}>
               Paid via {order.payment_method === "cash" 
                 ? "Cash"
                 : order.payment_method === "card"
@@ -1830,8 +1832,12 @@ function WaiterOrderCard({
 
         {/* Special Requests */}
         {order.special_requests && (
-          <div className="mb-3 flex items-start gap-2 px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
-            <AlertCircle className="size-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+          <div className={`flex items-start gap-2 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 ${
+            priority === "urgent" || priority === "high" || slaStatus === "critical" || slaStatus === "warning" ? "mb-3 px-3 py-2" : "mb-1 px-2.5 py-1.5"
+          }`}>
+            <AlertCircle className={`text-blue-600 dark:text-blue-400 mt-0.5 shrink-0 ${
+              priority === "urgent" || priority === "high" || slaStatus === "critical" || slaStatus === "warning" ? "size-4" : "size-3.5"
+            }`} />
             <div className="flex-1 min-w-0">
               <p className="text-xs font-bold text-blue-700 dark:text-blue-300 mb-0.5">
                 Special Request
@@ -1844,7 +1850,7 @@ function WaiterOrderCard({
         )}
 
         {/* Action Buttons */}
-        <div className="flex gap-2 mt-4">
+        <div className={`flex gap-2 ${priority === "urgent" || priority === "high" || slaStatus === "critical" || slaStatus === "warning" ? "mt-4" : "mt-2"}`}>
           {isPending && !isClaimedByMe ? (
             <Button
               onClick={(e) => {
