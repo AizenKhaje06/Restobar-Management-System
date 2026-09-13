@@ -1,19 +1,8 @@
 name = "restobar-management-system"
-main = ".vercel/output/static/_worker.js"
 compatibility_date = "2026-09-13"
-workers_dev = false
-preview_urls = false
+pages_build_output_dir = ".vercel/output/static"
 
-[observability]
-enabled = false
-
-[observability.logs]
-enabled = false
-
-# Environment variables for Cloudflare
+# Environment variables for Cloudflare Pages
 [vars]
 NEXT_PUBLIC_SUPABASE_URL = "https://szfvjfvukicjmuxogglt.supabase.co"
 NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_F0YFhnyT82KlMNny7t3hUg_i89JPklS"
-
-# Note: Service bindings have been removed as they are not needed for this Next.js app
-# If you need service bindings in the future, add them here with the correct worker name
