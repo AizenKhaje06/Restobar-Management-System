@@ -495,7 +495,7 @@ function TableFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{table ? "Edit Table" : "New Table"}</DialogTitle>
           <DialogDescription>
