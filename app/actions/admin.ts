@@ -268,9 +268,24 @@ export async function createTableAction(formData: FormData) {
 
   if (!label || isNaN(seats)) return { error: "Label and seats are required" }
 
+  // Check if label already exists
+  const { data: existing } = await supabase
+    .from("tables")
+    .select("label")
+    .eq("label", label)
+    .single()
+  
+  if (existing) {
+    return { error: `Table "${label}" already exists. Please use a different label.` }
+  }
+
+  // Generate unique 4-digit table code
+  const { data: codeData } = await supabase.rpc("generate_table_code")
+  const table_code = (codeData as string) ?? Math.floor(1000 + Math.random() * 9000).toString()
+
   const { data, error } = await supabase
     .from("tables")
-    .insert({ label, seats, zone, notes, status: "available" })
+    .insert({ label, table_code, seats, zone, notes, status: "available" })
     .select()
     .single()
   if (error) return { error: error.message }

@@ -38,6 +38,10 @@ export function QRCodesManager({ tables }: { tables: TableWithWaiter[] }) {
   const [search, setSearch] = useState("")
   const [origin, setOrigin] = useState("")
   const [showRegenerateDialog, setShowRegenerateDialog] = useState(false)
+  const [regeneratingTable, setRegeneratingTable] = useState<string | null>(null)
+  const [regeneratingAll, setRegeneratingAll] = useState(false)
+  const [showToast, setShowToast] = useState(false)
+  const [toastMessage, setToastMessage] = useState("")
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -46,11 +50,32 @@ export function QRCodesManager({ tables }: { tables: TableWithWaiter[] }) {
   }, [])
 
   const filtered = useMemo(() => {
-    if (!search) return tables
-    const q = search.toLowerCase()
-    return tables.filter(
-      (t) => t.label.toLowerCase().includes(q) || (t.zone ?? "").toLowerCase().includes(q),
-    )
+    let result = tables
+    
+    if (search) {
+      const q = search.toLowerCase()
+      result = result.filter(
+        (t) => t.label.toLowerCase().includes(q) || (t.zone ?? "").toLowerCase().includes(q),
+      )
+    }
+    
+    // Sort alphabetically by label (chronological order)
+    return result.sort((a, b) => {
+      const labelA = a.label.toLowerCase()
+      const labelB = b.label.toLowerCase()
+      
+      // Extract numbers from labels if they exist (e.g., "T-1", "A-10")
+      const numA = parseInt(labelA.match(/\d+/)?.[0] || '0')
+      const numB = parseInt(labelB.match(/\d+/)?.[0] || '0')
+      
+      // If both have numbers, sort by number
+      if (numA && numB && labelA.replace(/\d+/, '') === labelB.replace(/\d+/, '')) {
+        return numA - numB
+      }
+      
+      // Otherwise, sort alphabetically
+      return labelA.localeCompare(labelB)
+    })
   }, [tables, search])
 
   const onPrint = () => {
@@ -63,11 +88,16 @@ export function QRCodesManager({ tables }: { tables: TableWithWaiter[] }) {
 
   const confirmRegenerateAll = () => {
     setShowRegenerateDialog(false)
+    setRegeneratingAll(true)
     startTransition(async () => {
       for (const t of tables) {
         await generateTableQRAction(t.id)
       }
       router.refresh()
+      setRegeneratingAll(false)
+      setToastMessage(`Successfully regenerated ${tables.length} QR codes!`)
+      setShowToast(true)
+      setTimeout(() => setShowToast(false), 5000)
     })
   }
 
@@ -124,14 +154,48 @@ export function QRCodesManager({ tables }: { tables: TableWithWaiter[] }) {
               table={table}
               origin={origin}
               onRegenerate={() => {
+                setRegeneratingTable(table.id)
                 startTransition(async () => {
                   await generateTableQRAction(table.id)
                   router.refresh()
+                  setRegeneratingTable(null)
+                  setToastMessage(`QR code for ${table.label} regenerated successfully!`)
+                  setShowToast(true)
+                  setTimeout(() => setShowToast(false), 4000)
                 })
               }}
-              pending={pending}
+              pending={regeneratingTable === table.id || regeneratingAll}
             />
           ))}
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {showToast && (
+        <div className="fixed top-20 right-6 z-[100] min-w-[320px] max-w-md rounded-lg border border-emerald-500/50 bg-white p-4 shadow-xl dark:bg-gray-950 dark:border-emerald-500/30 animate-in fade-in slide-in-from-right-4 duration-300">
+          <div className="flex items-start gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/50">
+              <svg className="h-5 w-5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-100">
+                Success!
+              </p>
+              <p className="mt-1 text-sm text-emerald-700 dark:text-emerald-300">
+                {toastMessage}
+              </p>
+            </div>
+            <button
+              onClick={() => setShowToast(false)}
+              className="shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
       )}
 
@@ -320,8 +384,16 @@ function QRCard({
         </div>
 
         {/* QR Code Section */}
-        <div className="mx-auto flex size-52 items-center justify-center rounded-xl border-4 border-gray-200 bg-white p-3 shadow-sm print:border-4 print:size-56">
-          {qrUrl ? (
+        <div className="mx-auto flex size-52 items-center justify-center rounded-xl border-4 border-gray-200 bg-white p-3 shadow-sm print:border-4 print:size-56 relative">
+          {pending ? (
+            <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-center">
+              <Loader2 className="size-12 animate-spin text-primary" />
+              <div>
+                <p className="text-sm font-semibold text-foreground">Generating New QR...</p>
+                <p className="text-xs text-muted-foreground mt-1">Please wait a moment</p>
+              </div>
+            </div>
+          ) : qrUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={qrUrl} alt={`QR for ${table.label}`} className="h-full w-full" />
           ) : (

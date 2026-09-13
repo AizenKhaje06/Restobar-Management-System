@@ -128,7 +128,7 @@ export function WaiterOrdersClient({
   const supabase = createClient()
   const [orders, setOrders] = useState(initialOrders)
   const [search, setSearch] = useState("")
-  const [tab, setTab] = useState<OrderStatus | "all" | "addon" | "urgent">("all")
+  const [tab, setTab] = useState<OrderStatus | "all" | "complete" | "urgent">("all")
   const [dateStart, setDateStart] = useState<Date | null>(null)
   const [dateEnd, setDateEnd] = useState<Date | null>(null)
   const [selectedOrder, setSelectedOrder] = useState<WaiterOrder | null>(null)
@@ -456,9 +456,9 @@ export function WaiterOrdersClient({
         return false
       }
       
-      // Add-On filter
-      if (tab === "addon") {
-        if (o.order_type !== "additional") return false
+      // COMPLETE filter - show all served orders (ready for payment)
+      if (tab === "complete") {
+        if (o.status !== "served") return false
       } else if (tab === "urgent") {
         // Urgent filter - show orders with urgent priority
         if (getOrderPriority(o) !== "urgent") return false
@@ -500,14 +500,14 @@ export function WaiterOrdersClient({
 
     // Apply sorting
     result.sort((a, b) => {
-      // ALWAYS put paid/completed orders at the bottom
-      const aIsPaid = a.payment_status === "paid" || a.status === "completed"
-      const bIsPaid = b.payment_status === "paid" || b.status === "completed"
+      // PRIORITY 1: ALWAYS put paid/completed/served orders at the bottom (in ACTIVE tab)
+      const aIsBottom = a.payment_status === "paid" || a.status === "completed" || a.status === "served"
+      const bIsBottom = b.payment_status === "paid" || b.status === "completed" || b.status === "served"
       
-      if (aIsPaid && !bIsPaid) return 1 // a goes down
-      if (!aIsPaid && bIsPaid) return -1 // b goes down
+      if (aIsBottom && !bIsBottom) return 1 // a goes down
+      if (!aIsBottom && bIsBottom) return -1 // b goes down
       
-      // Both paid or both unpaid, apply normal sorting
+      // If both are at bottom (both served/paid), or both are active, apply secondary sorting
       switch (sortBy) {
         case "priority": {
           const priorityOrder = { urgent: 3, high: 2, normal: 1 }
@@ -564,14 +564,23 @@ export function WaiterOrdersClient({
   const counts = dateFilteredOrders.reduce(
     (acc, o) => {
       acc[o.status] = (acc[o.status] ?? 0) + 1
-      // Count add-on orders (exclude served ones since they're hidden from list)
-      if (o.order_type === "additional" && o.status !== "served") {
-        acc["addon"] = (acc["addon"] ?? 0) + 1
-      }
       return acc
     },
     {} as Record<string, number>
   )
+
+  // Count unique TABLES with served orders that will actually be displayed
+  const completeCount = useMemo(() => {
+    return dateFilteredOrders.filter(o => {
+      // Count all served orders EXCEPT served add-ons (they're hidden from list)
+      if (o.status === "served") {
+        // Exclude served add-on orders (they're combined in the detail view)
+        if (o.order_type === "additional") return false
+        return true
+      }
+      return false
+    }).length
+  }, [dateFilteredOrders])
 
   // Count urgent orders (based on priority) - filtered by date
   const urgentCount = useMemo(() => {
@@ -847,20 +856,20 @@ export function WaiterOrdersClient({
           <div className="mt-1 text-2xl font-bold">{urgentCount}</div>
         </button>
 
-        {/* ADD-ON - Show additional orders */}
+        {/* COMPLETE - Show all served orders ready for payment */}
         <button
-          onClick={() => setTab("addon")}
+          onClick={() => setTab("complete")}
           className={`rounded-lg border p-3 text-left transition-all ${
-            tab === "addon"
-              ? "border-indigo-600 bg-indigo-500/20 text-indigo-900 dark:text-indigo-200 ring-2 ring-indigo-500/30"
+            tab === "complete"
+              ? "border-green-600 bg-green-500/20 text-green-900 dark:text-green-200 ring-2 ring-green-500/30"
               : "bg-card hover:bg-muted/40"
           }`}
         >
           <div className="flex items-center gap-2">
-            <Plus className="size-4 text-indigo-500" />
-            <div className="text-xs text-muted-foreground uppercase font-semibold">ADD-ON</div>
+            <CheckCircle2 className="size-4 text-green-500" />
+            <div className="text-xs text-muted-foreground uppercase font-semibold">COMPLETE</div>
           </div>
-          <div className="mt-1 text-2xl font-bold">{counts["addon"] ?? 0}</div>
+          <div className="mt-1 text-2xl font-bold">{completeCount}</div>
         </button>
       </div>
 
@@ -1660,7 +1669,9 @@ function WaiterOrderCard({
   const priorityStyle = priorityConfig[priority]
 
   return (
-    <Card className={`group relative overflow-hidden transition-all duration-200 hover:shadow-lg ${
+    <Card 
+      onClick={onView}
+      className={`group relative overflow-hidden transition-all duration-200 hover:shadow-lg cursor-pointer ${
       slaStatus === "critical" 
         ? "ring-2 ring-red-500 shadow-red-100 dark:shadow-red-950" 
         : slaStatus === "warning"
@@ -1700,12 +1711,12 @@ function WaiterOrderCard({
 
       <CardContent className="p-4">
         {/* Header Section - Table & Time */}
-        <div className="flex items-start justify-between gap-3 mb-3">
+        <div className={`flex items-start justify-between gap-2 ${priority === "urgent" || priority === "high" || slaStatus === "critical" || slaStatus === "warning" ? "mb-3" : "mb-1"}`}>
           <div className="flex-1 min-w-0">
             {/* Table Number / Take-Out */}
             {order.tables ? (
               <div className="flex items-baseline gap-2">
-                <h2 className="text-3xl font-black tracking-tight text-foreground">
+                <h2 className={`font-black tracking-tight text-foreground ${priority === "urgent" || priority === "high" || slaStatus === "critical" || slaStatus === "warning" ? "text-3xl" : "text-[28px]"}`}>
                   {order.tables.label}
                 </h2>
                 {order.tables.zone && (
@@ -1715,26 +1726,24 @@ function WaiterOrderCard({
                 )}
               </div>
             ) : (
-              <h2 className="text-3xl font-black tracking-tight bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent">
+              <h2 className={`font-black tracking-tight bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent ${priority === "urgent" || priority === "high" || slaStatus === "critical" || slaStatus === "warning" ? "text-3xl" : "text-[28px]"}`}>
                 Take-Out
               </h2>
             )}
-            {/* Customer Name */}
-            <p className="text-sm font-semibold text-foreground/80 mt-1 truncate">
-              {order.customer_name || "Walk-in Guest"}
-            </p>
           </div>
 
           {/* Time Badge - Prominent */}
           <div className={`flex flex-col items-end gap-1.5 shrink-0`}>
-            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm ${
+            <div className={`flex items-center gap-1.5 rounded-lg text-sm font-bold shadow-sm ${
+              priority === "urgent" || priority === "high" || slaStatus === "critical" || slaStatus === "warning" ? "px-3 py-1.5" : "px-2.5 py-1"
+            } ${
               slaStatus === "critical" 
                 ? "bg-red-600 text-white ring-2 ring-red-400" 
                 : slaStatus === "warning"
                 ? "bg-amber-500 text-white ring-2 ring-amber-300"
                 : "bg-muted/80 text-foreground"
             }`}>
-              <Timer className="size-4" />
+              <Timer className={priority === "urgent" || priority === "high" || slaStatus === "critical" || slaStatus === "warning" ? "size-4" : "size-3.5"} />
               <span className="tabular-nums">
                 {age >= 60 ? `${Math.floor(age / 60)}h ${age % 60}m` : `${age}m`}
               </span>
@@ -1743,7 +1752,7 @@ function WaiterOrderCard({
         </div>
 
         {/* Status Row - Compact & Clean */}
-        <div className="flex items-center gap-2 mb-3 flex-wrap">
+        <div className={`flex items-center gap-2 flex-wrap ${priority === "urgent" || priority === "high" || slaStatus === "critical" || slaStatus === "warning" ? "mb-3" : "mb-1"}`}>
           {/* Status Badge */}
           {!isPaid && (
             <Badge className={`${config?.color ?? "bg-gray-100"} px-2.5 py-1 text-xs font-semibold`}>
@@ -1752,17 +1761,8 @@ function WaiterOrderCard({
             </Badge>
           )}
           
-          {/* Priority Badge */}
-          {priority !== "normal" && (
-            <Badge className={`px-2.5 py-1 text-xs font-semibold ${
-              priority === "urgent" 
-                ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
-                : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
-            }`}>
-              {priorityStyle.icon}
-              <span className="ml-1">{priorityStyle.label}</span>
-            </Badge>
-          )}
+          {/* Priority Badge - Hidden (already shown in banner) */}
+          {/* Removed: Redundant with HIGH PRIORITY banner at top */}
           
           {/* Add-On Badge */}
           {order.order_type === "additional" && (
@@ -1781,9 +1781,13 @@ function WaiterOrderCard({
 
         {/* Payment Status - Green Banner */}
         {isPaid && (
-          <div className="mb-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-950/30 dark:to-emerald-900/30 border border-emerald-200 dark:border-emerald-800">
-            <CreditCard className="size-4 text-emerald-600 dark:text-emerald-400" />
-            <span className="text-sm font-bold text-emerald-700 dark:text-emerald-300">
+          <div className={`flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-950/30 dark:to-emerald-900/30 border border-emerald-200 dark:border-emerald-800 ${
+            priority === "urgent" || priority === "high" || slaStatus === "critical" || slaStatus === "warning" ? "mb-3 px-3 py-2" : "mb-1 px-2.5 py-1.5"
+          }`}>
+            <CreditCard className={priority === "urgent" || priority === "high" || slaStatus === "critical" || slaStatus === "warning" ? "size-4" : "size-3.5"} />
+            <span className={`font-bold text-emerald-700 dark:text-emerald-300 ${
+              priority === "urgent" || priority === "high" || slaStatus === "critical" || slaStatus === "warning" ? "text-sm" : "text-xs"
+            }`}>
               Paid via {order.payment_method === "cash" 
                 ? "Cash"
                 : order.payment_method === "card"
@@ -1799,8 +1803,12 @@ function WaiterOrderCard({
 
         {/* Special Requests */}
         {order.special_requests && (
-          <div className="mb-3 flex items-start gap-2 px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
-            <AlertCircle className="size-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+          <div className={`flex items-start gap-2 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 ${
+            priority === "urgent" || priority === "high" || slaStatus === "critical" || slaStatus === "warning" ? "mb-3 px-3 py-2" : "mb-1 px-2.5 py-1.5"
+          }`}>
+            <AlertCircle className={`text-blue-600 dark:text-blue-400 mt-0.5 shrink-0 ${
+              priority === "urgent" || priority === "high" || slaStatus === "critical" || slaStatus === "warning" ? "size-4" : "size-3.5"
+            }`} />
             <div className="flex-1 min-w-0">
               <p className="text-xs font-bold text-blue-700 dark:text-blue-300 mb-0.5">
                 Special Request
@@ -1813,7 +1821,7 @@ function WaiterOrderCard({
         )}
 
         {/* Action Buttons */}
-        <div className="flex gap-2 mt-4">
+        <div className={`flex gap-2 ${priority === "urgent" || priority === "high" || slaStatus === "critical" || slaStatus === "warning" ? "mt-4" : "mt-2"}`}>
           {isPending && !isClaimedByMe ? (
             <Button
               onClick={(e) => {
@@ -1837,17 +1845,6 @@ function WaiterOrderCard({
             </Button>
           ) : (
             <>
-              <Button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onView()
-                }}
-                variant="outline"
-                className="flex-1 h-10 text-sm font-semibold shadow-sm hover:bg-accent"
-              >
-                <Eye className="size-4 mr-2" />
-                View Details
-              </Button>
               {next && !isPaid && (
                 <Button
                   onClick={(e) => {
