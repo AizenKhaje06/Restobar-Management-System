@@ -345,7 +345,7 @@ function QRCard({
               ? 'text-emerald-600 dark:text-emerald-400' 
               : 'text-gray-400 dark:text-gray-600'
           }`}>
-            {accessCode || "----"}
+            {accessCode || "------"}
           </p>
           {accessCode && (
             <p className="mt-1 text-[0.6rem] font-medium text-emerald-600 dark:text-emerald-400">

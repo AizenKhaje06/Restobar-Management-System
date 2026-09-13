@@ -4,6 +4,8 @@ import { useMemo, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import {
   Edit3,
+  Eye,
+  EyeOff,
   Filter,
   Mail,
   MoreVertical,
@@ -500,6 +502,8 @@ function AddStaffDialog({
   const [selectedRole, setSelectedRole] = useState<UserRole>("waiter")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -619,31 +623,61 @@ function AddStaffDialog({
                   <Label htmlFor="add_password">
                     Password <span className="text-destructive">*</span>
                   </Label>
-                  <Input
-                    id="add_password"
-                    type="password"
-                    placeholder="••••••••"
-                    required
-                    minLength={8}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    autoComplete="new-password"
-                  />
+                  <div className="relative">
+                    <Input
+                      id="add_password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      required
+                      minLength={8}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      autoComplete="new-password"
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      tabIndex={-1}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="size-4" />
+                      ) : (
+                        <Eye className="size-4" />
+                      )}
+                    </button>
+                  </div>
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="add_confirm_password">
                     Confirm Password <span className="text-destructive">*</span>
                   </Label>
-                  <Input
-                    id="add_confirm_password"
-                    type="password"
-                    placeholder="••••••••"
-                    required
-                    minLength={8}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    autoComplete="new-password"
-                  />
+                  <div className="relative">
+                    <Input
+                      id="add_confirm_password"
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      required
+                      minLength={8}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      autoComplete="new-password"
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      tabIndex={-1}
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="size-4" />
+                      ) : (
+                        <Eye className="size-4" />
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
 

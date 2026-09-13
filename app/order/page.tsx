@@ -379,8 +379,8 @@ function CreateSessionModal({
     e.preventDefault()
     setError("")
     if (!name.trim()) return
-    if (!/^\d{4}$/.test(accessCode)) {
-      setError("Access code must be exactly 4 digits")
+    if (!/^\d{6}$/.test(accessCode)) {
+      setError("Access code must be exactly 6 digits")
       return
     }
     if (accessCode !== confirmCode) {
@@ -457,14 +457,14 @@ function CreateSessionModal({
                 <Input
                   id="accessCode"
                   inputMode="numeric"
-                  placeholder="4-digit PIN"
+                  placeholder="6-digit PIN"
+                  maxLength={6}
                   value={accessCode}
                   onChange={(e) => {
-                    setAccessCode(e.target.value.replace(/\D/g, "").slice(0, 4))
+                    setAccessCode(e.target.value.replace(/\D/g, "").slice(0, 6))
                     setError("")
                   }}
                   className="h-12 text-center text-xl sm:text-2xl font-black tracking-[0.4em]"
-                  maxLength={4}
                   required
                 />
                 <p className="text-xs text-muted-foreground">
@@ -482,11 +482,11 @@ function CreateSessionModal({
                   placeholder="Re-enter PIN"
                   value={confirmCode}
                   onChange={(e) => {
-                    setConfirmCode(e.target.value.replace(/\D/g, "").slice(0, 4))
+                    setConfirmCode(e.target.value.replace(/\D/g, "").slice(0, 6))
                     setError("")
                   }}
                   className="h-12 text-center text-xl sm:text-2xl font-black tracking-[0.4em]"
-                  maxLength={4}
+                  maxLength={6}
                   required
                 />
               </div>
@@ -503,8 +503,9 @@ function CreateSessionModal({
                 className="w-full h-12 text-base font-semibold mt-2"
                 disabled={
                   !name.trim() ||
-                  accessCode.length !== 4 ||
-                  confirmCode.length !== 4 ||
+                  accessCode.length !== 6 ||
+                  confirmCode.length !== 6 ||
+                  accessCode !== confirmCode ||
                   loading
                 }
               >
@@ -551,8 +552,8 @@ function JoinSessionModal({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError("")
-    if (!/^\d{4}$/.test(accessCode)) {
-      setError("Please enter the 4-digit access code")
+    if (!/^\d{6}$/.test(accessCode)) {
+      setError("Please enter the 6-digit access code")
       return
     }
     setLoading(true)
@@ -612,19 +613,19 @@ function JoinSessionModal({
                 <Input
                   id="joinCode"
                   inputMode="numeric"
-                  placeholder="4-digit PIN from the host"
+                  placeholder="6-digit PIN from the host"
+                  maxLength={6}
                   value={accessCode}
                   onChange={(e) => {
-                    setAccessCode(e.target.value.replace(/\D/g, "").slice(0, 4))
+                    setAccessCode(e.target.value.replace(/\D/g, "").slice(0, 6))
                     setError("")
                   }}
                   className="h-12 text-center text-xl sm:text-2xl font-black tracking-[0.4em]"
-                  maxLength={4}
                   autoFocus
                   required
                 />
                 <p className="text-xs text-muted-foreground">
-                  Ask the host for the 4-digit PIN
+                  Ask the host for the 6-digit PIN
                 </p>
               </div>
 
@@ -644,7 +645,7 @@ function JoinSessionModal({
                 type="submit"
                 size="lg"
                 className="w-full h-12 text-base font-semibold"
-                disabled={accessCode.length !== 4 || loading}
+                disabled={accessCode.length !== 6 || loading}
               >
                 {loading ? (
                   <span className="flex items-center gap-2">
