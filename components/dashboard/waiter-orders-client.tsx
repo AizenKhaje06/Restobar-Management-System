@@ -58,6 +58,7 @@ import {
 } from "@/components/ui/select"
 import { AssistModal, type WaiterOrderForModal } from "@/components/dashboard/assist-modal"
 import { WaiterAddonOrderModal } from "@/components/dashboard/waiter-addon-order-modal"
+import { WaiterCreateOrderModal } from "@/components/dashboard/waiter-create-order-modal"
 import { formatCurrency, formatTime, formatDateTime } from "@/lib/constants"
 import { createClient } from "@/lib/supabase/client"
 import type { Profile, OrderWithItems, OrderStatus } from "@/lib/types"
@@ -68,6 +69,7 @@ import {
   confirmWaiterOrder,
   getWaiterTables,
   getWaiterMenu,
+  createManualOrder,
 } from "@/app/actions/waiter"
 import { signOut } from "@/app/actions/auth"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -147,6 +149,9 @@ export function WaiterOrdersClient({
   const [loadingMenu, setLoadingMenu] = useState(false)
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  
+  // Create order modal
+  const [showCreateOrderModal, setShowCreateOrderModal] = useState(false)
   
   // New state for enterprise features
   const [currentTime, setCurrentTime] = useState(new Date())
@@ -630,6 +635,74 @@ export function WaiterOrdersClient({
     }
   }, [])
 
+  // Handle opening create order modal
+  const handleOpenCreateOrderModal = useCallback(async () => {
+    setShowCreateOrderModal(true)
+    
+    // Fetch menu data if not already loaded
+    if (menuData.menuItems.length === 0 && !loadingMenu) {
+      setLoadingMenu(true)
+      try {
+        const data = await getWaiterMenu()
+        setMenuData(data)
+        
+        if (data.menuItems.length === 0) {
+          toast.error("No menu items available. Please add items to the menu first.")
+        }
+      } catch (error) {
+        console.error('Error fetching menu:', error)
+        toast.error("Failed to load menu")
+      } finally {
+        setLoadingMenu(false)
+      }
+    }
+
+    // Load tables using existing loadTables function
+    loadTables()
+  }, [menuData.menuItems.length, loadingMenu, loadTables])
+
+  // Handle creating manual order
+  const handleCreateManualOrder = useCallback(async (data: {
+    order_type: "dine-in" | "take-out"
+    table_id?: string
+    customer_name: string
+    items: { menu_item_id: string; name: string; price: number; quantity: number }[]
+  }) => {
+    try {
+      const result = await createManualOrder(data)
+      
+      if (result?.error) {
+        throw new Error(result.error)
+      }
+
+      toast.success(`Order #${result.order_number} created successfully!`)
+      
+      // Refresh orders list
+      const { data: updatedOrders } = await supabase
+        .from("orders")
+        .select(`
+          *,
+          tables(label, zone, assigned_waiter),
+          order_items(*),
+          assisted_by_profile:profiles!orders_assisted_by_fkey(id, username, full_name),
+          served_by_profile:profiles!orders_served_by_fkey(id, username, full_name)
+        `)
+        .order("created_at", { ascending: false })
+        .limit(100)
+
+      if (updatedOrders) {
+        setOrders(updatedOrders as WaiterOrder[])
+      }
+
+      // Refresh tables if dine-in
+      if (data.order_type === "dine-in") {
+        await loadTables()
+      }
+    } catch (error: any) {
+      throw error
+    }
+  }, [supabase, loadTables])
+
   // Load tables when sheet opens
   useEffect(() => {
     if (showTablesSheet) {
@@ -683,6 +756,15 @@ export function WaiterOrdersClient({
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleOpenCreateOrderModal}
+              className="text-white hover:bg-white/10 gap-2"
+            >
+              <Plus className="size-4" />
+              <span className="hidden sm:inline">New Order</span>
+            </Button>
             <ThemeToggle className="text-white hover:bg-white/10" />
             <Button variant="ghost" size="sm" onClick={() => window.location.reload()} className="text-white hover:bg-white/10">
               <RefreshCw className="size-4" />
@@ -1597,6 +1679,16 @@ export function WaiterOrdersClient({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Create New Order Modal */}
+      <WaiterCreateOrderModal
+        open={showCreateOrderModal}
+        onClose={() => setShowCreateOrderModal(false)}
+        categories={menuData.categories}
+        menuItems={menuData.menuItems}
+        tables={tables}
+        onCreateOrder={handleCreateManualOrder}
+      />
       </main>
     </div>
   )

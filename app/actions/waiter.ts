@@ -537,6 +537,118 @@ export async function deleteWaiterOrderItem(itemId: string) {
 }
 
 // ============================================================
+// CREATE MANUAL ORDER (walk-in customers without phone)
+// ============================================================
+export async function createManualOrder(input: {
+  order_type: "dine-in" | "take-out"
+  table_id?: string
+  customer_name: string
+  items: {
+    menu_item_id: string
+    name: string
+    price: number
+    quantity: number
+    notes?: string
+  }[]
+}) {
+  const supabase = await createClient()
+  const profile = await getSessionProfile()
+
+  if (!profile) return { error: "Not authenticated" }
+  if (profile.role !== "waiter") return { error: "Not authorized" }
+
+  // Validate required fields
+  if (input.order_type === "dine-in" && !input.table_id) {
+    return { error: "Table is required for dine-in orders" }
+  }
+  if (!input.customer_name || input.customer_name.trim() === "") {
+    return { error: "Customer name is required" }
+  }
+  if (!input.items || input.items.length === 0) {
+    return { error: "At least one item is required" }
+  }
+
+  // Calculate totals
+  const taxRate = await getTaxRate()
+  const subtotal = input.items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  const tax = Math.round(subtotal * taxRate * 100) / 100
+  const total = Math.round((subtotal + tax) * 100) / 100
+
+  // Create the order
+  const { data: order, error: orderError } = await supabase
+    .from("orders")
+    .insert({
+      table_id: input.order_type === "dine-in" ? input.table_id : null,
+      customer_name: input.customer_name,
+      status: "preparing" as OrderStatus, // Go directly to kitchen
+      payment_status: "unpaid",
+      order_type: input.order_type === "dine-in" ? "dine-in" : "take-out",
+      assisted_by: profile.id,
+      subtotal,
+      tax,
+      total,
+    })
+    .select()
+    .single()
+
+  if (orderError || !order) {
+    return { error: orderError?.message || "Failed to create order" }
+  }
+
+  // Insert order items
+  const orderItems = input.items.map((item) => ({
+    order_id: order.id,
+    menu_item_id: item.menu_item_id,
+    name: item.name,
+    unit_price: item.price,
+    quantity: item.quantity,
+    notes: item.notes ?? null,
+    status: "pending" as OrderStatus,
+  }))
+
+  const { error: itemsError } = await supabase
+    .from("order_items")
+    .insert(orderItems)
+
+  if (itemsError) {
+    // Rollback: delete the order if items insertion fails
+    await supabase.from("orders").delete().eq("id", order.id)
+    return { error: itemsError.message }
+  }
+
+  // If dine-in, update table status
+  if (input.order_type === "dine-in" && input.table_id) {
+    await supabase
+      .from("tables")
+      .update({
+        status: "occupied",
+        assigned_waiter: profile.id,
+      })
+      .eq("id", input.table_id)
+  }
+
+  // Log activity
+  await supabase.rpc("log_activity", {
+    p_action: "order.manual_created",
+    p_entity: "order",
+    p_entity_id: order.id,
+    p_detail: {
+      waiter_id: profile.id,
+      waiter_name: profile.full_name,
+      order_type: input.order_type,
+      customer_name: input.customer_name,
+      items_count: input.items.length,
+      total,
+    },
+  })
+
+  revalidatePath("/waiter")
+  revalidatePath("/waiter/orders")
+  revalidatePath("/waiter/tables")
+  return { success: true, order_id: order.id, order_number: order.order_number }
+}
+
+// ============================================================
 // RECALCULATE ORDER TOTALS (subtotal, tax, total)
 // ============================================================
 async function recalculateOrderTotals(supabase: Awaited<ReturnType<typeof createClient>>, orderId: string) {
