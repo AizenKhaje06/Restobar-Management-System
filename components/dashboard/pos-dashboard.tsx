@@ -45,6 +45,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/pos/orders", label: "Orders", icon: "ShoppingCart" },
   { href: "/pos/tables", label: "Tables", icon: "Utensils" },
   { href: "/pos/receipts", label: "Receipts", icon: "Receipt" },
+  { href: "/pos/cashflow", label: "Cashflow", icon: "Wallet" },
 ]
 
 interface CartItem {

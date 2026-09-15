@@ -8,6 +8,7 @@ const NAV: NavItem[] = [
   { href: "/admin", label: "Dashboard", icon: "LayoutDashboard" },
   { href: "/admin/orders", label: "Orders", icon: "ClipboardList" },
   { href: "/admin/cashflow", label: "Cashflow", icon: "DollarSign" },
+  { href: "/admin/remittances", label: "Remittances", icon: "Wallet" },
   { href: "/admin/menu", label: "Menu", icon: "UtensilsCrossed" },
   { href: "/admin/tables", label: "Tables", icon: "Grid3x3" },
   { href: "/admin/qr-codes", label: "QR Codes", icon: "ScanLine" },

@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useTransition, useMemo } from "react"
+import { useState, useTransition, useMemo, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
 import {
   Users,
   CreditCard,
@@ -18,6 +19,7 @@ import {
   AlertCircle,
   Check,
   Loader2,
+  UtensilsCrossed,
 } from "lucide-react"
 import { StaffShell, type NavItem } from "@/components/staff-shell"
 import { Card, CardContent } from "@/components/ui/card"
@@ -48,6 +50,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/pos/orders", label: "Orders", icon: "ShoppingCart" },
   { href: "/pos/tables", label: "Tables", icon: "Utensils" },
   { href: "/pos/receipts", label: "Receipts", icon: "Receipt" },
+  { href: "/pos/cashflow", label: "Cashflow", icon: "Wallet" },
 ]
 
 const ORDER_STATUS_CONFIG: Record<string, { label: string; className: string; dot: string }> = {
@@ -95,6 +98,7 @@ interface OrderRow {
     name: string
     unit_price: number
     quantity: number
+    image_url?: string | null
   }[]
 }
 
@@ -120,14 +124,113 @@ export function PosTablesClient({
   const [payAmountTendered, setPayAmountTendered] = useState("")
   const [showCancelDialog, setShowCancelDialog] = useState(false)
 
+  const [localTables, setLocalTables] = useState(tables)
+  const [localSessions, setLocalSessions] = useState(sessions)
+
+  // Sync with props
+  useEffect(() => {
+    setLocalTables(tables)
+  }, [tables])
+
+  useEffect(() => {
+    setLocalSessions(sessions)
+  }, [sessions])
+
+  // Real-time subscription for tables
+  useEffect(() => {
+    const supabase = createClient()
+    
+    const tablesChannel = supabase
+      .channel('pos-tables-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tables',
+        },
+        (payload) => {
+          if (payload.eventType === 'UPDATE') {
+            const updated = payload.new as TableRow
+            setLocalTables((prev) =>
+              prev.map((t) => (t.id === updated.id ? updated : t))
+            )
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(tablesChannel)
+    }
+  }, [])
+
+  // Real-time subscription for sessions
+  useEffect(() => {
+    const supabase = createClient()
+    
+    const sessionsChannel = supabase
+      .channel('pos-sessions-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'table_sessions',
+        },
+        async (payload) => {
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const session = payload.new as any
+            if (session.status === 'active') {
+              // Fetch with order status
+              const { data } = await supabase
+                .from('table_sessions')
+                .select('id, table_id, customer_name, created_at, status, orders!inner(status)')
+                .eq('id', session.id)
+                .eq('status', 'active')
+                .order('created_at', { ascending: false, foreignTable: 'orders' })
+                .limit(1, { foreignTable: 'orders' })
+                .single()
+              
+              if (data) {
+                const transformed = {
+                  id: data.id,
+                  table_id: data.table_id,
+                  customer_name: data.customer_name,
+                  created_at: data.created_at,
+                  status: data.status,
+                  order_status: (data.orders as any[])?.[0]?.status ?? null,
+                }
+                
+                setLocalSessions((prev) => {
+                  const filtered = prev.filter((s) => s.id !== transformed.id)
+                  return [...filtered, transformed]
+                })
+              }
+            } else {
+              // Session closed
+              setLocalSessions((prev) => prev.filter((s) => s.id !== session.id))
+            }
+          } else if (payload.eventType === 'DELETE') {
+            setLocalSessions((prev) => prev.filter((s) => s.id !== payload.old.id))
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(sessionsChannel)
+    }
+  }, [])
+
   // Index sessions by table_id for quick lookup
   const sessionByTable = useMemo(() => {
     const map: Record<string, ActiveSession> = {}
-    for (const s of sessions) map[s.table_id] = s
+    for (const s of localSessions) map[s.table_id] = s
     return map
-  }, [sessions])
+  }, [localSessions])
 
-  const filtered = tables.filter((t) => {
+  const filtered = localTables.filter((t) => {
     const session = sessionByTable[t.id]
     const isOccupied = !!session
     const isActuallyAvailable = !isOccupied && t.status !== "unavailable" && t.status !== "reserved"
@@ -161,7 +264,7 @@ export function PosTablesClient({
     let reserved = 0
     let unavailable = 0
     
-    for (const t of tables) {
+    for (const t of localTables) {
       const hasSession = !!sessionByTable[t.id]
       if (hasSession) {
         occupied++
@@ -176,13 +279,13 @@ export function PosTablesClient({
     }
     
     return { 
-      all: tables.length,
+      all: localTables.length,
       occupied, 
       available,
       reserved,
       unavailable,
     }
-  }, [tables, sessionByTable])
+  }, [localTables, sessionByTable])
 
   // Count order statuses across all occupied tables
   const orderStatusCounts = useMemo(() => {
@@ -197,14 +300,14 @@ export function PosTablesClient({
     }
     
     // Count statuses from sessions
-    for (const session of sessions) {
+    for (const session of localSessions) {
       if (session.order_status && statusCounts[session.order_status] !== undefined) {
         statusCounts[session.order_status]++
       }
     }
     
     return statusCounts
-  }, [sessions])
+  }, [localSessions])
 
   // When a table is selected, load its orders
   async function openTableAccount(tableId: string) {
@@ -511,7 +614,7 @@ export function PosTablesClient({
               {/* Header band */}
               <div className="px-6 py-4 border-b bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 shrink-0">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 pr-8">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                       Table Account
                     </p>
@@ -525,7 +628,7 @@ export function PosTablesClient({
                     )}
                   </div>
                   {selectedSession && (
-                    <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                    <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 shrink-0">
                       <Lock className="size-3 mr-1" /> Active
                     </Badge>
                   )}
@@ -586,16 +689,33 @@ export function PosTablesClient({
                                   {order.status}
                                 </Badge>
                               </div>
-                              <div className="space-y-1">
+                              <div className="space-y-2">
                                 {(order.order_items ?? []).map((item) => (
                                   <div
                                     key={item.id}
-                                    className="flex items-center justify-between text-xs"
+                                    className="flex items-center gap-2 text-xs"
                                   >
-                                    <span className="text-muted-foreground">
-                                      {item.quantity}× {item.name}
+                                    <span className="text-muted-foreground shrink-0 font-medium">
+                                      {item.quantity}×
                                     </span>
-                                    <span className="tabular-nums">
+                                    {/* Item Image */}
+                                    <div className="size-10 rounded-md overflow-hidden bg-muted shrink-0">
+                                      {item.image_url ? (
+                                        <img 
+                                          src={item.image_url} 
+                                          alt={item.name}
+                                          className="size-full object-cover"
+                                        />
+                                      ) : (
+                                        <div className="size-full flex items-center justify-center">
+                                          <UtensilsCrossed className="size-4 text-muted-foreground/40" />
+                                        </div>
+                                      )}
+                                    </div>
+                                    <span className="text-muted-foreground flex-1 min-w-0 truncate">
+                                      {item.name}
+                                    </span>
+                                    <span className="tabular-nums font-medium shrink-0">
                                       {formatCurrency(
                                         Number(item.unit_price) * item.quantity
                                       )}
@@ -681,138 +801,353 @@ export function PosTablesClient({
         </DialogContent>
       </Dialog>
 
-      {/* Process Payment Dialog */}
+      {/* Process Payment Dialog - Professional Layout */}
       <Dialog
         open={showPayDialog}
         onOpenChange={(o) => setShowPayDialog(o)}
       >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CreditCard className="size-4" />
-              Process Payment
-            </DialogTitle>
-            <DialogDescription>
-              {selectedTable?.label} ·{" "}
-              {selectedSession && (
-                <span className="font-medium text-foreground">
-                  {selectedSession.customer_name}
-                </span>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            {/* Amount due */}
-            <div className="rounded-lg border-2 border-emerald-200 bg-emerald-50/60 dark:bg-emerald-950/20 dark:border-emerald-800/40 p-4 text-center">
-              <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
-                Amount Due
-              </p>
-              <p className="text-4xl font-black text-emerald-700 dark:text-emerald-400 tabular-nums mt-1">
-                {formatCurrency(grandTotal)}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {unpaidOrders.length} order{unpaidOrders.length !== 1 ? "s" : ""} ·{" "}
-                {grandItemCount} item{grandItemCount !== 1 ? "s" : ""}
-              </p>
-            </div>
-
-            {/* Method */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Payment Method</label>
-              <Select value={payMethod} onValueChange={(v) => setPayMethod(v as typeof payMethod)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cash">
-                    <div className="flex items-center gap-2">
-                      <Banknote className="size-4" /> Cash
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="card">
-                    <div className="flex items-center gap-2">
-                      <CardIcon className="size-4" /> Card
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="gcash">
-                    <div className="flex items-center gap-2">
-                      <Smartphone className="size-4" /> GCash
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="maya">
-                    <div className="flex items-center gap-2">
-                      <Smartphone className="size-4" /> Maya
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Cash tendered */}
-            {payMethod === "cash" && (
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Amount Tendered</label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={payAmountTendered}
-                  onChange={(e) => setPayAmountTendered(e.target.value)}
-                  className="text-lg tabular-nums"
-                  autoFocus
-                />
-                {changeDue !== null && changeDue > 0 && (
-                  <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm dark:border-emerald-800 dark:bg-emerald-950/20">
-                    <span className="font-medium">Change:</span>{" "}
-                    <span className="text-emerald-700 dark:text-emerald-400 tabular-nums">
-                      {formatCurrency(changeDue)}
-                    </span>
+        <DialogContent 
+          showCloseButton={false}
+          className="w-[1000px] !min-w-[1000px] max-h-[90vh] !max-w-[1000px] p-0 gap-0 overflow-hidden flex flex-col rounded-2xl"
+        >
+          {selectedTable && selectedSession && (
+            <>
+              {/* Modern Header with Restaurant Branding */}
+              <div className="shrink-0 bg-gradient-to-r from-slate-800 to-slate-700 px-6 py-4 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="size-12 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                    <UtensilsCrossed className="size-6 text-white" />
                   </div>
-                )}
-                {insufficient && (
-                  <div className="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700 dark:border-amber-800 dark:bg-amber-950/20">
-                    <AlertCircle className="size-4 shrink-0" />
-                    <span>
-                      Insufficient amount. Need {formatCurrency(grandTotal)}
-                    </span>
+                  <div>
+                    <h2 className="text-xl font-black text-white leading-tight">Restaubar</h2>
+                    <p className="text-xs text-slate-300 leading-tight">Good Food • Great Vibes</p>
                   </div>
-                )}
+                </div>
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-2 text-white">
+                    <Users className="size-4" />
+                    <div className="text-left">
+                      <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Table</p>
+                      <p className="text-base font-black leading-tight">{selectedTable.label}</p>
+                    </div>
+                  </div>
+                  <div className="w-px h-8 bg-slate-600" />
+                  <div className="flex items-center gap-2 text-white">
+                    <Receipt className="size-4" />
+                    <div className="text-left">
+                      <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Session</p>
+                      <p className="text-base font-black leading-tight truncate max-w-[120px]">{selectedSession.customer_name}</p>
+                    </div>
+                  </div>
+                  <div className="w-px h-8 bg-slate-600" />
+                  <div className="flex items-center gap-2 text-white">
+                    <Clock className="size-4" />
+                    <div className="text-left">
+                      <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                      <p className="text-base font-black leading-tight">{new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowPayDialog(false)}
+                    className="ml-2 size-9 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+                  >
+                    <XCircle className="size-5 text-white" />
+                  </button>
+                </div>
               </div>
-            )}
 
-            {/* What will happen on confirm */}
-            <div className="rounded-md border bg-muted/40 p-3 text-xs space-y-1.5 text-muted-foreground">
-              <p className="font-semibold text-foreground text-sm">After confirmation:</p>
-              <ul className="space-y-0.5 pl-4 list-disc">
-                <li>All open orders will be marked as paid</li>
-                <li>Table session will be archived and closed</li>
-                <li>Table will return to Available for new customers</li>
-              </ul>
-            </div>
-          </div>
+              {/* Main Content - Two Column Layout */}
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <div className="flex h-full min-w-[1000px]">
+                  {/* Left Column - Payment Input */}
+                  <div className="flex-1 p-5 space-y-4 overflow-y-auto bg-slate-50 dark:bg-slate-950">
+                    {/* Amount Due Card */}
+                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-4 shadow-lg">
+                      <div className="flex items-start gap-3">
+                        <div className="size-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center shrink-0">
+                          <CreditCard className="size-5 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-[10px] font-bold text-blue-100 uppercase tracking-wider">Amount Due</p>
+                          <p className="text-4xl font-black text-white tabular-nums mt-1">
+                            {formatCurrency(grandTotal)}
+                          </p>
+                          <p className="text-[11px] text-blue-100 mt-1.5">
+                            Total items: {grandItemCount} | Service charge: {formatCurrency(grandTax)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="outline"
-              onClick={() => setShowPayDialog(false)}
-              disabled={pending}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleConfirmPayment}
-              disabled={
-                pending ||
-                (payMethod === "cash" && (!payAmountTendered || insufficient))
-              }
-              className="bg-emerald-600 hover:bg-emerald-700"
-            >
-              {pending ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
-              <span className="ml-1.5">Confirm Payment</span>
-            </Button>
-          </DialogFooter>
+                    {/* Payment Method Selection */}
+                    <div>
+                      <h3 className="text-sm font-black text-slate-900 dark:text-white mb-0.5">Select Payment Method</h3>
+                      <p className="text-[11px] text-slate-600 dark:text-slate-400 mb-2.5">Choose a payment method to proceed.</p>
+                      
+                      <div className="grid grid-cols-4 gap-2.5">
+                        {[
+                          { id: 'cash', label: 'Cash', img: '/Cash.png' },
+                          { id: 'card', label: 'Card', img: '/Card.png' },
+                          { id: 'gcash', label: 'GCash', img: '/Gcash.png' },
+                          { id: 'maya', label: 'Maya', img: '/Paymaya.png' },
+                        ].map((method) => (
+                          <button
+                            key={method.id}
+                            type="button"
+                            onClick={() => setPayMethod(method.id as any)}
+                            className={`relative rounded-xl border-2 p-2.5 transition-all duration-200 ${
+                              payMethod === method.id
+                                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 shadow-lg scale-105'
+                                : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700'
+                            }`}
+                          >
+                            {payMethod === method.id && (
+                              <div className="absolute -top-2 -right-2 size-6 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg z-10">
+                                <Check className="size-3.5 text-white stroke-[3]" />
+                              </div>
+                            )}
+                            <div className="w-full h-12 mb-1.5 flex items-center justify-center">
+                              <img src={method.img} alt={method.label} className="max-w-full max-h-full object-contain" />
+                            </div>
+                            <p className={`text-center text-xs font-black ${
+                              payMethod === method.id ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400'
+                            }`}>
+                              {method.label}
+                            </p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Cash Input with Numpad */}
+                    {payMethod === "cash" && (
+                      <div>
+                        <h3 className="text-sm font-black text-slate-900 dark:text-white mb-0.5">Amount Tendered</h3>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-400 mb-2.5">Enter the cash amount received.</p>
+                        
+                        <div className="relative mb-3">
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-black text-slate-400">₱</span>
+                          <Input
+                            type="text"
+                            inputMode="decimal"
+                            value={payAmountTendered}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/[^0-9.]/g, '')
+                              setPayAmountTendered(value)
+                            }}
+                            className="pl-11 h-14 text-2xl font-black tabular-nums border-2 rounded-xl text-center"
+                            placeholder="0.00"
+                          />
+                        </div>
+
+                        {/* Numpad */}
+                        <div className="grid grid-cols-4 gap-2 mb-3">
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, '00', 0, '⌫'].map((num) => (
+                            <Button
+                              key={num}
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                if (num === '⌫') {
+                                  setPayAmountTendered((v) => v.slice(0, -1))
+                                } else {
+                                  setPayAmountTendered((v) => v + num)
+                                }
+                              }}
+                              className="h-11 text-lg font-bold rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
+                            >
+                              {num}
+                            </Button>
+                          ))}
+                        </div>
+
+                        {/* Quick Amount Buttons */}
+                        <div className="grid grid-cols-4 gap-2">
+                          {[100, 500, 1000].map((amount) => (
+                            <Button
+                              key={amount}
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                const current = parseFloat(payAmountTendered) || 0
+                                setPayAmountTendered(String(current + amount))
+                              }}
+                              className="h-9 text-sm font-bold rounded-lg bg-blue-50 hover:bg-blue-100 dark:bg-blue-950 dark:hover:bg-blue-900 border-blue-200 dark:border-blue-800"
+                            >
+                              +{amount}
+                            </Button>
+                          ))}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setPayAmountTendered(String(grandTotal))}
+                            className="h-9 text-sm font-bold rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950 dark:hover:bg-emerald-900 border-emerald-200 dark:border-emerald-800"
+                          >
+                            Exact
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right Column - Summary */}
+                  <div className="w-[400px] shrink-0 bg-white dark:bg-slate-900 border-l-4 border-emerald-500 flex flex-col h-full">
+                    <div className="flex-1 p-6 space-y-6 overflow-y-auto">
+                      {/* Items Summary */}
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="text-sm font-black text-slate-900 dark:text-white">Items ({grandItemCount})</h3>
+                          <span className="text-xl font-black text-slate-900 dark:text-white">
+                            {formatCurrency(grandSubtotal)}
+                          </span>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-slate-600 dark:text-slate-400">Subtotal</span>
+                            <span className="font-bold text-slate-900 dark:text-white">
+                              {formatCurrency(grandSubtotal)}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-slate-600 dark:text-slate-400">Service Charge</span>
+                            <span className="font-bold text-slate-900 dark:text-white">
+                              {formatCurrency(grandTax)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="mt-4 pt-4 border-t-2 border-slate-200 dark:border-slate-800">
+                          <div className="flex items-center justify-between">
+                            <span className="text-lg font-black text-slate-900 dark:text-white">Total</span>
+                            <span className="text-2xl font-black text-slate-900 dark:text-white">
+                              {formatCurrency(grandTotal)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Change Due Card */}
+                      {payMethod === "cash" && changeDue !== null && changeDue > 0 && (
+                        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-5 shadow-lg">
+                          <div className="flex items-start gap-3">
+                            <div className="size-10 rounded-lg bg-white/20 backdrop-blur flex items-center justify-center shrink-0">
+                              <Check className="size-5 text-white stroke-[3]" />
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="text-sm font-black text-emerald-50">CHANGE DUE</h3>
+                              <p className="text-4xl font-black text-white tabular-nums mt-2">
+                                {formatCurrency(changeDue)}
+                              </p>
+                              <div className="mt-3 pt-3 border-t border-emerald-400/30 space-y-1 text-xs text-emerald-50">
+                                <div className="flex justify-between">
+                                  <span>{formatCurrency(parseFloat(payAmountTendered))} received</span>
+                                  <span>−</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>{formatCurrency(grandTotal)} total</span>
+                                  <span>=</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Payment Summary Info */}
+                      {payMethod === "cash" && payAmountTendered && (
+                        <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4 border border-blue-200 dark:border-blue-900">
+                          <div className="flex gap-2">
+                            <AlertCircle className="size-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                            <div>
+                              <h4 className="text-sm font-bold text-blue-900 dark:text-blue-200 mb-1">Payment Summary</h4>
+                              <div className="space-y-1 text-xs text-blue-700 dark:text-blue-300">
+                                <div className="flex justify-between gap-4">
+                                  <span>Cash Received</span>
+                                  <span className="font-bold">{formatCurrency(parseFloat(payAmountTendered))}</span>
+                                </div>
+                                <div className="flex justify-between gap-4">
+                                  <span>Total Amount</span>
+                                  <span className="font-bold">{formatCurrency(grandTotal)}</span>
+                                </div>
+                                <div className="flex justify-between gap-4 pt-1 border-t border-blue-200 dark:border-blue-800">
+                                  <span className="font-bold">Change Due</span>
+                                  <span className="font-black text-emerald-600 dark:text-emerald-400">{formatCurrency(changeDue || 0)}</span>
+                                </div>
+                              </div>
+                              <p className="text-xs text-blue-600 dark:text-blue-400 mt-3">
+                                <strong>Payment method:</strong> Cash<br/>
+                                Please confirm the amount before completing.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="p-6 border-t border-slate-200 dark:border-slate-800 space-y-3">
+                      <Button
+                        onClick={handleConfirmPayment}
+                        disabled={
+                          pending ||
+                          (payMethod === "cash" &&
+                            (!payAmountTendered ||
+                              parseFloat(payAmountTendered) < grandTotal))
+                        }
+                        className="w-full h-12 text-base font-bold bg-emerald-600 hover:bg-emerald-700 rounded-xl"
+                        size="lg"
+                      >
+                        {pending ? (
+                          <Loader2 className="size-5 animate-spin mr-2" />
+                        ) : (
+                          <CreditCard className="size-5 mr-2" />
+                        )}
+                        Complete Payment →
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowPayDialog(false)}
+                        className="w-full h-10 text-sm font-bold rounded-lg"
+                      >
+                        <XCircle className="size-4 mr-2" />
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer Keyboard Shortcuts */}
+              <div className="shrink-0 px-6 py-3 bg-slate-800 border-t border-slate-700">
+                <div className="flex items-center justify-center gap-4 text-[10px] text-slate-400">
+                  <span className="flex items-center gap-1">
+                    <kbd className="px-2 py-1 rounded bg-slate-700 border border-slate-600 font-mono font-bold">1</kbd>
+                    <span>Cash</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <kbd className="px-2 py-1 rounded bg-slate-700 border border-slate-600 font-mono font-bold">2</kbd>
+                    <span>Card</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <kbd className="px-2 py-1 rounded bg-slate-700 border border-slate-600 font-mono font-bold">3</kbd>
+                    <span>GCash</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <kbd className="px-2 py-1 rounded bg-slate-700 border border-slate-600 font-mono font-bold">4</kbd>
+                    <span>PayMaya</span>
+                  </span>
+                  <span className="text-slate-600">|</span>
+                  <span className="flex items-center gap-1">
+                    <kbd className="px-2 py-1 rounded bg-slate-700 border border-slate-600 font-mono font-bold">Esc</kbd>
+                    <span>Cancel</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <kbd className="px-2 py-1 rounded bg-slate-700 border border-slate-600 font-mono font-bold">Enter</kbd>
+                    <span>Complete</span>
+                  </span>
+                </div>
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 

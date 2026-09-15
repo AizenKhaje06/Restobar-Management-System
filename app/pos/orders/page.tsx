@@ -25,7 +25,7 @@ export default async function PosOrdersPage() {
       .select(
         `
         *,
-        order_items(*),
+        order_items(*, menu_items(image_url)),
         tables(label, zone)
       `
       )
@@ -35,8 +35,18 @@ export default async function PosOrdersPage() {
     getRestaurantSettings(),
   ])
 
+  // Transform data to flatten image_url from menu_items into order_items
+  const transformedOrders = (orders ?? []).map((order) => ({
+    ...order,
+    order_items: (order.order_items ?? []).map((item: any) => ({
+      ...item,
+      image_url: item.menu_items?.image_url ?? null,
+      menu_items: undefined, // Remove nested object
+    })),
+  }))
+
   // Filter out any orders with null status (defensive)
-  const safeOrders = (orders ?? []).filter((o) => o.status !== null)
+  const safeOrders = transformedOrders.filter((o) => o.status !== null)
 
   return (
     <ErrorBoundary>

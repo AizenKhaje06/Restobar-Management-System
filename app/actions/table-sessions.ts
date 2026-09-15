@@ -292,7 +292,7 @@ export async function processTableSessionPayment(input: {
 }
 
 /**
- * Cancel a table session (admin only).
+ * Cancel a table session (POS or Admin).
  * Marks all open orders as cancelled + closes the session + frees the table.
  */
 export async function cancelTableSession(input: {
@@ -301,8 +301,8 @@ export async function cancelTableSession(input: {
 }) {
   const supabase = await createClient()
   const profile = await (await import("@/lib/auth")).getSessionProfile()
-  if (!profile || profile.role !== "admin") {
-    return { error: "Unauthorized — admin only" }
+  if (!profile || !["pos", "admin"].includes(profile.role)) {
+    return { error: "Unauthorized — POS or Admin access required" }
   }
 
   // Get session

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
+import { createClient } from "@/lib/supabase/client"
 import {
   Armchair,
   Edit3,
@@ -91,6 +92,7 @@ export function TablesManager({
   const [zoneFilter, setZoneFilter] = useState<string>("all")
   const [statusFilter, setStatusFilter] = useState<TableStatus | "all">("all")
   const [localTables, setLocalTables] = useState<RestaurantTable[]>(tables)
+  const [realtimeStatus, setRealtimeStatus] = useState<'connecting' | 'connected' | 'error'>('connecting')
   const [editDialog, setEditDialog] = useState<{ open: boolean; table: RestaurantTable | null }>({
     open: false,
     table: null,
@@ -101,6 +103,85 @@ export function TablesManager({
   useEffect(() => {
     setLocalTables(tables)
   }, [tables])
+
+  // Real-time subscription for table updates
+  useEffect(() => {
+    const supabase = createClient()
+    
+    console.log('[Admin Tables] Setting up realtime subscription...')
+    
+    // Subscribe to table changes
+    const channel = supabase
+      .channel('admin-tables-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+          schema: 'public',
+          table: 'tables'
+        },
+        (payload) => {
+          console.log('[Admin Tables] Table change received:', payload)
+          
+          if (payload.eventType === 'INSERT') {
+            // Add new table
+            const newTable = payload.new as RestaurantTable
+            setLocalTables((prev) => {
+              // Check if already exists to avoid duplicates
+              if (prev.some(t => t.id === newTable.id)) {
+                console.log('[Admin Tables] Table already exists, skipping INSERT')
+                return prev
+              }
+              console.log('[Admin Tables] Adding new table:', newTable.label)
+              return [...prev, newTable]
+            })
+            toast.success(`Table ${newTable.label} added`)
+          } else if (payload.eventType === 'UPDATE') {
+            // Update existing table
+            const updatedTable = payload.new as RestaurantTable
+            const oldTable = payload.old as RestaurantTable
+            
+            setLocalTables((prev) => {
+              const updated = prev.map((t) => (t.id === updatedTable.id ? updatedTable : t))
+              console.log('[Admin Tables] Updated table:', updatedTable.label, 'Status:', updatedTable.status)
+              return updated
+            })
+            
+            // Only show toast if status changed
+            if (oldTable.status !== updatedTable.status) {
+              console.log('[Admin Tables] Status changed:', oldTable.status, '→', updatedTable.status)
+              toast.info(`Table ${updatedTable.label} is now ${updatedTable.status}`)
+            }
+          } else if (payload.eventType === 'DELETE') {
+            // Remove deleted table
+            const deletedTable = payload.old as RestaurantTable
+            setLocalTables((prev) => {
+              console.log('[Admin Tables] Removing table:', deletedTable.label)
+              return prev.filter((t) => t.id !== deletedTable.id)
+            })
+            toast.info(`Table ${deletedTable.label} removed`)
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('[Admin Tables] Subscription status:', status)
+        if (status === 'SUBSCRIBED') {
+          console.log('[Admin Tables] Successfully subscribed to realtime updates')
+          setRealtimeStatus('connected')
+          toast.success('Real-time updates enabled', { duration: 2000 })
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('[Admin Tables] Realtime subscription error')
+          setRealtimeStatus('error')
+          toast.error('Failed to connect to realtime updates')
+        }
+      })
+
+    // Cleanup subscription on unmount
+    return () => {
+      console.log('[Admin Tables] Cleaning up realtime subscription')
+      supabase.removeChannel(channel)
+    }
+  }, [])
 
   const zones = useMemo(() => {
     const set = new Set<string>()
@@ -195,7 +276,32 @@ export function TablesManager({
     <div className="space-y-6">
       <PageHeader
         title="Tables & Floor Plan"
-        description={`${stats.total} tables • ${stats.occupied} occupied • ${stats.utilization}% utilization`}
+        description={
+          <div className="flex items-center gap-3">
+            <span>{stats.total} tables • {stats.occupied} occupied • {stats.utilization}% utilization</span>
+            {/* Realtime Status Indicator */}
+            <span className="flex items-center gap-1.5 text-xs">
+              {realtimeStatus === 'connected' && (
+                <>
+                  <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-emerald-600 dark:text-emerald-400">Live</span>
+                </>
+              )}
+              {realtimeStatus === 'connecting' && (
+                <>
+                  <span className="size-2 rounded-full bg-amber-500 animate-pulse" />
+                  <span className="text-amber-600 dark:text-amber-400">Connecting...</span>
+                </>
+              )}
+              {realtimeStatus === 'error' && (
+                <>
+                  <span className="size-2 rounded-full bg-red-500" />
+                  <span className="text-red-600 dark:text-red-400">Offline</span>
+                </>
+              )}
+            </span>
+          </div>
+        }
         crumbs={[{ label: "Admin", href: "/admin" }, { label: "Tables" }]}
         actions={
           <>

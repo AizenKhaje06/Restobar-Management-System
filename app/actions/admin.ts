@@ -343,9 +343,19 @@ export async function updateTableStatusAction(id: string, status: string) {
 // ============================================================
 export async function generateTableQRAction(tableId: string) {
   const supabase = await createClient()
-  // Deactivate old QRs
-  await supabase.from("table_qr_codes").update({ is_active: false }).eq("table_id", tableId)
-  // Create new
+  
+  // Don't deactivate old QRs immediately - keep them active for existing customers
+  // Only deactivate QRs that are older than 24 hours to prevent issues with active sessions
+  const twentyFourHoursAgo = new Date()
+  twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24)
+  
+  await supabase
+    .from("table_qr_codes")
+    .update({ is_active: false })
+    .eq("table_id", tableId)
+    .lt("created_at", twentyFourHoursAgo.toISOString())
+  
+  // Create new QR code
   const { data: tokenData } = await supabase.rpc("generate_qr_token")
   const token = (tokenData as string) ?? Math.random().toString(36).slice(2, 18)
   const { data, error } = await supabase
@@ -356,6 +366,7 @@ export async function generateTableQRAction(tableId: string) {
   if (error) return { error: error.message }
   await supabase.rpc("log_activity", { p_action: "qr.generated", p_entity: "table", p_entity_id: tableId })
   revalidatePath("/admin/tables")
+  revalidatePath("/admin/qr-codes")
   return { success: true, data }
 }
 

@@ -38,6 +38,7 @@ import {
   ShoppingCart,
   Receipt,
   DollarSign,
+  Wallet,
   AlertCircle,
   X,
   Loader2,
@@ -70,6 +71,7 @@ const ICONS = {
   ShoppingCart,
   Receipt,
   DollarSign,
+  Wallet,
 } as const satisfies Record<string, LucideIcon>
 
 function initials(name?: string | null) {

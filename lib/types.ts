@@ -112,6 +112,7 @@ export interface OrderItem {
   notes: string | null
   status: OrderStatus
   created_at: string
+  image_url?: string | null // Add image_url field for joined menu_items data
 }
 
 export interface Payment {
@@ -138,6 +139,29 @@ export interface Receipt {
   tax: number
   total: number
   created_at: string
+}
+
+export interface CashRemittance {
+  id: string
+  remittance_number: number
+  remitted_by: string
+  received_by: string | null
+  cash_amount: number
+  declared_amount: number
+  variance: number
+  total_transactions: number
+  cash_transactions: number
+  card_amount: number
+  gcash_amount: number
+  maya_amount: number
+  shift_start_at: string
+  shift_end_at: string
+  status: "pending" | "verified" | "discrepancy"
+  notes: string | null
+  pos_notes: string | null
+  admin_notes: string | null
+  created_at: string
+  updated_at: string
 }
 
 export interface Reservation {

@@ -1,6 +1,8 @@
 "use client"
 
-import { useState, useTransition, useCallback } from "react"
+import { useState, useTransition, useCallback, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
 import {
   ChefHat,
   Check,
@@ -16,6 +18,8 @@ import {
   AlertCircle,
   Plus,
   ClipboardList,
+  Users,
+  Receipt,
 } from "lucide-react"
 import { StaffShell, type NavItem } from "@/components/staff-shell"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -61,6 +65,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/pos/orders", label: "Orders", icon: "ShoppingCart" },
   { href: "/pos/tables", label: "Tables", icon: "Utensils" },
   { href: "/pos/receipts", label: "Receipts", icon: "Receipt" },
+  { href: "/pos/cashflow", label: "Cashflow", icon: "Wallet" },
 ]
 
 const STATUS_CONFIG: Record<OrderStatus | "addon", { label: string; color: string }> = {
@@ -124,6 +129,89 @@ export function PosOrdersClient({
   const [showMenuModal, setShowMenuModal] = useState(false)
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [orderToCancel, setOrderToCancel] = useState<OrderWithItems | null>(null)
+
+  // Real-time subscription for orders
+  useEffect(() => {
+    const supabase = createClient()
+    
+    const channel = supabase
+      .channel('pos-orders-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+        },
+        async (payload) => {
+          console.log('[POS Orders] Order change:', payload.eventType)
+          
+          if (payload.eventType === 'INSERT') {
+            // Fetch the complete order with items
+            const { data } = await supabase
+              .from('orders')
+              .select(`
+                *,
+                order_items(*, menu_items(image_url)),
+                tables(label, zone)
+              `)
+              .eq('id', payload.new.id)
+              .single()
+            
+            if (data) {
+              // Transform data
+              const transformed = {
+                ...data,
+                order_items: (data.order_items ?? []).map((item: any) => ({
+                  ...item,
+                  image_url: item.menu_items?.image_url ?? null,
+                  menu_items: undefined,
+                })),
+              } as OrderWithItems
+              
+              setOrders((prev) => [transformed, ...prev])
+            }
+          } else if (payload.eventType === 'UPDATE') {
+            const { data } = await supabase
+              .from('orders')
+              .select(`
+                *,
+                order_items(*, menu_items(image_url)),
+                tables(label, zone)
+              `)
+              .eq('id', payload.new.id)
+              .single()
+            
+            if (data) {
+              const transformed = {
+                ...data,
+                order_items: (data.order_items ?? []).map((item: any) => ({
+                  ...item,
+                  image_url: item.menu_items?.image_url ?? null,
+                  menu_items: undefined,
+                })),
+              } as OrderWithItems
+              
+              setOrders((prev) =>
+                prev.map((o) => (o.id === transformed.id ? transformed : o))
+              )
+              
+              // Update selected order if it's open
+              if (selectedOrder?.id === transformed.id) {
+                setSelectedOrder(transformed)
+              }
+            }
+          } else if (payload.eventType === 'DELETE') {
+            setOrders((prev) => prev.filter((o) => o.id !== payload.old.id))
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [selectedOrder])
 
   // Fetch related orders for a table (main order + add-ons)
   const fetchRelatedOrders = useCallback(async (tableId: string | null) => {
@@ -577,46 +665,63 @@ export function PosOrdersClient({
         <DialogContent className="w-full sm:max-w-lg md:max-w-xl p-0 gap-0 overflow-hidden flex flex-col max-h-[90vh]">
           {selectedOrder && (
             <>
-              {/* Header band */}
-              <div className="px-6 py-4 border-b bg-muted/30 shrink-0">
+              {/* Header band - Amber/Orange gradient like Table Account */}
+              <div className="px-6 py-4 border-b bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 shrink-0">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h2 className="text-lg sm:text-xl font-bold">
-                        Order #{selectedOrder.order_number}
-                      </h2>
-                      <Badge
-                        className={
-                          STATUS_CONFIG[selectedOrder?.status as OrderStatus]?.color ?? "bg-gray-100"
-                        }
-                      >
-                        {STATUS_CONFIG[selectedOrder?.status as OrderStatus]?.label ??
-                          selectedOrder?.status}
-                      </Badge>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Order Account
+                    </p>
+                    <p className="text-2xl sm:text-3xl font-black text-primary mt-0.5">
+                      #{selectedOrder.order_number}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      {selectedOrder.tables?.label && (
+                        <p className="text-xs text-muted-foreground">
+                          {selectedOrder.tables.label}
+                          {selectedOrder.tables.zone ? ` · ${selectedOrder.tables.zone}` : ""}
+                        </p>
+                      )}
                       {selectedOrder.order_type === "additional" && (
-                        <Badge className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400">
-                          <Plus className="mr-1 size-3" /> Add-On
+                        <Badge className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300 text-[10px] h-4 px-1.5">
+                          <Plus className="mr-1 size-2.5" /> Add-On
                         </Badge>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 mt-1 text-xs sm:text-sm text-muted-foreground flex-wrap">
-                      {selectedOrder.tables?.label && (
-                        <span className="font-medium text-foreground">
-                          {selectedOrder.tables.label}
-                          {selectedOrder.tables.zone ? ` (${selectedOrder.tables.zone})` : ""}
-                        </span>
-                      )}
-                      {selectedOrder.customer_name && (
-                        <span>· {selectedOrder.customer_name}</span>
-                      )}
-                      <span>· {formatDateTime(selectedOrder.created_at)}</span>
-                    </div>
                   </div>
-                  {selectedOrder.payment_status === "paid" && (
-                    <Badge variant="outline" className="shrink-0">
-                      <CreditCard className="size-3 mr-1" /> Paid
-                    </Badge>
-                  )}
+                  <Badge
+                    className={
+                      STATUS_CONFIG[selectedOrder?.status as OrderStatus]?.color ?? "bg-gray-100"
+                    }
+                  >
+                    {STATUS_CONFIG[selectedOrder?.status as OrderStatus]?.label ??
+                      selectedOrder?.status}
+                  </Badge>
+                </div>
+                {/* Order info card - like Session Host card */}
+                <div className="mt-3 rounded-lg bg-white/60 dark:bg-black/20 p-2.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      {selectedOrder.customer_name && (
+                        <>
+                          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                            Customer
+                          </p>
+                          <p className="text-sm font-bold truncate">
+                            {selectedOrder.customer_name}
+                          </p>
+                        </>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Started {formatDateTime(selectedOrder.created_at)}
+                      </p>
+                    </div>
+                    {selectedOrder.payment_status === "paid" && (
+                      <Badge variant="outline" className="shrink-0 text-[10px] h-5">
+                        <CreditCard className="size-2.5 mr-1" /> Paid
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -685,6 +790,20 @@ export function PosOrdersClient({
                                 <div className="flex items-center justify-center size-7 rounded-full bg-primary/10 text-primary text-xs font-semibold shrink-0">
                                   {item.quantity}×
                                 </div>
+                                {/* Item Image */}
+                                <div className="size-12 rounded-lg overflow-hidden bg-muted shrink-0">
+                                  {item.image_url ? (
+                                    <img 
+                                      src={item.image_url} 
+                                      alt={item.name}
+                                      className="size-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="size-full flex items-center justify-center">
+                                      <UtensilsCrossed className="size-5 text-muted-foreground/40" />
+                                    </div>
+                                  )}
+                                </div>
                                 <div className="flex-1 min-w-0">
                                   <p className="text-sm font-medium leading-tight truncate">
                                     {item.name}
@@ -721,6 +840,20 @@ export function PosOrdersClient({
                             <div className="flex items-center justify-center size-7 rounded-full bg-primary/10 text-primary text-xs font-semibold shrink-0">
                               {item.quantity}×
                             </div>
+                            {/* Item Image */}
+                            <div className="size-12 rounded-lg overflow-hidden bg-muted shrink-0">
+                              {item.image_url ? (
+                                <img 
+                                  src={item.image_url} 
+                                  alt={item.name}
+                                  className="size-full object-cover"
+                                />
+                              ) : (
+                                <div className="size-full flex items-center justify-center">
+                                  <UtensilsCrossed className="size-5 text-muted-foreground/40" />
+                                </div>
+                              )}
+                            </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium leading-tight truncate">
                                 {item.name}
@@ -745,26 +878,28 @@ export function PosOrdersClient({
                     )}
                   </section>
 
-                  {/* Totals - Combined if multiple related orders */}
-                  <section className="rounded-lg border bg-muted/20 p-4 space-y-2">
+                  {/* Totals - Combined if multiple related orders - Styled like Table Account */}
+                  <section className="rounded-lg border-2 border-primary/30 bg-primary/5 p-4 space-y-2">
                     {relatedOrders.length > 1 ? (
                       // Combined totals
                       <>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Combined Subtotal</span>
-                          <span className="tabular-nums font-medium">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">
+                            {relatedOrders.length} order{relatedOrders.length !== 1 ? "s" : ""} · {relatedOrders.reduce((sum, o) => sum + (o.order_items?.length ?? 0), 0)} items
+                          </span>
+                          <span className="tabular-nums font-semibold">
                             {formatCurrency(relatedOrders.reduce((sum, o) => sum + Number(o.subtotal), 0))}
                           </span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Tax (12%)</span>
+                          <span className="text-muted-foreground">Tax</span>
                           <span className="tabular-nums font-medium">
                             {formatCurrency(relatedOrders.reduce((sum, o) => sum + Number(o.tax), 0))}
                           </span>
                         </div>
-                        <div className="flex justify-between items-baseline border-t pt-2 mt-2">
-                          <span className="text-sm font-semibold">Combined Total</span>
-                          <span className="text-xl font-bold text-primary tabular-nums">
+                        <div className="flex justify-between items-baseline border-t pt-2 mt-1">
+                          <span className="text-sm font-semibold">Amount Due</span>
+                          <span className="text-2xl font-black text-primary tabular-nums">
                             {formatCurrency(relatedOrders.reduce((sum, o) => sum + Number(o.total), 0))}
                           </span>
                         </div>
@@ -772,21 +907,23 @@ export function PosOrdersClient({
                     ) : (
                       // Single order totals
                       <>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Subtotal</span>
-                          <span className="tabular-nums font-medium">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">
+                            1 order · {selectedOrder.order_items?.length ?? 0} item{(selectedOrder.order_items?.length ?? 0) !== 1 ? "s" : ""}
+                          </span>
+                          <span className="tabular-nums font-semibold">
                             {formatCurrency(Number(selectedOrder.subtotal))}
                           </span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Tax (12%)</span>
+                          <span className="text-muted-foreground">Tax</span>
                           <span className="tabular-nums font-medium">
                             {formatCurrency(Number(selectedOrder.tax))}
                           </span>
                         </div>
-                        <div className="flex justify-between items-baseline border-t pt-2 mt-2">
-                          <span className="text-sm font-semibold">Total</span>
-                          <span className="text-xl font-bold text-primary tabular-nums">
+                        <div className="flex justify-between items-baseline border-t pt-2 mt-1">
+                          <span className="text-sm font-semibold">Amount Due</span>
+                          <span className="text-2xl font-black text-primary tabular-nums">
                             {formatCurrency(Number(selectedOrder.total))}
                           </span>
                         </div>
@@ -796,7 +933,7 @@ export function PosOrdersClient({
                 </div>
               </div>
 
-              {/* Footer actions — proper corporate layout */}
+              {/* Footer - Matching Table Account style */}
               <div className="border-t px-6 py-4 shrink-0 bg-muted/10">
                 <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2">
                   {/* Left side: secondary actions */}
@@ -883,272 +1020,349 @@ export function PosOrdersClient({
         </DialogContent>
       </Dialog>
 
-      {/* Payment Dialog - Redesigned to match reference */}
+      {/* Payment Dialog - Professional Layout */}
       <Dialog
         open={payDialog.open}
         onOpenChange={(o) => setPayDialog((d) => ({ ...d, open: o }))}
       >
         <DialogContent 
           showCloseButton={false}
-          className="w-[920px] h-[820px] max-w-[calc(100vw-48px)] max-h-[calc(100vh-48px)] p-0 gap-0 overflow-hidden flex flex-col rounded-2xl"
+          className="w-[1000px] !min-w-[1000px] max-h-[90vh] !max-w-[1000px] p-0 gap-0 overflow-hidden flex flex-col rounded-2xl"
         >
           {selectedOrder && (
             <>
-              {/* Dark Blue Header - Fixed at top - ~82px */}
-              <div className="shrink-0 bg-gradient-to-r from-slate-800 to-slate-700 px-6 py-3.5 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="size-11 rounded-xl bg-blue-600 flex items-center justify-center shrink-0">
-                    <CreditCard className="size-5 text-white" />
+              {/* Modern Header with Restaurant Branding */}
+              <div className="shrink-0 bg-gradient-to-r from-slate-800 to-slate-700 px-6 py-4 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="size-12 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                    <UtensilsCrossed className="size-6 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold text-white leading-tight">Process Payment</h2>
-                    <p className="text-xs text-slate-300 leading-tight">Complete the payment to close the order</p>
+                    <h2 className="text-xl font-black text-white leading-tight">Restaubar</h2>
+                    <p className="text-xs text-slate-300 leading-tight">Good Food • Great Vibes</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-5 shrink-0">
-                  <div className="text-center">
-                    <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mb-0.5">TABLE</p>
-                    <p className="text-lg font-black text-white leading-tight">{selectedOrder.tables?.label || "TO"}</p>
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-2 text-white">
+                    <Users className="size-4" />
+                    <div className="text-left">
+                      <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Table</p>
+                      <p className="text-base font-black leading-tight">{selectedOrder.tables?.label || "TO"}</p>
+                    </div>
                   </div>
                   <div className="w-px h-8 bg-slate-600" />
-                  <div className="text-center">
-                    <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mb-0.5">ORDER</p>
-                    <p className="text-lg font-black text-white leading-tight">#{selectedOrder.order_number}</p>
+                  <div className="flex items-center gap-2 text-white">
+                    <Receipt className="size-4" />
+                    <div className="text-left">
+                      <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Order #</p>
+                      <p className="text-base font-black leading-tight">{selectedOrder.order_number}</p>
+                    </div>
+                  </div>
+                  <div className="w-px h-8 bg-slate-600" />
+                  <div className="flex items-center gap-2 text-white">
+                    <Clock className="size-4" />
+                    <div className="text-left">
+                      <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                      <p className="text-base font-black leading-tight">{new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</p>
+                    </div>
                   </div>
                   <button
                     onClick={() => setPayDialog((d) => ({ ...d, open: false }))}
-                    className="ml-3 size-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+                    className="ml-2 size-9 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
                   >
-                    <X className="size-4 text-white" />
+                    <X className="size-5 text-white" />
                   </button>
                 </div>
               </div>
 
-              {/* Main Content - NO SCROLL, perfectly fitted - ~655px */}
-              <div className="flex-1 px-6 py-3.5 space-y-2.5 bg-slate-50 dark:bg-slate-950 overflow-hidden">
-                {/* Amount Due + Order Summary Grid - ~145px */}
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Left: Amount Due */}
-                  <div className="bg-gradient-to-br from-blue-50 to-slate-50 dark:from-blue-950/30 dark:to-slate-900 rounded-xl p-3 border border-blue-100 dark:border-blue-900">
-                    <div className="flex items-start gap-2 mb-1.5">
-                      <div className="size-7 rounded-full bg-blue-600 flex items-center justify-center shrink-0">
-                        <span className="text-white font-bold text-sm">₱</span>
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide leading-tight">Amount Due</p>
-                      </div>
-                    </div>
-                    <p className="text-3xl font-black text-slate-900 dark:text-white tabular-nums leading-tight">
-                      {formatCurrency(Number(selectedOrder.total)).replace('₱', '₱')}
-                    </p>
-                  </div>
-
-                  {/* Right: Order Summary */}
-                  <div className="bg-white dark:bg-slate-900 rounded-xl p-3 border border-slate-200 dark:border-slate-800 space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-600 dark:text-slate-400 font-medium">Items</span>
-                      <span className="font-black text-lg text-slate-900 dark:text-white">
-                        {selectedOrder.order_items?.reduce((sum, item) => sum + item.quantity, 0) || 0}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-600 dark:text-slate-400 font-medium">Subtotal</span>
-                      <span className="font-bold text-base text-slate-900 dark:text-white">
-                        {formatCurrency(Number(selectedOrder.subtotal))}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-600 dark:text-slate-400 font-medium">Service Charge (10%)</span>
-                      <span className="font-bold text-base text-slate-900 dark:text-white">
-                        {formatCurrency(Number(selectedOrder.tax))}
-                      </span>
-                    </div>
-                    <div className="pt-1.5 border-t-2 border-slate-200 dark:border-slate-800">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-black text-slate-900 dark:text-white">Total</span>
-                        <span className="text-xl font-black text-slate-900 dark:text-white">
-                          {formatCurrency(Number(selectedOrder.total))}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Payment Method Selection - ~155px */}
-                <div className="space-y-2">
-                  <div>
-                    <h3 className="text-sm font-black text-slate-900 dark:text-white leading-tight">Select Payment Method</h3>
-                    <p className="text-[10px] text-slate-600 dark:text-slate-400 leading-tight">Choose a payment method to proceed.</p>
-                  </div>
-                  
-                  <div className="grid grid-cols-4 gap-2.5">
-                    {[
-                      { id: 'cash', label: 'Cash', img: '/Cash.png', color: 'emerald' },
-                      { id: 'card', label: 'Card', img: '/Card.png', color: 'slate' },
-                      { id: 'gcash', label: 'GCash', img: '/Gcash.png', color: 'blue' },
-                      { id: 'maya', label: 'PayMaya', img: '/Paymaya.png', color: 'emerald' },
-                    ].map((method) => (
-                      <button
-                        key={method.id}
-                        type="button"
-                        onClick={() => setPayDialog((d) => ({ ...d, method: method.id as any, amountTendered: "" }))}
-                        className={`relative rounded-xl border-2 p-2.5 transition-all duration-200 ${
-                          payDialog.method === method.id
-                            ? `border-${method.color}-600 bg-${method.color}-50 dark:bg-${method.color}-950/30 shadow-xl scale-105`
-                            : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-lg hover:scale-102'
-                        }`}
-                      >
-                        {payDialog.method === method.id && (
-                          <div className={`absolute -top-2 -right-2 size-6 rounded-full bg-${method.color}-600 flex items-center justify-center shadow-lg z-10`}>
-                            <Check className="size-3.5 text-white stroke-[3]" />
-                          </div>
-                        )}
-                        <div className="w-full h-20 mb-1.5 flex items-center justify-center">
-                          <img src={method.img} alt={method.label} className="max-w-full max-h-full object-contain" />
+              {/* Main Content - Two Column Layout */}
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <div className="flex h-full min-w-[1000px]">
+                  {/* Left Column - Payment Input */}
+                  <div className="flex-1 p-5 space-y-4 overflow-y-auto bg-slate-50 dark:bg-slate-950">
+                    {/* Amount Due Card */}
+                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-4 shadow-lg">
+                      <div className="flex items-start gap-3">
+                        <div className="size-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center shrink-0">
+                          <CreditCard className="size-5 text-white" />
                         </div>
-                        <p className={`text-center text-xs font-black leading-tight ${
-                          payDialog.method === method.id ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'
-                        }`}>
-                          {method.label}
-                        </p>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                        <div className="flex-1">
+                          <p className="text-[10px] font-bold text-blue-100 uppercase tracking-wider">Amount Due</p>
+                          <p className="text-4xl font-black text-white tabular-nums mt-1">
+                            {formatCurrency(Number(selectedOrder.total))}
+                          </p>
+                          <p className="text-[11px] text-blue-100 mt-1.5">
+                            Total items: {selectedOrder.order_items?.reduce((sum, item) => sum + item.quantity, 0) || 0} | Service charge: {formatCurrency(Number(selectedOrder.tax))}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
 
-                {/* Cash Amount Input - Dynamic height based on state */}
-                {payDialog.method === "cash" && (
-                  <div className="grid grid-cols-2 gap-3">
-                    {/* Amount Tendered */}
-                    <div className="space-y-2">
+                    {/* Payment Method Selection */}
+                    <div>
+                      <h3 className="text-sm font-black text-slate-900 dark:text-white mb-0.5">Select Payment Method</h3>
+                      <p className="text-[11px] text-slate-600 dark:text-slate-400 mb-2.5">Choose a payment method to proceed.</p>
+                      
+                      <div className="grid grid-cols-4 gap-2.5">
+                        {[
+                          { id: 'cash', label: 'Cash', img: '/Cash.png' },
+                          { id: 'card', label: 'Card', img: '/Card.png' },
+                          { id: 'gcash', label: 'GCash', img: '/Gcash.png' },
+                          { id: 'maya', label: 'Maya', img: '/Paymaya.png' },
+                        ].map((method) => (
+                          <button
+                            key={method.id}
+                            type="button"
+                            onClick={() => setPayDialog((d) => ({ ...d, method: method.id as any, amountTendered: "" }))}
+                            className={`relative rounded-xl border-2 p-2.5 transition-all duration-200 ${
+                              payDialog.method === method.id
+                                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 shadow-lg scale-105'
+                                : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700'
+                            }`}
+                          >
+                            {payDialog.method === method.id && (
+                              <div className="absolute -top-2 -right-2 size-6 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg z-10">
+                                <Check className="size-3.5 text-white stroke-[3]" />
+                              </div>
+                            )}
+                            <div className="w-full h-12 mb-1.5 flex items-center justify-center">
+                              <img src={method.img} alt={method.label} className="max-w-full max-h-full object-contain" />
+                            </div>
+                            <p className={`text-center text-xs font-black ${
+                              payDialog.method === method.id ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400'
+                            }`}>
+                              {method.label}
+                            </p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Cash Input with Numpad */}
+                    {payDialog.method === "cash" && (
                       <div>
-                        <h3 className="text-sm font-black text-slate-900 dark:text-white leading-tight">Amount Tendered</h3>
-                        <p className="text-[10px] text-slate-600 dark:text-slate-400 leading-tight">Enter the cash amount received</p>
-                      </div>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-lg font-black text-slate-400">₱</span>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          placeholder="0.00"
-                          value={payDialog.amountTendered}
-                          onChange={(e) => setPayDialog((d) => ({ ...d, amountTendered: e.target.value }))}
-                          className="pl-9 h-12 text-xl font-black tabular-nums border-2 rounded-xl"
-                        />
-                      </div>
-                      <div className="flex gap-2">
-                        {[100, 500, 1000].map((amount) => (
+                        <h3 className="text-sm font-black text-slate-900 dark:text-white mb-0.5">Amount Tendered</h3>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-400 mb-2.5">Enter the cash amount received.</p>
+                        
+                        <div className="relative mb-3">
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-black text-slate-400">₱</span>
+                          <Input
+                            type="text"
+                            inputMode="decimal"
+                            value={payDialog.amountTendered}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/[^0-9.]/g, '')
+                              setPayDialog((d) => ({ ...d, amountTendered: value }))
+                            }}
+                            className="pl-11 h-14 text-2xl font-black tabular-nums border-2 rounded-xl text-center"
+                            placeholder="0.00"
+                          />
+                        </div>
+
+                        {/* Numpad */}
+                        <div className="grid grid-cols-4 gap-2 mb-3">
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, '00', 0, '⌫'].map((num) => (
+                            <Button
+                              key={num}
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                if (num === '⌫') {
+                                  setPayDialog((d) => ({ ...d, amountTendered: d.amountTendered.slice(0, -1) }))
+                                } else {
+                                  setPayDialog((d) => ({ ...d, amountTendered: d.amountTendered + num }))
+                                }
+                              }}
+                              className="h-11 text-lg font-bold rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
+                            >
+                              {num}
+                            </Button>
+                          ))}
+                        </div>
+
+                        {/* Quick Amount Buttons */}
+                        <div className="grid grid-cols-4 gap-2">
+                          {[100, 500, 1000].map((amount) => (
+                            <Button
+                              key={amount}
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                const current = parseFloat(payDialog.amountTendered) || 0
+                                setPayDialog((d) => ({ ...d, amountTendered: String(current + amount) }))
+                              }}
+                              className="h-9 text-sm font-bold rounded-lg bg-blue-50 hover:bg-blue-100 dark:bg-blue-950 dark:hover:bg-blue-900 border-blue-200 dark:border-blue-800"
+                            >
+                              +{amount}
+                            </Button>
+                          ))}
                           <Button
-                            key={amount}
                             type="button"
                             variant="outline"
-                            onClick={() => {
-                              const current = parseFloat(payDialog.amountTendered) || 0
-                              setPayDialog((d) => ({ ...d, amountTendered: String(current + amount) }))
-                            }}
-                            className="flex-1 h-8 text-xs font-bold rounded-lg"
+                            onClick={() => setPayDialog((d) => ({ ...d, amountTendered: String(Number(selectedOrder.total)) }))}
+                            className="h-9 text-sm font-bold rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950 dark:hover:bg-emerald-900 border-emerald-200 dark:border-emerald-800"
                           >
-                            +{amount}
+                            Exact
                           </Button>
-                        ))}
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => setPayDialog((d) => ({ ...d, amountTendered: String(Math.ceil(Number(selectedOrder.total))) }))}
-                          className="px-2.5 h-8 text-xs font-bold rounded-lg"
-                        >
-                          Exact
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Change Due */}
-                    {changeDue !== null && changeDue >= 0 && (
-                      <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-xl p-3 border-2 border-emerald-200 dark:border-emerald-900 flex flex-col items-center justify-center">
-                        <div className="flex items-center gap-1.5 mb-1.5">
-                          <div className="size-6 rounded-full bg-emerald-600 flex items-center justify-center">
-                            <Check className="size-3.5 text-white stroke-[3]" />
-                          </div>
-                          <h3 className="text-sm font-black text-emerald-700 dark:text-emerald-400 leading-tight">Change Due</h3>
                         </div>
-                        <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums leading-tight">
-                          {formatCurrency(changeDue)}
-                        </p>
                       </div>
                     )}
                   </div>
-                )}
 
-                {/* Payment Info */}
-                {payDialog.method === "cash" && payDialog.amountTendered && (
-                  <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-2.5 border border-blue-200 dark:border-blue-900 flex items-center gap-2">
-                    <AlertCircle className="size-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-                    <div className="text-xs leading-tight">
-                      <span className="font-bold text-blue-900 dark:text-blue-200">Payment method: Cash</span>
-                      <span className="text-blue-700 dark:text-blue-300"> • </span>
-                      <span className="text-blue-700 dark:text-blue-300">
-                        {formatCurrency(parseFloat(payDialog.amountTendered))} received
-                        {changeDue !== null && changeDue > 0 && ` • ${formatCurrency(changeDue)} change`}
-                      </span>
+                  {/* Right Column - Summary */}
+                  <div className="w-[400px] shrink-0 bg-white dark:bg-slate-900 border-l-4 border-emerald-500 flex flex-col h-full">
+                    <div className="flex-1 p-6 space-y-6 overflow-y-auto">
+                      {/* Items Summary */}
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="text-sm font-black text-slate-900 dark:text-white">Items ({selectedOrder.order_items?.reduce((sum, item) => sum + item.quantity, 0) || 0})</h3>
+                          <span className="text-xl font-black text-slate-900 dark:text-white">
+                            {formatCurrency(Number(selectedOrder.subtotal))}
+                          </span>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-slate-600 dark:text-slate-400">Subtotal</span>
+                            <span className="font-bold text-slate-900 dark:text-white">
+                              {formatCurrency(Number(selectedOrder.subtotal))}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-slate-600 dark:text-slate-400">Service Charge</span>
+                            <span className="font-bold text-slate-900 dark:text-white">
+                              {formatCurrency(Number(selectedOrder.tax))}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="mt-4 pt-4 border-t-2 border-slate-200 dark:border-slate-800">
+                          <div className="flex items-center justify-between">
+                            <span className="text-lg font-black text-slate-900 dark:text-white">Total</span>
+                            <span className="text-2xl font-black text-slate-900 dark:text-white">
+                              {formatCurrency(Number(selectedOrder.total))}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Change Due Card */}
+                      {payDialog.method === "cash" && changeDue !== null && changeDue > 0 && (
+                        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-5 shadow-lg">
+                          <div className="flex items-start gap-3">
+                            <div className="size-10 rounded-lg bg-white/20 backdrop-blur flex items-center justify-center shrink-0">
+                              <Check className="size-5 text-white stroke-[3]" />
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="text-sm font-black text-emerald-50">CHANGE DUE</h3>
+                              <p className="text-4xl font-black text-white tabular-nums mt-2">
+                                {formatCurrency(changeDue)}
+                              </p>
+                              <div className="mt-3 pt-3 border-t border-emerald-400/30 space-y-1 text-xs text-emerald-50">
+                                <div className="flex justify-between">
+                                  <span>{formatCurrency(parseFloat(payDialog.amountTendered))} received</span>
+                                  <span>−</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>{formatCurrency(Number(selectedOrder.total))} total</span>
+                                  <span>=</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Payment Summary Info */}
+                      {payDialog.method === "cash" && payDialog.amountTendered && (
+                        <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4 border border-blue-200 dark:border-blue-900">
+                          <div className="flex gap-2">
+                            <AlertCircle className="size-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                            <div>
+                              <h4 className="text-sm font-bold text-blue-900 dark:text-blue-200 mb-1">Payment Summary</h4>
+                              <div className="space-y-1 text-xs text-blue-700 dark:text-blue-300">
+                                <div className="flex justify-between gap-4">
+                                  <span>Cash Received</span>
+                                  <span className="font-bold">{formatCurrency(parseFloat(payDialog.amountTendered))}</span>
+                                </div>
+                                <div className="flex justify-between gap-4">
+                                  <span>Total Amount</span>
+                                  <span className="font-bold">{formatCurrency(Number(selectedOrder.total))}</span>
+                                </div>
+                                <div className="flex justify-between gap-4 pt-1 border-t border-blue-200 dark:border-blue-800">
+                                  <span className="font-bold">Change Due</span>
+                                  <span className="font-black text-emerald-600 dark:text-emerald-400">{formatCurrency(changeDue || 0)}</span>
+                                </div>
+                              </div>
+                              <p className="text-xs text-blue-600 dark:text-blue-400 mt-3">
+                                <strong>Payment method:</strong> Cash<br/>
+                                Please confirm the amount before completing.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="p-6 border-t border-slate-200 dark:border-slate-800 space-y-3">
+                      <Button
+                        onClick={confirmPayment}
+                        disabled={
+                          pending ||
+                          (payDialog.method === "cash" &&
+                            (!payDialog.amountTendered ||
+                              parseFloat(payDialog.amountTendered) < Number(selectedOrder.total)))
+                        }
+                        className="w-full h-12 text-base font-bold bg-emerald-600 hover:bg-emerald-700 rounded-xl"
+                        size="lg"
+                      >
+                        {pending ? (
+                          <Loader2 className="size-5 animate-spin mr-2" />
+                        ) : (
+                          <CreditCard className="size-5 mr-2" />
+                        )}
+                        Complete Payment →
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => setPayDialog((d) => ({ ...d, open: false }))}
+                        className="w-full h-10 text-sm font-bold rounded-lg"
+                      >
+                        <X className="size-4 mr-2" />
+                        Cancel
+                      </Button>
                     </div>
                   </div>
-                )}
+                </div>
               </div>
 
-              {/* Footer - Fixed at bottom - ~83px */}
-              <div className="shrink-0 px-6 py-3 bg-white dark:bg-slate-900 border-t-2 border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2.5">
+              {/* Footer Keyboard Shortcuts */}
+              <div className="shrink-0 px-6 py-3 bg-slate-800 border-t border-slate-700">
+                <div className="flex items-center justify-center gap-4 text-[10px] text-slate-400">
                   <span className="flex items-center gap-1">
-                    <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 font-mono font-semibold text-[10px]">1</kbd>
-                    <span className="text-[10px]">Cash</span>
+                    <kbd className="px-2 py-1 rounded bg-slate-700 border border-slate-600 font-mono font-bold">1</kbd>
+                    <span>Cash</span>
                   </span>
                   <span className="flex items-center gap-1">
-                    <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 font-mono font-semibold text-[10px]">2</kbd>
-                    <span className="text-[10px]">Card</span>
+                    <kbd className="px-2 py-1 rounded bg-slate-700 border border-slate-600 font-mono font-bold">2</kbd>
+                    <span>Card</span>
                   </span>
                   <span className="flex items-center gap-1">
-                    <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 font-mono font-semibold text-[10px]">3</kbd>
-                    <span className="text-[10px]">GCash</span>
+                    <kbd className="px-2 py-1 rounded bg-slate-700 border border-slate-600 font-mono font-bold">3</kbd>
+                    <span>GCash</span>
                   </span>
                   <span className="flex items-center gap-1">
-                    <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 font-mono font-semibold text-[10px]">4</kbd>
-                    <span className="text-[10px]">PayMaya</span>
+                    <kbd className="px-2 py-1 rounded bg-slate-700 border border-slate-600 font-mono font-bold">4</kbd>
+                    <span>PayMaya</span>
+                  </span>
+                  <span className="text-slate-600">|</span>
+                  <span className="flex items-center gap-1">
+                    <kbd className="px-2 py-1 rounded bg-slate-700 border border-slate-600 font-mono font-bold">Esc</kbd>
+                    <span>Cancel</span>
                   </span>
                   <span className="flex items-center gap-1">
-                    <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 font-mono font-semibold text-[10px]">Esc</kbd>
-                    <span className="text-[10px]">Cancel</span>
+                    <kbd className="px-2 py-1 rounded bg-slate-700 border border-slate-600 font-mono font-bold">Enter</kbd>
+                    <span>Complete</span>
                   </span>
-                  <span className="flex items-center gap-1">
-                    <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 font-mono font-semibold text-[10px]">Enter</kbd>
-                    <span className="text-[10px]">Complete</span>
-                  </span>
-                </div>
-                <div className="flex gap-2.5">
-                  <Button
-                    variant="outline"
-                    onClick={() => setPayDialog((d) => ({ ...d, open: false }))}
-                    className="h-9 px-5 text-xs font-bold rounded-lg"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={confirmPayment}
-                    disabled={
-                      pending ||
-                      (payDialog.method === "cash" &&
-                        (!payDialog.amountTendered ||
-                          parseFloat(payDialog.amountTendered) < Number(selectedOrder.total)))
-                    }
-                    className="h-9 px-5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 rounded-lg"
-                  >
-                    {pending ? (
-                      <Loader2 className="size-3.5 animate-spin mr-1.5" />
-                    ) : (
-                      <CreditCard className="size-3.5 mr-1.5" />
-                    )}
-                    Complete Payment
-                  </Button>
                 </div>
               </div>
             </>
