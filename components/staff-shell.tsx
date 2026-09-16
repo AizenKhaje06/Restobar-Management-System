@@ -311,7 +311,7 @@ export function StaffShell({
           </Avatar>
         </header>
 
-        <main className="flex-1 px-4 py-6 md:px-8 md:py-8">{children}</main>
+        <main className="flex-1 px-4 py-6 md:px-8 md:py-8 bg-white dark:bg-zinc-950">{children}</main>
       </div>
 
       {/* Logout Confirmation Dialog */}

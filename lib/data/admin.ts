@@ -390,11 +390,155 @@ export async function getActivityLogs(limit = 50) {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from("activity_logs")
-    .select("*")
+    .select(`
+      *,
+      actor:profiles!activity_logs_actor_id_fkey(id, full_name, email, role)
+    `)
     .order("created_at", { ascending: false })
     .limit(limit)
+  
   if (error) return []
-  return (data ?? []) as ActivityLog[]
+  
+  // Enhance activity logs with additional context
+  const enhancedLogs = await Promise.all((data ?? []).map(async (log) => {
+    const detail = log.detail as Record<string, any> | null
+    let enhancedDetail = detail ? { ...detail } : {}
+    
+    // If table_label is already in detail, use it
+    // Otherwise, fetch from database for old logs
+    
+    // Add table information for table-related activities
+    if (log.entity === "table" && log.entity_id && !enhancedDetail.table_label) {
+      const { data: table, error: tableError } = await supabase
+        .from("tables")
+        .select("label, capacity, status")
+        .eq("id", log.entity_id)
+        .single()
+      
+      console.log('Fetching table for entity_id:', log.entity_id, { table, tableError })
+      
+      if (table) {
+        enhancedDetail = { ...enhancedDetail, table_label: table.label, capacity: table.capacity, status: table.status }
+        console.log('Enhanced detail after table fetch:', enhancedDetail)
+      }
+    }
+    
+    // Add order details for order-related activities
+    if (log.entity === "order" && log.entity_id) {
+      const { data: order } = await supabase
+        .from("orders")
+        .select(`
+          order_number,
+          total,
+          status,
+          payment_status,
+          customer_name,
+          table:tables(label)
+        `)
+        .eq("id", log.entity_id)
+        .single()
+      if (order) {
+        enhancedDetail = {
+          ...enhancedDetail,
+          order_number: order.order_number,
+          total: order.total,
+          status: order.status,
+          payment_status: order.payment_status,
+          customer_name: order.customer_name,
+          table_label: order.table?.label || enhancedDetail.table_label
+        }
+      }
+    }
+    
+    // Add table_session details for session-related activities
+    if (log.entity === "table_session" && log.entity_id) {
+      const { data: session, error: sessionError } = await supabase
+        .from("table_sessions")
+        .select(`
+          customer_name,
+          guests,
+          status,
+          table_id,
+          table:tables(label)
+        `)
+        .eq("id", log.entity_id)
+        .single()
+      
+      console.log('Fetching session for entity_id:', log.entity_id, { session, sessionError })
+      
+      if (session) {
+        enhancedDetail = {
+          ...enhancedDetail,
+          customer_name: enhancedDetail.customer_name || session.customer_name,
+          guests: enhancedDetail.guests || session.guests,
+          status: session.status,
+          table_label: session.table?.label || enhancedDetail.table_label
+        }
+        console.log('Enhanced detail after session fetch:', enhancedDetail)
+      }
+    }
+    
+    // Add reservation details
+    if (log.entity === "reservation" && log.entity_id) {
+      const { data: reservation } = await supabase
+        .from("reservations")
+        .select(`
+          customer_name,
+          customer_email,
+          customer_phone,
+          guests,
+          date,
+          time,
+          status,
+          table:tables(label)
+        `)
+        .eq("id", log.entity_id)
+        .single()
+      if (reservation) {
+        enhancedDetail = {
+          ...enhancedDetail,
+          customer_name: reservation.customer_name,
+          customer_email: reservation.customer_email,
+          customer_phone: reservation.customer_phone,
+          guests: reservation.guests,
+          date: reservation.date,
+          time: reservation.time,
+          status: reservation.status,
+          table_label: reservation.table?.label || enhancedDetail.table_label
+        }
+      }
+    }
+    
+    // Add menu item details
+    if (log.entity === "menu_item" && log.entity_id) {
+      const { data: menuItem } = await supabase
+        .from("menu_items")
+        .select(`
+          name,
+          price,
+          category:categories(name)
+        `)
+        .eq("id", log.entity_id)
+        .single()
+      if (menuItem) {
+        enhancedDetail = {
+          ...enhancedDetail,
+          name: menuItem.name,
+          price: menuItem.price,
+          category: menuItem.category?.name
+        }
+      }
+    }
+    
+    return {
+      ...log,
+      actor_name: log.actor?.full_name || log.actor?.email || "System",
+      actor_role: log.actor?.role,
+      detail: enhancedDetail
+    } as ActivityLog
+  }))
+  
+  return enhancedLogs
 }
 
 // ============================================================

@@ -259,7 +259,7 @@ export function MenuManager({
 
           {/* RIGHT: Category Sidebar */}
           <div className="w-[240px] flex-shrink-0 space-y-4">
-            <Card className="sticky top-4">
+            <Card className="sticky top-4 transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(0,0,0,0.15),0_0_0_1px_rgba(255,255,255,0.1)_inset,0_1px_0_rgba(255,255,255,0.3)_inset] shadow-[0_2px_8px_rgba(0,0,0,0.08),0_0_0_1px_rgba(0,0,0,0.05)_inset,0_1px_0_rgba(255,255,255,0.5)_inset] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.05)_inset,0_1px_0_rgba(255,255,255,0.1)_inset] dark:hover:shadow-[0_20px_50px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.1)_inset,0_1px_0_rgba(255,255,255,0.2)_inset]">
               <CardContent className="p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <h3 className="text-sm font-semibold">Categories</h3>
@@ -523,7 +523,7 @@ function ItemCard({
   onToggle: () => void
 }) {
   return (
-    <Card className="group overflow-hidden transition-all hover:border-foreground/20 hover:shadow-sm">
+    <Card className="group overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:border-foreground/20 hover:shadow-[0_20px_50px_rgba(0,0,0,0.15),0_0_0_1px_rgba(255,255,255,0.1)_inset,0_1px_0_rgba(255,255,255,0.3)_inset] shadow-[0_2px_8px_rgba(0,0,0,0.08),0_0_0_1px_rgba(0,0,0,0.05)_inset,0_1px_0_rgba(255,255,255,0.5)_inset] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.05)_inset,0_1px_0_rgba(255,255,255,0.1)_inset] dark:hover:shadow-[0_20px_50px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.1)_inset,0_1px_0_rgba(255,255,255,0.2)_inset]">
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-br from-muted to-muted/40">
         {item.image_url ? (
           // eslint-disable-next-line @next/next/no-img-element

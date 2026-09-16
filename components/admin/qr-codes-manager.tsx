@@ -121,7 +121,7 @@ export function QRCodesManager({ tables }: { tables: TableWithWaiter[] }) {
         }
       />
 
-      <Card className="print:hidden">
+      <Card className="print:hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(0,0,0,0.15),0_0_0_1px_rgba(255,255,255,0.1)_inset,0_1px_0_rgba(255,255,255,0.3)_inset] shadow-[0_2px_8px_rgba(0,0,0,0.08),0_0_0_1px_rgba(0,0,0,0.05)_inset,0_1px_0_rgba(255,255,255,0.5)_inset] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.05)_inset,0_1px_0_rgba(255,255,255,0.1)_inset] dark:hover:shadow-[0_20px_50px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.1)_inset,0_1px_0_rgba(255,255,255,0.2)_inset]">
         <CardContent className="flex flex-wrap items-center gap-3 p-4">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -139,7 +139,7 @@ export function QRCodesManager({ tables }: { tables: TableWithWaiter[] }) {
       </Card>
 
       {filtered.length === 0 ? (
-        <Card className="print:hidden">
+        <Card className="print:hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(0,0,0,0.15),0_0_0_1px_rgba(255,255,255,0.1)_inset,0_1px_0_rgba(255,255,255,0.3)_inset] shadow-[0_2px_8px_rgba(0,0,0,0.08),0_0_0_1px_rgba(0,0,0,0.05)_inset,0_1px_0_rgba(255,255,255,0.5)_inset] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.05)_inset,0_1px_0_rgba(255,255,255,0.1)_inset] dark:hover:shadow-[0_20px_50px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.1)_inset,0_1px_0_rgba(255,255,255,0.2)_inset]">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <QrCode className="mb-3 size-10 text-muted-foreground" />
             <p className="text-sm font-medium">No tables to show</p>
@@ -370,7 +370,7 @@ function QRCard({
   }, [table.id, supabase])
 
   return (
-    <Card className="overflow-hidden print:break-inside-avoid print:shadow-none print:border-2 print:border-gray-300">
+    <Card className="overflow-hidden print:break-inside-avoid print:shadow-none print:border-2 print:border-gray-300 transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(0,0,0,0.15),0_0_0_1px_rgba(255,255,255,0.1)_inset,0_1px_0_rgba(255,255,255,0.3)_inset] shadow-[0_2px_8px_rgba(0,0,0,0.08),0_0_0_1px_rgba(0,0,0,0.05)_inset,0_1px_0_rgba(255,255,255,0.5)_inset] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.05)_inset,0_1px_0_rgba(255,255,255,0.1)_inset] dark:hover:shadow-[0_20px_50px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.1)_inset,0_1px_0_rgba(255,255,255,0.2)_inset]">
       <CardContent className="space-y-4 p-6 text-center print:p-6">
         {/* Header Section - TABLE INFO */}
         <div className="space-y-1 border-b pb-4 print:border-b-2">

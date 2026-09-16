@@ -296,7 +296,17 @@ export async function createTableAction(formData: FormData) {
     await supabase.from("table_qr_codes").insert({ table_id: data.id, token, is_active: true })
   })
 
-  await supabase.rpc("log_activity", { p_action: "table.created", p_entity: "table", p_entity_id: data.id, p_detail: { label } })
+  await supabase.rpc("log_activity", { 
+    p_action: "table.created", 
+    p_entity: "table", 
+    p_entity_id: data.id, 
+    p_detail: { 
+      label,
+      table_label: label,
+      capacity: seats,
+      zone
+    } 
+  })
   revalidatePath("/admin/tables")
   return { success: true, data }
 }
@@ -316,16 +326,47 @@ export async function updateTableAction(id: string, formData: FormData) {
     .eq("id", id)
   if (error) return { error: error.message }
 
-  await supabase.rpc("log_activity", { p_action: "table.updated", p_entity: "table", p_entity_id: id })
+  await supabase.rpc("log_activity", { 
+    p_action: "table.updated", 
+    p_entity: "table", 
+    p_entity_id: id,
+    p_detail: {
+      label,
+      table_label: label,
+      capacity: seats,
+      zone,
+      status
+    }
+  })
   revalidatePath("/admin/tables")
   return { success: true }
 }
 
 export async function deleteTableAction(id: string) {
   const supabase = await createClient()
+  
+  // Get table info before deletion
+  const { data: table } = await supabase
+    .from("tables")
+    .select("label, seats, zone")
+    .eq("id", id)
+    .single()
+  
   const { error } = await supabase.from("tables").delete().eq("id", id)
   if (error) return { error: error.message }
-  await supabase.rpc("log_activity", { p_action: "table.deleted", p_entity: "table", p_entity_id: id })
+  
+  await supabase.rpc("log_activity", { 
+    p_action: "table.deleted", 
+    p_entity: "table", 
+    p_entity_id: id,
+    p_detail: {
+      label: table?.label,
+      table_label: table?.label,
+      capacity: table?.seats,
+      zone: table?.zone
+    }
+  })
+  
   revalidatePath("/admin/tables")
   return { success: true }
 }
@@ -364,7 +405,23 @@ export async function generateTableQRAction(tableId: string) {
     .select()
     .single()
   if (error) return { error: error.message }
-  await supabase.rpc("log_activity", { p_action: "qr.generated", p_entity: "table", p_entity_id: tableId })
+  
+  // Get table info for logging
+  const { data: table } = await supabase
+    .from("tables")
+    .select("label")
+    .eq("id", tableId)
+    .single()
+  
+  await supabase.rpc("log_activity", { 
+    p_action: "qr.generated", 
+    p_entity: "table", 
+    p_entity_id: tableId,
+    p_detail: {
+      table_label: table?.label,
+      token: token.slice(0, 8) + "..."
+    }
+  })
   revalidatePath("/admin/tables")
   revalidatePath("/admin/qr-codes")
   return { success: true, data }

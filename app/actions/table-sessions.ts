@@ -197,7 +197,7 @@ export async function processTableSessionPayment(input: {
   // Get session + table_id
   const { data: session, error: sesErr } = await supabase
     .from("table_sessions")
-    .select("id, table_id, status, customer_name")
+    .select("id, table_id, status, customer_name, guests, table:tables(label)")
     .eq("id", input.session_id)
     .single()
   if (sesErr || !session) return { error: "Session not found" }
@@ -280,6 +280,8 @@ export async function processTableSessionPayment(input: {
       total: grandTotal,
       method: input.method,
       customer_name: session.customer_name,
+      table_label: session.table?.label,
+      guests: session.guests,
       order_count: orders.length,
     },
   })
@@ -308,6 +310,10 @@ export async function cancelTableSession(input: {
   // Get session
   const { data: session, error: sesErr } = await supabase
     .from("table_sessions")
+    .select("*, table:tables(label)")
+    .eq("id", input.session_id)
+    .single()
+  if (sesErr || !session) return { error: sesErr?.message ?? "Session not found" }
     .select("id, table_id, status, customer_name")
     .eq("id", input.session_id)
     .single()
@@ -353,6 +359,8 @@ export async function cancelTableSession(input: {
     p_entity_id: input.session_id,
     p_detail: {
       customer_name: session.customer_name,
+      table_label: session.table?.label,
+      guests: session.guests,
       reason: input.reason,
       order_count: orders?.length ?? 0,
     },

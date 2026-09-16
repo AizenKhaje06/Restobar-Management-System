@@ -185,7 +185,7 @@ export function ReservationsManager({
       </div>
 
       {/* Filters */}
-      <Card>
+      <Card className="transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(0,0,0,0.15),0_0_0_1px_rgba(255,255,255,0.1)_inset,0_1px_0_rgba(255,255,255,0.3)_inset] shadow-[0_2px_8px_rgba(0,0,0,0.08),0_0_0_1px_rgba(0,0,0,0.05)_inset,0_1px_0_rgba(255,255,255,0.5)_inset] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.05)_inset,0_1px_0_rgba(255,255,255,0.1)_inset] dark:hover:shadow-[0_20px_50px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.1)_inset,0_1px_0_rgba(255,255,255,0.2)_inset]">
         <CardContent className="flex flex-wrap items-center gap-3 p-4">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -214,7 +214,7 @@ export function ReservationsManager({
 
       {/* Reservations groups */}
       {filtered.length === 0 ? (
-        <Card>
+        <Card className="transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(0,0,0,0.15),0_0_0_1px_rgba(255,255,255,0.1)_inset,0_1px_0_rgba(255,255,255,0.3)_inset] shadow-[0_2px_8px_rgba(0,0,0,0.08),0_0_0_1px_rgba(0,0,0,0.05)_inset,0_1px_0_rgba(255,255,255,0.5)_inset] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.05)_inset,0_1px_0_rgba(255,255,255,0.1)_inset] dark:hover:shadow-[0_20px_50px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.1)_inset,0_1px_0_rgba(255,255,255,0.2)_inset]">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <CalendarClock className="mb-3 size-10 text-muted-foreground" />
             <p className="text-sm font-medium">No reservations found</p>
@@ -323,7 +323,7 @@ function ReservationGroup({
         <Icon className="size-4" />
         {title} <span className="font-normal">({reservations.length})</span>
       </h3>
-      <Card>
+      <Card className="transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(0,0,0,0.15),0_0_0_1px_rgba(255,255,255,0.1)_inset,0_1px_0_rgba(255,255,255,0.3)_inset] shadow-[0_2px_8px_rgba(0,0,0,0.08),0_0_0_1px_rgba(0,0,0,0.05)_inset,0_1px_0_rgba(255,255,255,0.5)_inset] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.05)_inset,0_1px_0_rgba(255,255,255,0.1)_inset] dark:hover:shadow-[0_20px_50px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.1)_inset,0_1px_0_rgba(255,255,255,0.2)_inset]">
         <CardContent className="p-0">
           <ul className="divide-y">
             {reservations.map((r) => {
@@ -459,75 +459,158 @@ function NewReservationDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>New Reservation</DialogTitle>
+          <DialogTitle className="flex items-center gap-2 text-xl">
+            <CalendarClock className="size-5 text-primary" />
+            New Reservation
+          </DialogTitle>
           <DialogDescription>
-            Create a new booking. The customer will be added to today's queue.
+            Create a new booking for your restaurant. Fill in the customer details and reservation time.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={onSubmit} className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="customer_name">Customer name *</Label>
-              <Input id="customer_name" name="customer_name" required placeholder="e.g. Juan dela Cruz" />
+        <form onSubmit={onSubmit} className="space-y-6">
+          {/* Customer Information Section */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Users className="size-4" />
+              Customer Information
+            </h4>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="customer_name" className="text-sm font-medium">
+                  Customer Name <span className="text-destructive">*</span>
+                </Label>
+                <div className="relative">
+                  <Users className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input 
+                    id="customer_name" 
+                    name="customer_name" 
+                    required 
+                    placeholder="e.g. Juan dela Cruz"
+                    className="h-10 pl-10"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="customer_phone" className="text-sm font-medium">
+                  Phone Number
+                </Label>
+                <div className="relative">
+                  <Phone className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input 
+                    id="customer_phone" 
+                    name="customer_phone" 
+                    type="tel" 
+                    placeholder="0917 000 0000"
+                    className="h-10 pl-10"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="customer_email" className="text-sm font-medium">
+                  Email Address
+                </Label>
+                <div className="relative">
+                  <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input 
+                    id="customer_email" 
+                    name="customer_email" 
+                    type="email" 
+                    placeholder="email@example.com"
+                    className="h-10 pl-10"
+                  />
+                </div>
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="customer_phone">Phone</Label>
-              <Input id="customer_phone" name="customer_phone" type="tel" placeholder="0917 000 0000" />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="customer_email">Email</Label>
-              <Input id="customer_email" name="customer_email" type="email" placeholder="email@example.com" />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="party_size">Party size *</Label>
-              <Input id="party_size" name="party_size" type="number" min="1" defaultValue="2" required />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="reserved_at">Date & time *</Label>
-              <Input
-                id="reserved_at"
-                name="reserved_at"
-                type="datetime-local"
-                defaultValue={defaultDateTime}
-                required
-              />
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="table_id">Table (optional)</Label>
-              <select
-                id="table_id"
-                name="table_id"
-                defaultValue=""
-                className="flex h-8 w-full rounded-md border border-input bg-transparent px-2 text-sm"
-              >
-                <option value="">— Unassigned —</option>
-                {tables.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.label} ({t.seats} seats{t.zone ? `, ${t.zone}` : ""})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea id="notes" name="notes" rows={2} placeholder="Birthday, dietary needs, etc." />
+          </div>
+
+          {/* Reservation Details Section */}
+          <div className="space-y-4 border-t pt-4">
+            <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Clock className="size-4" />
+              Reservation Details
+            </h4>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="party_size" className="text-sm font-medium">
+                  Party Size <span className="text-destructive">*</span>
+                </Label>
+                <div className="relative">
+                  <Users className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input 
+                    id="party_size" 
+                    name="party_size" 
+                    type="number" 
+                    min="1" 
+                    defaultValue="2" 
+                    required
+                    className="h-10 pl-10"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="reserved_at" className="text-sm font-medium">
+                  Date & Time <span className="text-destructive">*</span>
+                </Label>
+                <div className="relative">
+                  <CalendarClock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="reserved_at"
+                    name="reserved_at"
+                    type="datetime-local"
+                    defaultValue={defaultDateTime}
+                    required
+                    className="h-10 pl-10"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="table_id" className="text-sm font-medium">
+                  Assign Table (Optional)
+                </Label>
+                <select
+                  id="table_id"
+                  name="table_id"
+                  defaultValue=""
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <option value="">— Unassigned —</option>
+                  {tables.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.label} ({t.seats} seats{t.zone ? `, ${t.zone}` : ""})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="notes" className="text-sm font-medium">
+                  Special Notes
+                </Label>
+                <Textarea 
+                  id="notes" 
+                  name="notes" 
+                  rows={3} 
+                  placeholder="Birthday celebration, dietary restrictions, accessibility needs, etc."
+                  className="resize-none"
+                />
+              </div>
             </div>
           </div>
 
           {error && (
-            <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-              <XCircle className="mt-0.5 size-4 shrink-0" />
-              {error}
+            <div className="flex items-start gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
+              <XCircle className="mt-0.5 size-5 shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button type="button" variant="outline" onClick={onClose} className="h-10">
               Cancel
             </Button>
-            <Button type="submit" disabled={pending}>
+            <Button type="submit" disabled={pending} className="h-10">
+              <CalendarClock className="mr-2 size-4" />
               {pending ? "Creating..." : "Create Reservation"}
             </Button>
           </DialogFooter>
