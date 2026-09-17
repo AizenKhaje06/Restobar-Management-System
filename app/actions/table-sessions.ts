@@ -63,7 +63,7 @@ export async function getTableSessionByQr(qrToken: string, deviceId?: string) {
         table_id,
         customer_name,
         created_at,
-        tables (label, zone)
+        tables!inner (label, zone)
       `)
       .eq("device_id", deviceId)
       .eq("status", "active")
@@ -71,12 +71,15 @@ export async function getTableSessionByQr(qrToken: string, deviceId?: string) {
       .maybeSingle()
 
     if (deviceSession) {
+      // Supabase returns the joined table as an object, not array (using !inner)
+      const tableInfo = deviceSession.tables as unknown as { label: string; zone?: string } | null
+      
       deviceActiveSession = {
         id: deviceSession.id,
         table_id: deviceSession.table_id,
         customer_name: deviceSession.customer_name,
-        table_label: deviceSession.tables?.label || "Unknown",
-        table_zone: deviceSession.tables?.zone,
+        table_label: tableInfo?.label || "Unknown",
+        table_zone: tableInfo?.zone,
         created_at: deviceSession.created_at,
       }
     }
@@ -119,7 +122,7 @@ export async function createTableSession(input: {
       .select(`
         id,
         table_id,
-        tables (label, zone)
+        tables!inner (label, zone)
       `)
       .eq("device_id", input.device_id)
       .eq("status", "active")
@@ -127,7 +130,9 @@ export async function createTableSession(input: {
       .maybeSingle()
 
     if (deviceSession) {
-      const tableInfo = deviceSession.tables as { label: string; zone?: string } | null
+      // Supabase returns the joined table as an object, not array (using !inner)
+      const tableInfo = deviceSession.tables as unknown as { label: string; zone?: string } | null
+      
       return { 
         error: `You already have an active session at ${tableInfo?.label || "another table"}${tableInfo?.zone ? ` (${tableInfo.zone})` : ""}. Please finish or cancel that session first.`,
         existingSessionTableId: deviceSession.table_id
@@ -343,6 +348,8 @@ export async function processTableSessionPayment(input: {
     .update({ status: "available" })
     .eq("id", session.table_id)
 
+  const tableInfo = session.table as any
+  
   await supabase.rpc("log_activity", {
     p_action: "session.paid",
     p_entity: "table_session",
@@ -351,7 +358,7 @@ export async function processTableSessionPayment(input: {
       total: grandTotal,
       method: input.method,
       customer_name: session.customer_name,
-      table_label: session.table?.label,
+      table_label: (Array.isArray(tableInfo) ? tableInfo[0]?.label : tableInfo?.label) || null,
       guests: session.guests,
       order_count: orders.length,
     },
@@ -385,10 +392,6 @@ export async function cancelTableSession(input: {
     .eq("id", input.session_id)
     .single()
   if (sesErr || !session) return { error: sesErr?.message ?? "Session not found" }
-    .select("id, table_id, status, customer_name")
-    .eq("id", input.session_id)
-    .single()
-  if (sesErr || !session) return { error: "Session not found" }
   if (session.status !== "active") return { error: "Session is already closed" }
 
   // Get all unpaid orders
@@ -424,13 +427,15 @@ export async function cancelTableSession(input: {
     .update({ status: "available" })
     .eq("id", session.table_id)
 
+  const tableInfo = session.table as any
+  
   await supabase.rpc("log_activity", {
     p_action: "session.cancelled",
     p_entity: "table_session",
     p_entity_id: input.session_id,
     p_detail: {
       customer_name: session.customer_name,
-      table_label: session.table?.label,
+      table_label: (Array.isArray(tableInfo) ? tableInfo[0]?.label : tableInfo?.label) || null,
       guests: session.guests,
       reason: input.reason,
       order_count: orders?.length ?? 0,
