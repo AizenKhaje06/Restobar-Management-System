@@ -22,8 +22,10 @@ export interface ActiveSession {
  * Called by customer page on load to decide:
  *  - if active session exists → show "join with access code" modal
  *  - if not → show "create session" modal
+ * 
+ * ✅ NEW: Also checks if the device has an active session on a different table
  */
-export async function getTableSessionByQr(qrToken: string) {
+export async function getTableSessionByQr(qrToken: string, deviceId?: string) {
   const supabase = await createClient()
 
   // Find table by QR token
@@ -51,30 +53,86 @@ export async function getTableSessionByQr(qrToken: string) {
     .eq("status", "active")
     .maybeSingle()
 
+  // ✅ NEW: Check if this device has an active session on a DIFFERENT table
+  let deviceActiveSession = null
+  if (deviceId) {
+    const { data: deviceSession } = await supabase
+      .from("table_sessions")
+      .select(`
+        id,
+        table_id,
+        customer_name,
+        created_at,
+        tables (label, zone)
+      `)
+      .eq("device_id", deviceId)
+      .eq("status", "active")
+      .neq("table_id", table.id) // Different table than the one being scanned
+      .maybeSingle()
+
+    if (deviceSession) {
+      deviceActiveSession = {
+        id: deviceSession.id,
+        table_id: deviceSession.table_id,
+        customer_name: deviceSession.customer_name,
+        table_label: deviceSession.tables?.label || "Unknown",
+        table_zone: deviceSession.tables?.zone,
+        created_at: deviceSession.created_at,
+      }
+    }
+  }
+
   return {
     table,
     activeSession: session
       ? { id: session.id, customer_name: session.customer_name, created_at: session.created_at }
       : null,
+    deviceActiveSession, // NEW: Returns info if device has session on different table
   }
 }
 
 /**
  * Create a new table session (first customer).
  * Returns the session token to be stored in localStorage by the customer.
+ * 
+ * ✅ NEW: Includes device_id tracking to prevent multi-table scanning
  */
 export async function createTableSession(input: {
   table_id: string
   customer_name: string
   access_code: string
+  device_id?: string
 }) {
   const supabase = await createClient()
 
   if (!input.customer_name.trim()) return { error: "Customer name is required" }
   
-  // ✅ NEW: 6-digit PIN validation
+  // ✅ 6-digit PIN validation
   if (!/^\d{6}$/.test(input.access_code)) {
     return { error: "Access code must be exactly 6 digits" }
+  }
+
+  // ✅ NEW: Check if device already has active session on a different table
+  if (input.device_id) {
+    const { data: deviceSession } = await supabase
+      .from("table_sessions")
+      .select(`
+        id,
+        table_id,
+        tables (label, zone)
+      `)
+      .eq("device_id", input.device_id)
+      .eq("status", "active")
+      .neq("table_id", input.table_id)
+      .maybeSingle()
+
+    if (deviceSession) {
+      const tableInfo = deviceSession.tables as { label: string; zone?: string } | null
+      return { 
+        error: `You already have an active session at ${tableInfo?.label || "another table"}${tableInfo?.zone ? ` (${tableInfo.zone})` : ""}. Please finish or cancel that session first.`,
+        existingSessionTableId: deviceSession.table_id
+      }
+    }
   }
 
   // Check for existing active session
@@ -86,13 +144,14 @@ export async function createTableSession(input: {
     .maybeSingle()
   if (existing) return { error: "This table already has an active session. Please ask the host for the access code." }
 
-  // Create session
+  // Create session with device_id
   const { data: session, error } = await supabase
     .from("table_sessions")
     .insert({
       table_id: input.table_id,
       customer_name: input.customer_name.trim(),
       access_code: input.access_code,
+      device_id: input.device_id || null,
       status: "active",
     })
     .select("id, token, customer_name, created_at")
@@ -104,6 +163,18 @@ export async function createTableSession(input: {
     .from("tables")
     .update({ status: "occupied" })
     .eq("id", input.table_id)
+
+  // Log activity
+  await supabase.rpc("log_activity", {
+    p_action: "session.created",
+    p_entity: "table_session",
+    p_entity_id: session.id,
+    p_detail: {
+      table_id: input.table_id,
+      customer_name: input.customer_name,
+      has_device_id: !!input.device_id,
+    },
+  })
 
   return { session }
 }

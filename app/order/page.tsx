@@ -30,8 +30,10 @@ import {
   Gamepad2,
   ChevronRight,
   AlertCircle,
+  ShieldAlert,
 } from "lucide-react"
 import type { Category, MenuItem, RestaurantTable, OrderStatus } from "@/lib/types"
+import { getDeviceFingerprint } from "@/lib/device-fingerprint"
 
 // ============================================================
 // ORDER STATUS TRACKER
@@ -679,6 +681,78 @@ function JoinSessionModal({
 }
 
 // ============================================================
+// DEVICE WARNING MODAL
+// ============================================================
+function DeviceWarningModal({
+  existingTable,
+  existingZone,
+  onCancel,
+}: {
+  existingTable: string
+  existingZone?: string | null
+  onCancel: () => void
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="w-full max-w-md animate-in fade-in zoom-in-95 duration-300">
+        <Card className="border-2 border-destructive/50 shadow-2xl shadow-destructive/20">
+          <CardContent className="p-8 text-center">
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
+              <ShieldAlert className="size-8 text-destructive" />
+            </div>
+
+            <h1 className="mb-2 text-xl font-bold tracking-tight text-foreground">
+              Active Session Detected
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Your device already has an active session
+            </p>
+
+            <div className="mt-6 mb-6 rounded-xl border-2 border-destructive/30 bg-destructive/5 px-4 py-4">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1">
+                Current Active Table
+              </p>
+              <p className="text-2xl font-black text-destructive">
+                {existingTable}
+              </p>
+              {existingZone && (
+                <p className="text-sm text-muted-foreground mt-1">{existingZone}</p>
+              )}
+            </div>
+
+            <div className="rounded-xl border border-amber-200 bg-amber-50/60 dark:bg-amber-950/20 dark:border-amber-800/50 p-4 mb-6">
+              <div className="flex items-start gap-3 text-left">
+                <AlertCircle className="size-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-semibold text-amber-800 dark:text-amber-200 mb-1">
+                    Security Notice
+                  </p>
+                  <p className="text-xs text-amber-700/80 dark:text-amber-400/70 leading-relaxed">
+                    To prevent confusion and ensure accurate billing, you can only have one active table session at a time. Please finish or cancel your current session before scanning a new table.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <Button
+              onClick={onCancel}
+              size="lg"
+              className="w-full h-12 text-base font-semibold"
+            >
+              Got it
+            </Button>
+
+            <p className="mt-4 text-xs text-muted-foreground">
+              If you need to switch tables, please ask our staff for assistance
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// ============================================================
 // MENU ITEM CARD
 // ============================================================
 function MenuItemCard({
@@ -1021,8 +1095,10 @@ function CustomerOrderContent() {
     | { kind: "create" }
     | { kind: "join"; hostName: string }
     | { kind: "active"; sessionId: string; hostName: string; myName: string }
+    | { kind: "device_warning"; existingTable: string; existingZone?: string | null }
   const [sessionState, setSessionState] = useState<SessionState>({ kind: "loading" })
   const [sessionError, setSessionError] = useState<string | null>(null)
+  const [deviceId, setDeviceId] = useState<string | null>(null)
 
   // Sync orderPlaced with localStorage (keyed by session id) so /play → back returns to Order Placed view
   const setOrderPlaced = (v: boolean) => {
@@ -1040,10 +1116,14 @@ function CustomerOrderContent() {
       return
     }
 
+    // Generate device fingerprint on mount
+    const fingerprint = getDeviceFingerprint()
+    setDeviceId(fingerprint)
+
     async function load() {
       setLoading(true)
       try {
-        await loadData()
+        await loadData(fingerprint)
       } catch (err) {
         console.error("[OrderPage] load failed:", err)
         // Only reset to create state if we have a table
@@ -1055,8 +1135,8 @@ function CustomerOrderContent() {
       }
     }
 
-    async function loadData() {
-      // Find table by QR token
+    async function loadData(deviceFingerprint: string) {
+      // Find table by QR token + check device
       const { data: qrData, error: qrError } = await supabase
         .from("table_qr_codes")
         .select("table_id, is_active")
@@ -1086,6 +1166,32 @@ function CustomerOrderContent() {
       }
 
       setTable(tableData)
+
+      // ✅ Check if this device has an active session on a DIFFERENT table
+      const { data: deviceSession } = await supabase
+        .from("table_sessions")
+        .select(`
+          id,
+          table_id,
+          customer_name,
+          tables (label, zone)
+        `)
+        .eq("device_id", deviceFingerprint)
+        .eq("status", "active")
+        .neq("table_id", tableData.id)
+        .maybeSingle()
+
+      if (deviceSession) {
+        // Device has active session on different table - show warning
+        const tableInfo = deviceSession.tables as { label: string; zone?: string } | null
+        setSessionState({
+          kind: "device_warning",
+          existingTable: tableInfo?.label || "Unknown Table",
+          existingZone: tableInfo?.zone,
+        })
+        setLoading(false)
+        return
+      }
 
       // Check for active session on this table
       const { data: activeSession } = await supabase
@@ -1169,7 +1275,13 @@ function CustomerOrderContent() {
     const res = await fetch("/api/table-sessions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "create", table_id: table.id, customer_name: name, access_code: accessCode }),
+      body: JSON.stringify({ 
+        action: "create", 
+        table_id: table.id, 
+        customer_name: name, 
+        access_code: accessCode,
+        device_id: deviceId, // Pass device fingerprint
+      }),
     })
     const data = await res.json()
     if (!res.ok) throw new Error(data.error || "Failed to start session")
@@ -1490,6 +1602,20 @@ function CustomerOrderContent() {
         }}
         onCancel={() => {
           // Allow them to back out — reload to scan a different QR
+          window.location.href = "/"
+        }}
+      />
+    )
+  }
+
+  // Device warning - already has active session on different table
+  if (sessionState.kind === "device_warning") {
+    return (
+      <DeviceWarningModal
+        existingTable={sessionState.existingTable}
+        existingZone={sessionState.existingZone}
+        onCancel={() => {
+          // Send them back - they need to finish their existing session
           window.location.href = "/"
         }}
       />

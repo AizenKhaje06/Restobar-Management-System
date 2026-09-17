@@ -16,6 +16,7 @@ export async function POST(request: Request) {
         table_id: body.table_id,
         customer_name: body.customer_name,
         access_code: body.access_code,
+        device_id: body.device_id, // Pass device fingerprint
       })
       if (result.error) {
         return NextResponse.json({ error: result.error }, { status: 400 })
