@@ -132,12 +132,10 @@ export function WaiterCreateOrderModal({
     })
   }, [menuItems, search, selectedCategory])
 
-  // Available tables (no active orders AND not reserved/unavailable)
+  // Available tables (not occupied AND not reserved/unavailable)
   const availableTables = useMemo(() => {
     return tables.filter(t => 
-      (!t.active_orders || t.active_orders.length === 0) && 
-      t.status !== 'reserved' && 
-      t.status !== 'unavailable'
+      t.status === 'available'
     )
   }, [tables])
 
@@ -364,7 +362,7 @@ export function WaiterCreateOrderModal({
                           No tables
                         </div>
                       ) : (
-                        <Select value={selectedTableId} onValueChange={setSelectedTableId}>
+                        <Select value={selectedTableId} onValueChange={(value) => value && setSelectedTableId(value)}>
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select table">
                               {selectedTableId 

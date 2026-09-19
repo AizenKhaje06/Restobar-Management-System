@@ -64,7 +64,7 @@ export function PosActivityManager({
       const detail = log.detail as Record<string, any> | null
       return (
         log.action.toLowerCase().includes(q) ||
-        log.entity.toLowerCase().includes(q) ||
+        (log.entity || "").toLowerCase().includes(q) ||
         (detail?.table_label || "").toLowerCase().includes(q) ||
         (detail?.order_number || "").toLowerCase().includes(q) ||
         (detail?.customer_name || "").toLowerCase().includes(q)
@@ -101,7 +101,9 @@ export function PosActivityManager({
   const entityCounts = useMemo(() => {
     const counts: Record<string, number> = {}
     for (const log of activityLogs) {
-      counts[log.entity] = (counts[log.entity] || 0) + 1
+      if (log.entity) {
+        counts[log.entity] = (counts[log.entity] || 0) + 1
+      }
     }
     return counts
   }, [activityLogs])

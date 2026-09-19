@@ -267,7 +267,7 @@ export function AdminRemittancesClient({
             className="pl-9"
           />
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select value={statusFilter} onValueChange={(value) => value && setStatusFilter(value)}>
           <SelectTrigger className="w-[180px]">
             <Filter className="size-4 mr-2" />
             <SelectValue />

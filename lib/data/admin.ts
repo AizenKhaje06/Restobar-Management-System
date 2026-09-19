@@ -438,6 +438,7 @@ export async function getActivityLogs(limit = 50) {
         .eq("id", log.entity_id)
         .single()
       if (order) {
+        const tableInfo = Array.isArray(order.table) ? order.table[0] : order.table as any
         enhancedDetail = {
           ...enhancedDetail,
           order_number: order.order_number,
@@ -445,7 +446,7 @@ export async function getActivityLogs(limit = 50) {
           status: order.status,
           payment_status: order.payment_status,
           customer_name: order.customer_name,
-          table_label: order.table?.label || enhancedDetail.table_label
+          table_label: tableInfo?.label || enhancedDetail.table_label
         }
       }
     }
@@ -467,12 +468,13 @@ export async function getActivityLogs(limit = 50) {
       console.log('Fetching session for entity_id:', log.entity_id, { session, sessionError })
       
       if (session) {
+        const tableInfo = Array.isArray(session.table) ? session.table[0] : session.table as any
         enhancedDetail = {
           ...enhancedDetail,
           customer_name: enhancedDetail.customer_name || session.customer_name,
           guests: enhancedDetail.guests || session.guests,
           status: session.status,
-          table_label: session.table?.label || enhancedDetail.table_label
+          table_label: tableInfo?.label || enhancedDetail.table_label
         }
         console.log('Enhanced detail after session fetch:', enhancedDetail)
       }
@@ -495,6 +497,7 @@ export async function getActivityLogs(limit = 50) {
         .eq("id", log.entity_id)
         .single()
       if (reservation) {
+        const tableInfo = Array.isArray(reservation.table) ? reservation.table[0] : reservation.table as any
         enhancedDetail = {
           ...enhancedDetail,
           customer_name: reservation.customer_name,
@@ -504,7 +507,7 @@ export async function getActivityLogs(limit = 50) {
           date: reservation.date,
           time: reservation.time,
           status: reservation.status,
-          table_label: reservation.table?.label || enhancedDetail.table_label
+          table_label: tableInfo?.label || enhancedDetail.table_label
         }
       }
     }
@@ -521,11 +524,12 @@ export async function getActivityLogs(limit = 50) {
         .eq("id", log.entity_id)
         .single()
       if (menuItem) {
+        const categoryInfo = Array.isArray(menuItem.category) ? menuItem.category[0] : menuItem.category as any
         enhancedDetail = {
           ...enhancedDetail,
           name: menuItem.name,
           price: menuItem.price,
-          category: menuItem.category?.name
+          category: categoryInfo?.name
         }
       }
     }

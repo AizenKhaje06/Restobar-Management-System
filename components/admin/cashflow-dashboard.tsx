@@ -161,7 +161,7 @@ export function CashflowDashboard() {
               <SelectTrigger className="w-40">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent position="popper" sideOffset={5}>
+              <SelectContent sideOffset={5}>
                 <SelectItem value="7">Last 7 days</SelectItem>
                 <SelectItem value="30">Last 30 days</SelectItem>
                 <SelectItem value="90">Last 90 days</SelectItem>
@@ -179,7 +179,7 @@ export function CashflowDashboard() {
               <SelectTrigger className="w-44">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent position="popper" sideOffset={5}>
+              <SelectContent sideOffset={5}>
                 <SelectItem value="all">All payments</SelectItem>
                 <SelectItem value="cash">Cash only</SelectItem>
                 <SelectItem value="card">Card only</SelectItem>

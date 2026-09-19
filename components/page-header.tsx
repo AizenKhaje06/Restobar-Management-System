@@ -15,7 +15,7 @@ export function PageHeader({
   className,
 }: {
   title: string
-  description?: string
+  description?: React.ReactNode
   crumbs?: Crumb[]
   actions?: React.ReactNode
   className?: string
@@ -54,7 +54,7 @@ export function PageHeader({
           {title}
         </h1>
         {description && (
-          <p className="max-w-2xl text-sm text-muted-foreground">{description}</p>
+          <div className="max-w-2xl text-sm text-muted-foreground">{description}</div>
         )}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}

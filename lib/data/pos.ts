@@ -52,6 +52,7 @@ export async function getStaffActivityLogs(staffId: string, limit = 50) {
         .eq("id", log.entity_id)
         .single()
       if (order) {
+        const tableInfo = Array.isArray(order.table) ? order.table[0] : order.table as any
         enhancedDetail = {
           ...enhancedDetail,
           order_number: order.order_number,
@@ -59,7 +60,7 @@ export async function getStaffActivityLogs(staffId: string, limit = 50) {
           status: order.status,
           payment_status: order.payment_status,
           customer_name: order.customer_name,
-          table_label: order.table?.label || enhancedDetail.table_label
+          table_label: tableInfo?.label || enhancedDetail.table_label
         }
       }
     }
@@ -79,12 +80,13 @@ export async function getStaffActivityLogs(staffId: string, limit = 50) {
         .single()
       
       if (session) {
+        const tableInfo = Array.isArray(session.table) ? session.table[0] : session.table as any
         enhancedDetail = {
           ...enhancedDetail,
           customer_name: enhancedDetail.customer_name || session.customer_name,
           guests: enhancedDetail.guests || session.guests,
           status: session.status,
-          table_label: session.table?.label || enhancedDetail.table_label
+          table_label: tableInfo?.label || enhancedDetail.table_label
         }
       }
     }
@@ -102,13 +104,16 @@ export async function getStaffActivityLogs(staffId: string, limit = 50) {
         .eq("id", log.entity_id)
         .single()
       if (payment) {
+        const orderInfo = Array.isArray(payment.order) ? payment.order[0] : payment.order as any
+        const tableInfo = orderInfo ? (Array.isArray(orderInfo.table) ? orderInfo.table[0] : orderInfo.table) : null
+        
         enhancedDetail = {
           ...enhancedDetail,
           amount: payment.amount,
           method: payment.method,
           payment_status: payment.status,
-          order_number: payment.order?.order_number,
-          table_label: payment.order?.table?.label || enhancedDetail.table_label
+          order_number: orderInfo?.order_number,
+          table_label: tableInfo?.label || enhancedDetail.table_label
         }
       }
     }

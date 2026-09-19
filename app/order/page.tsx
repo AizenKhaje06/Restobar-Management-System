@@ -1183,7 +1183,10 @@ function CustomerOrderContent() {
 
       if (deviceSession) {
         // Device has active session on different table - show warning
-        const tableInfo = deviceSession.tables as { label: string; zone?: string } | null
+        const tableInfo = Array.isArray(deviceSession.tables) 
+          ? deviceSession.tables[0] 
+          : deviceSession.tables as { label: string; zone?: string } | null
+        
         setSessionState({
           kind: "device_warning",
           existingTable: tableInfo?.label || "Unknown Table",
