@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Button } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { MapPin, Users, ArrowRight } from "lucide-react"
 import type { EventVenue } from "@/lib/types/events"
 

@@ -1,12 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { CheckCircle, Download, Home, FileText, Mail, Phone } from "lucide-react"
+import { CheckCircle, Download, Home, FileText, Mail, Phone, Loader2 } from "lucide-react"
 
-export default function BookingSuccessPage() {
+function BookingSuccessContent() {
   const searchParams = useSearchParams()
   const bookingNumber = searchParams.get("booking")
   const [countdown, setCountdown] = useState(10)
@@ -123,5 +123,17 @@ export default function BookingSuccessPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function BookingSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 dark:from-amber-950/20 dark:via-orange-950/20 dark:to-rose-950/20 flex items-center justify-center">
+        <Loader2 className="size-8 animate-spin text-amber-600" />
+      </div>
+    }>
+      <BookingSuccessContent />
+    </Suspense>
   )
 }

@@ -13,17 +13,8 @@ const NAV: NavItem[] = [
   { href: "/admin/tables", label: "Tables", icon: "Grid3x3" },
   { href: "/admin/qr-codes", label: "QR Codes", icon: "ScanLine" },
   { href: "/admin/reservations", label: "Reservations", icon: "CalendarClock" },
-  { 
-    label: "Events", 
-    icon: "PartyPopper",
-    items: [
-      { href: "/admin/events/bookings", label: "Bookings", icon: "Calendar" },
-      { href: "/admin/events/payments", label: "Payments", icon: "CreditCard" },
-      { href: "/admin/events/venues", label: "Venues", icon: "Building2" },
-      { href: "/admin/events/packages", label: "Packages", icon: "Package" },
-      { href: "/admin/events/inquiries", label: "Inquiries", icon: "MessageSquare" },
-    ]
-  },
+  { href: "/admin/events/bookings", label: "Event Bookings", icon: "Calendar" },
+  { href: "/admin/events/payments", label: "Event Payments", icon: "CreditCard" },
   { href: "/admin/staff", label: "Staff", icon: "Users" },
   { href: "/admin/activity", label: "Activity Log", icon: "History" },
   { href: "/admin/settings", label: "Settings", icon: "Settings" },

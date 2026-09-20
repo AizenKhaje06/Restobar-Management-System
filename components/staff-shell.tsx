@@ -42,6 +42,12 @@ import {
   AlertCircle,
   X,
   Loader2,
+  Calendar,
+  CreditCard,
+  Building2,
+  Package,
+  MessageSquare,
+  PartyPopper,
   type LucideIcon,
 } from "lucide-react"
 
@@ -72,6 +78,12 @@ const ICONS = {
   Receipt,
   DollarSign,
   Wallet,
+  Calendar,
+  CreditCard,
+  Building2,
+  Package,
+  MessageSquare,
+  PartyPopper,
 } as const satisfies Record<string, LucideIcon>
 
 function initials(name?: string | null) {

@@ -120,7 +120,7 @@ export default async function GalleryPage() {
                                   Event
                                 </span>
                               )}
-                              {photo.location && (
+                              {('location' in photo) && photo.location && (
                                 <span className="text-xs text-white/80 line-clamp-1">
                                   {photo.location}
                                 </span>

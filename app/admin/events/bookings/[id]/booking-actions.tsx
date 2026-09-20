@@ -51,13 +51,16 @@ export function BookingActions({ booking }: { booking: EventBooking }) {
     return null
   }
 
+  // TypeScript type guard: at this point status can only be pending, confirmed, or paid
+  const activeBooking = booking as EventBooking & { status: Exclude<EventBooking['status'], 'completed' | 'cancelled'> }
+
   return (
     <div className="p-6 rounded-xl border bg-card space-y-4">
       <h2 className="text-lg font-bold">Quick Actions</h2>
 
       <div className="flex flex-wrap gap-3">
         {/* Approve/Confirm Button */}
-        {booking.status === "pending" && (
+        {activeBooking.status === "pending" && (
           <Button
             onClick={() => handleStatusChange("confirmed")}
             disabled={loading}
@@ -73,7 +76,7 @@ export function BookingActions({ booking }: { booking: EventBooking }) {
         )}
 
         {/* Mark as Paid (manual override) */}
-        {(booking.status === "confirmed" || booking.status === "pending") &&
+        {(activeBooking.status === "confirmed" || activeBooking.status === "pending") &&
           booking.payment_status !== "paid" && (
             <Button
               onClick={() => handleStatusChange("paid" as any)}
@@ -86,7 +89,7 @@ export function BookingActions({ booking }: { booking: EventBooking }) {
           )}
 
         {/* Complete Booking */}
-        {booking.status === "paid" && (
+        {activeBooking.status === "paid" && (
           <Button
             onClick={() => handleStatusChange("completed" as any)}
             disabled={loading}
@@ -97,53 +100,50 @@ export function BookingActions({ booking }: { booking: EventBooking }) {
         )}
 
         {/* Cancel Button */}
-        {booking.status !== "cancelled" && (
-          <>
-            {showNotesFor === "cancel" ? (
-              <div className="flex-1 min-w-[300px] space-y-2">
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Reason for cancellation (required)"
-                  className="w-full p-3 rounded-lg border bg-background resize-none"
-                  rows={2}
-                />
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => handleStatusChange("cancelled", true)}
-                    disabled={loading || !notes.trim()}
-                    variant="destructive"
-                    size="sm"
-                  >
-                    {loading ? (
-                      <Loader2 className="size-4 mr-2 animate-spin" />
-                    ) : (
-                      <XCircle className="size-4 mr-2" />
-                    )}
-                    Confirm Cancellation
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      setShowNotesFor(null)
-                      setNotes("")
-                    }}
-                    variant="outline"
-                    size="sm"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            ) : (
+        {/* Always show cancel button for active bookings */}
+        {showNotesFor === "cancel" ? (
+          <div className="flex-1 min-w-[300px] space-y-2">
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Reason for cancellation (required)"
+              className="w-full p-3 rounded-lg border bg-background resize-none"
+              rows={2}
+            />
+            <div className="flex gap-2">
               <Button
-                onClick={() => setShowNotesFor("cancel")}
+                onClick={() => handleStatusChange("cancelled", true)}
+                disabled={loading || !notes.trim()}
                 variant="destructive"
+                size="sm"
               >
-                <Ban className="size-4 mr-2" />
-                Cancel Booking
+                {loading ? (
+                  <Loader2 className="size-4 mr-2 animate-spin" />
+                ) : (
+                  <XCircle className="size-4 mr-2" />
+                )}
+                Confirm Cancellation
               </Button>
-            )}
-          </>
+              <Button
+                onClick={() => {
+                  setShowNotesFor(null)
+                  setNotes("")
+                }}
+                variant="outline"
+                size="sm"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button
+            onClick={() => setShowNotesFor("cancel")}
+            variant="destructive"
+          >
+            <Ban className="size-4 mr-2" />
+            Cancel Booking
+          </Button>
         )}
       </div>
 

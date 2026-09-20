@@ -101,13 +101,17 @@ export async function updateBookingStatus(
 
   if (error) return { error: error.message }
 
-  // Log activity
-  await supabase.rpc("log_activity", {
-    p_action: `event.booking.${status}`,
-    p_entity: "event_booking",
-    p_entity_id: bookingId,
-    p_detail: { status, notes },
-  }).catch(() => {}) // Ignore if log_activity doesn't exist
+  // Log activity (ignore errors if log_activity doesn't exist)
+  try {
+    await supabase.rpc("log_activity", {
+      p_action: `event.booking.${status}`,
+      p_entity: "event_booking",
+      p_entity_id: bookingId,
+      p_detail: { status, notes },
+    })
+  } catch {
+    // Silently ignore if log_activity RPC doesn't exist
+  }
 
   revalidatePath("/admin/events/bookings")
   revalidatePath(`/admin/events/bookings/${bookingId}`)
