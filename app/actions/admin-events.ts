@@ -74,6 +74,10 @@ export async function updateBookingStatus(
 ) {
   const supabase = await createClient()
 
+  // Get current user ID for confirmed_by/cancelled_by
+  const { data: { user } } = await supabase.auth.getUser()
+  const userId = user?.id
+
   const updateData: any = {
     status,
     notes,
@@ -82,13 +86,17 @@ export async function updateBookingStatus(
   // Set confirmation timestamp if confirming
   if (status === "confirmed") {
     updateData.confirmed_at = new Date().toISOString()
-    updateData.confirmed_by = "admin"
+    if (userId) {
+      updateData.confirmed_by = userId // Use UUID instead of "admin" string
+    }
   }
 
   // Set cancellation timestamp if cancelling
   if (status === "cancelled") {
     updateData.cancelled_at = new Date().toISOString()
-    updateData.cancelled_by = "admin"
+    if (userId) {
+      updateData.cancelled_by = userId // Use UUID instead of "admin" string
+    }
     updateData.cancellation_reason = notes
   }
 

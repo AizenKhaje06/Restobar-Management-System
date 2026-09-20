@@ -19,8 +19,9 @@ import {
 import { Button } from "@/components/ui/button"
 import { BookingTimeline } from "@/components/events/dashboard/booking-timeline"
 
-export async function generateMetadata({ params }: { params: { id: string } }) {
-  const { booking } = await getBooking(params.id)
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const { booking } = await getBooking(id)
   return {
     title: booking
       ? `${booking.booking_number} - Admin`
@@ -39,9 +40,10 @@ const statusColors = {
 export default async function AdminBookingDetailPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
-  const { booking, error } = await getBooking(params.id)
+  const { id } = await params
+  const { booking, error } = await getBooking(id)
 
   if (error || !booking) {
     return (
