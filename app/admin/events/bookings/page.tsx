@@ -39,13 +39,16 @@ const paymentStatusColors = {
 export default async function AdminBookingsPage({
   searchParams,
 }: {
-  searchParams: { status?: string; venue?: string; search?: string }
+  searchParams: Promise<{ status?: string; venue?: string; search?: string }>
 }) {
+  // Await searchParams in Next.js 15+
+  const params = await searchParams
+  
   const [bookingsResult, statsResult, venuesResult] = await Promise.all([
     getAllBookings({
-      status: searchParams.status,
-      venue_id: searchParams.venue,
-      search: searchParams.search,
+      status: params.status,
+      venue_id: params.venue,
+      search: params.search,
     }),
     getBookingStats(),
     getAllVenues(),
@@ -158,7 +161,7 @@ export default async function AdminBookingsPage({
         <div className="flex flex-wrap gap-2">
           <Link href="/admin/events/bookings">
             <Button
-              variant={!searchParams.status ? "default" : "outline"}
+              variant={!params.status ? "default" : "outline"}
               size="sm"
             >
               All ({stats?.total_bookings || 0})
@@ -166,7 +169,7 @@ export default async function AdminBookingsPage({
           </Link>
           <Link href="/admin/events/bookings?status=pending">
             <Button
-              variant={searchParams.status === "pending" ? "default" : "outline"}
+              variant={params.status === "pending" ? "default" : "outline"}
               size="sm"
             >
               Pending ({stats?.pending_bookings || 0})
@@ -175,7 +178,7 @@ export default async function AdminBookingsPage({
           <Link href="/admin/events/bookings?status=confirmed">
             <Button
               variant={
-                searchParams.status === "confirmed" ? "default" : "outline"
+                params.status === "confirmed" ? "default" : "outline"
               }
               size="sm"
             >
@@ -184,7 +187,7 @@ export default async function AdminBookingsPage({
           </Link>
           <Link href="/admin/events/bookings?status=paid">
             <Button
-              variant={searchParams.status === "paid" ? "default" : "outline"}
+              variant={params.status === "paid" ? "default" : "outline"}
               size="sm"
             >
               Paid ({stats?.paid_bookings || 0})
@@ -193,7 +196,7 @@ export default async function AdminBookingsPage({
           <Link href="/admin/events/bookings?status=completed">
             <Button
               variant={
-                searchParams.status === "completed" ? "default" : "outline"
+                params.status === "completed" ? "default" : "outline"
               }
               size="sm"
             >
@@ -204,7 +207,7 @@ export default async function AdminBookingsPage({
       </div>
 
       {/* Priority: Pending Approval */}
-      {pendingBookings.length > 0 && !searchParams.status && (
+      {pendingBookings.length > 0 && !params.status && (
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <AlertCircle className="size-5 text-amber-600" />
@@ -285,8 +288,8 @@ export default async function AdminBookingsPage({
       {/* All Bookings List */}
       <div className="space-y-4">
         <h2 className="text-xl font-bold">
-          {searchParams.status
-            ? `${searchParams.status.charAt(0).toUpperCase() + searchParams.status.slice(1)} Bookings`
+          {params.status
+            ? `${params.status.charAt(0).toUpperCase() + params.status.slice(1)} Bookings`
             : "Recent Bookings"}
         </h2>
 
@@ -295,7 +298,7 @@ export default async function AdminBookingsPage({
             <Calendar className="size-16 text-muted-foreground/30 mx-auto mb-4" />
             <h3 className="text-xl font-bold mb-2">No bookings found</h3>
             <p className="text-muted-foreground">
-              {searchParams.status || searchParams.search
+              {params.status || params.search
                 ? "Try adjusting your filters"
                 : "Bookings will appear here once customers make reservations"}
             </p>
