@@ -11,6 +11,6 @@ export default async function HomePage() {
     redirect(ROLE_HOME[profile.role] ?? "/admin")
   }
   
-  // If not logged in, redirect to login page
-  redirect("/login")
+  // If not logged in, redirect to events landing page (customer-facing)
+  redirect("/events")
 }
