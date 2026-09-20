@@ -30,15 +30,48 @@ export function EventsNavbar() {
   useEffect(() => {
     const supabase = createClient()
     
-    // Get initial session
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user)
+    // Get initial session and check for customer profile
+    const checkCustomer = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (user) {
+        // Check if this user has a customer profile in event_customers table
+        const { data: customer } = await supabase
+          .from("event_customers")
+          .select("id")
+          .eq("auth_id", user.id)
+          .maybeSingle()
+        
+        // Only set user if they have a customer profile
+        if (customer) {
+          setUser(user)
+        } else {
+          // User has auth but no customer profile - sign them out
+          await supabase.auth.signOut()
+          setUser(null)
+        }
+      }
+      
       setLoading(false)
-    })
+    }
+    
+    checkCustomer()
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        // Check if this user has a customer profile
+        const { data: customer } = await supabase
+          .from("event_customers")
+          .select("id")
+          .eq("auth_id", session.user.id)
+          .maybeSingle()
+        
+        // Only set user if they have a customer profile
+        setUser(customer ? session.user : null)
+      } else {
+        setUser(null)
+      }
     })
 
     return () => subscription.unsubscribe()

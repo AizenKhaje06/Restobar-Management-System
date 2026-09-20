@@ -43,18 +43,24 @@ export default function LoginPage() {
 
       if (data.user) {
         // Check if user has event customer profile
-        const { data: customer } = await supabase
+        const { data: customer, error: customerError } = await supabase
           .from("event_customers")
           .select("id")
           .eq("auth_id", data.user.id)
-          .single()
+          .maybeSingle()
 
         if (customer) {
           // Redirect to dashboard
           router.push("/events/dashboard")
+          router.refresh()
         } else {
-          // No customer profile found
-          setError("Customer profile not found. Please contact support.")
+          // No customer profile found - this might be a staff account
+          await supabase.auth.signOut() // Sign out to clear session
+          setError(
+            "This account is not registered as a customer. " +
+            "If you're a staff member, please use the staff login at /login. " +
+            "If you're a customer, please create an account first."
+          )
         }
       }
     } catch (err) {
