@@ -12,11 +12,31 @@ import {
   Check,
   Star
 } from "lucide-react"
+import { TestimonialsSection } from "@/components/events/testimonials-section"
+import { HowItWorksSection } from "@/components/events/how-it-works-section"
+import { WhyChooseUsSection } from "@/components/events/why-choose-us-section"
+import { FaqSection } from "@/components/events/faq-section"
+import { RecentEventsSection } from "@/components/events/recent-events-section"
 
 export const metadata = {
-  title: "Lumière Events - Luxury Event Venue & Catering",
+  title: "Lumière Events - Luxury Event Venue & Catering in Manila",
   description:
-    "Elevate your celebrations at Lumière Events. Premium venues, exquisite catering, and flawless execution for weddings, corporate events, and milestone celebrations.",
+    "Premier event venue in Manila. Stunning venues, award-winning catering, and flawless execution for weddings, corporate events, and celebrations. Book your perfect event today!",
+  keywords: "event venue Manila, wedding venue Philippines, corporate event space, birthday party venue, luxury event hall, event catering Manila",
+  openGraph: {
+    title: "Lumière Events - Luxury Event Venue & Catering in Manila",
+    description: "Premier event venue with stunning spaces, award-winning catering, and exceptional service for all your celebrations.",
+    type: "website",
+    url: "https://yourdomain.com/events",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Lumière Events Venue"
+      }
+    ]
+  }
 }
 
 export default async function EventsLandingPage() {
@@ -28,7 +48,80 @@ export default async function EventsLandingPage() {
   const venues = venuesResult.venues || []
   const packages = packagesResult.packages || []
 
+  // Structured Data for SEO
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "EventVenue",
+    "name": "Lumière Events",
+    "description": "Premier event venue in Manila offering stunning spaces for weddings, corporate events, and celebrations",
+    "url": "https://yourdomain.com/events",
+    "telephone": "+639171234567",
+    "email": "events@restaurant.com",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "123 Main Street",
+      "addressLocality": "Manila",
+      "addressCountry": "Philippines",
+      "postalCode": "1000"
+    },
+    "priceRange": "₱₱₱",
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "5.0",
+      "reviewCount": "500",
+      "bestRating": "5",
+      "worstRating": "1"
+    },
+    "geo": {
+      "@type": "GeoCoordinates",
+      "latitude": "14.5995",
+      "longitude": "120.9842"
+    },
+    "openingHoursSpecification": {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday"
+      ],
+      "opens": "08:00",
+      "closes": "22:00"
+    },
+    "amenityFeature": [
+      {
+        "@type": "LocationFeatureSpecification",
+        "name": "Parking",
+        "value": true
+      },
+      {
+        "@type": "LocationFeatureSpecification",
+        "name": "Air Conditioning",
+        "value": true
+      },
+      {
+        "@type": "LocationFeatureSpecification",
+        "name": "Catering",
+        "value": true
+      }
+    ],
+    "sameAs": [
+      "https://facebook.com/lumiereevents",
+      "https://instagram.com/lumiereevents"
+    ]
+  }
+
   return (
+    <>
+      {/* Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+
     <div className="flex flex-col">
       {/* Hero Section - Premium */}
       <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
@@ -66,14 +159,14 @@ export default async function EventsLandingPage() {
           </p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-4">
             <Link href="/events/book">
               <Button 
                 size="lg"
                 className="group relative overflow-hidden bg-gradient-to-r from-amber-600 to-orange-600 px-8 py-6 text-lg font-semibold shadow-2xl shadow-amber-500/25 transition-all hover:shadow-amber-500/40 hover:scale-105"
               >
                 <span className="relative z-10 flex items-center gap-2">
-                  Book Your Event
+                  Check Availability
                   <ChevronRight className="size-5 transition-transform group-hover:translate-x-1" />
                 </span>
                 <div className="absolute inset-0 bg-gradient-to-r from-amber-500 to-orange-500 opacity-0 transition-opacity group-hover:opacity-100"></div>
@@ -90,6 +183,11 @@ export default async function EventsLandingPage() {
               </Button>
             </Link>
           </div>
+
+          {/* Trust Badges */}
+          <p className="text-sm text-slate-400 mb-16">
+            ✓ No credit card required • ✓ Free consultation • ✓ Flexible cancellation
+          </p>
 
           {/* Trust Indicators */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
@@ -116,6 +214,9 @@ export default async function EventsLandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Testimonials Section */}
+      <TestimonialsSection />
 
       {/* Featured Venues Section */}
       <section className="py-24 bg-white dark:bg-slate-950">
@@ -271,6 +372,18 @@ export default async function EventsLandingPage() {
         </div>
       </section>
 
+      {/* Why Choose Us Section */}
+      <WhyChooseUsSection />
+
+      {/* How It Works Section */}
+      <HowItWorksSection />
+
+      {/* Recent Events Showcase */}
+      <RecentEventsSection />
+
+      {/* FAQ Section */}
+      <FaqSection />
+
       {/* Final CTA Section */}
       <section className="relative py-24 overflow-hidden">
         {/* Background Image */}
@@ -321,5 +434,6 @@ export default async function EventsLandingPage() {
         </div>
       </section>
     </div>
+    </>
   )
 }

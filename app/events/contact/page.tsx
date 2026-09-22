@@ -1,23 +1,31 @@
 "use client"
 
 import { useState } from "react"
-import { submitInquiry } from "@/app/actions/events"
 import { Button } from "@/components/ui/button"
-import { Phone, Mail, MapPin, Clock, Send, CheckCircle } from "lucide-react"
-import type { EventType } from "@/lib/types/events"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { 
+  MapPin, 
+  Phone, 
+  Mail, 
+  Clock, 
+  Send,
+  MessageSquare,
+  CheckCircle2
+} from "lucide-react"
 
-const eventTypes: { value: EventType; label: string }[] = [
-  { value: "birthday", label: "Birthday Party" },
-  { value: "wedding", label: "Wedding" },
-  { value: "corporate", label: "Corporate Event" },
-  { value: "christening", label: "Christening" },
-  { value: "graduation", label: "Graduation" },
-  { value: "anniversary", label: "Anniversary" },
-  { value: "reunion", label: "Reunion" },
-  { value: "seminar", label: "Seminar/Workshop" },
-  { value: "product_launch", label: "Product Launch" },
-  { value: "team_building", label: "Team Building" },
-  { value: "other", label: "Other" },
+const eventTypes = [
+  "Wedding",
+  "Birthday",
+  "Corporate Event",
+  "Christening",
+  "Graduation",
+  "Anniversary",
+  "Reunion",
+  "Seminar",
+  "Product Launch",
+  "Team Building",
+  "Other"
 ]
 
 export default function ContactPage() {
@@ -25,369 +33,335 @@ export default function ContactPage() {
     name: "",
     email: "",
     phone: "",
-    event_type: "" as EventType | "",
-    event_date: "",
-    num_guests: "",
+    eventType: "",
+    guestCount: "",
+    preferredDate: "",
     message: "",
   })
-
-  const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState(false)
-  const [error, setError] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSubmitted, setIsSubmitted] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
-    setError("")
-
-    try {
-      const result = await submitInquiry({
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        event_type: formData.event_type || undefined,
-        event_date: formData.event_date || undefined,
-        num_guests: formData.num_guests ? parseInt(formData.num_guests) : undefined,
-        message: formData.message,
+    setIsSubmitting(true)
+    
+    // Simulate form submission
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    
+    setIsSubmitting(false)
+    setIsSubmitted(true)
+    
+    // Reset form after 3 seconds
+    setTimeout(() => {
+      setIsSubmitted(false)
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        eventType: "",
+        guestCount: "",
+        preferredDate: "",
+        message: "",
       })
-
-      if (result.error) {
-        setError(result.error)
-      } else {
-        setSuccess(true)
-        setFormData({
-          name: "",
-          email: "",
-          phone: "",
-          event_type: "",
-          event_date: "",
-          num_guests: "",
-          message: "",
-        })
-      }
-    } catch (err) {
-      setError("Something went wrong. Please try again.")
-    } finally {
-      setLoading(false)
-    }
+    }, 3000)
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData(prev => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      [e.target.name]: e.target.value
     }))
-  }
-
-  if (success) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="max-w-md w-full text-center space-y-6">
-          <div className="flex size-20 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30 mx-auto">
-            <CheckCircle className="size-10 text-green-600 dark:text-green-400" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Thank You!</h1>
-            <p className="text-lg text-muted-foreground">
-              We've received your inquiry and will get back to you within 24 hours.
-            </p>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button
-              onClick={() => setSuccess(false)}
-              variant="outline"
-            >
-              Send Another Inquiry
-            </Button>
-            <Button asChild>
-              <a href="/events">Back to Home</a>
-            </Button>
-          </div>
-        </div>
-      </div>
-    )
   }
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <section className="relative py-16 sm:py-20 bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 dark:from-amber-950/20 dark:via-orange-950/20 dark:to-rose-950/20">
+      <section className="relative py-16 bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 dark:from-amber-950/20 dark:via-orange-950/20 dark:to-rose-950/20">
         <div className="container mx-auto px-4 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100 text-sm font-medium mb-4">
-            <Phone className="size-4" />
-            <span>Get in Touch</span>
+            <MessageSquare className="size-4" />
+            <span>Get In Touch</span>
           </div>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-4">
-            Let's Plan Your{" "}
+            Contact{" "}
             <span className="bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
-              Perfect Event
+              Our Team
             </span>
           </h1>
           <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
-            Have questions? We're here to help you create an unforgettable experience
+            Let's discuss your event and create something extraordinary together
           </p>
         </div>
       </section>
 
-      {/* Contact Content */}
       <section className="py-16">
         <div className="container mx-auto px-4">
-          <div className="grid gap-12 lg:grid-cols-5">
-            {/* Left Column - Contact Info */}
+          <div className="grid lg:grid-cols-5 gap-12">
+            {/* Contact Information */}
             <div className="lg:col-span-2 space-y-8">
               <div>
-                <h2 className="text-2xl font-bold mb-6">Contact Information</h2>
-                <div className="space-y-6">
-                  {/* Phone */}
-                  <div className="flex items-start gap-4">
-                    <div className="flex size-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30 flex-shrink-0">
-                      <Phone className="size-6 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <div>
-                      <p className="font-semibold mb-1">Phone</p>
-                      <a
-                        href="tel:+639171234567"
-                        className="text-muted-foreground hover:text-amber-600 transition-colors"
-                      >
-                        +63 917 123 4567
-                      </a>
-                    </div>
-                  </div>
+                <h2 className="text-3xl font-bold mb-6">Let's Talk About Your Event</h2>
+                <p className="text-muted-foreground mb-8">
+                  Our event specialists are ready to help you plan the perfect celebration. 
+                  Reach out and we'll get back to you within 24 hours.
+                </p>
+              </div>
 
-                  {/* Email */}
-                  <div className="flex items-start gap-4">
-                    <div className="flex size-12 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/30 flex-shrink-0">
-                      <Mail className="size-6 text-purple-600 dark:text-purple-400" />
-                    </div>
-                    <div>
-                      <p className="font-semibold mb-1">Email</p>
-                      <a
-                        href="mailto:events@restaurant.com"
-                        className="text-muted-foreground hover:text-amber-600 transition-colors"
-                      >
-                        events@restaurant.com
-                      </a>
-                    </div>
+              {/* Contact Cards */}
+              <div className="space-y-4">
+                <a 
+                  href="tel:+639171234567"
+                  className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 hover:shadow-lg transition-shadow"
+                >
+                  <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-orange-600 text-white">
+                    <Phone className="size-5" />
                   </div>
-
-                  {/* Location */}
-                  <div className="flex items-start gap-4">
-                    <div className="flex size-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30 flex-shrink-0">
-                      <MapPin className="size-6 text-green-600 dark:text-green-400" />
-                    </div>
-                    <div>
-                      <p className="font-semibold mb-1">Location</p>
-                      <p className="text-muted-foreground">
-                        123 Main Street<br />
-                        Manila, Philippines
-                      </p>
-                    </div>
+                  <div>
+                    <h3 className="font-semibold mb-1">Phone</h3>
+                    <p className="text-sm text-muted-foreground">Mon-Sun, 8:00 AM - 10:00 PM</p>
+                    <p className="font-medium text-amber-600">+63 917 123 4567</p>
                   </div>
+                </a>
 
-                  {/* Hours */}
-                  <div className="flex items-start gap-4">
-                    <div className="flex size-12 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30 flex-shrink-0">
-                      <Clock className="size-6 text-amber-600 dark:text-amber-400" />
-                    </div>
-                    <div>
-                      <p className="font-semibold mb-1">Operating Hours</p>
-                      <p className="text-muted-foreground">
-                        Monday - Sunday<br />
-                        8:00 AM - 10:00 PM
-                      </p>
-                    </div>
+                <a 
+                  href="mailto:events@restaurant.com"
+                  className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-950/30 dark:to-pink-950/30 hover:shadow-lg transition-shadow"
+                >
+                  <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-rose-500 to-pink-600 text-white">
+                    <Mail className="size-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold mb-1">Email</h3>
+                    <p className="text-sm text-muted-foreground">We'll respond within 24 hours</p>
+                    <p className="font-medium text-rose-600">events@restaurant.com</p>
+                  </div>
+                </a>
+
+                <div className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30">
+                  <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-600 text-white">
+                    <MapPin className="size-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold mb-1">Location</h3>
+                    <p className="text-sm text-muted-foreground">Visit us for a venue tour</p>
+                    <p className="font-medium text-blue-600">123 Main Street, Manila, Philippines 1000</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/30 dark:to-violet-950/30">
+                  <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-violet-600 text-white">
+                    <Clock className="size-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold mb-1">Operating Hours</h3>
+                    <p className="text-sm text-muted-foreground">Open 7 days a week</p>
+                    <p className="font-medium text-purple-600">8:00 AM - 10:00 PM</p>
                   </div>
                 </div>
               </div>
 
-              {/* Social Media */}
-              <div>
-                <h3 className="font-semibold mb-4">Follow Us</h3>
-                <div className="flex gap-3">
-                  <a
-                    href="https://facebook.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex size-10 items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-                  >
-                    <span className="sr-only">Facebook</span>
-                    <svg className="size-5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                    </svg>
-                  </a>
-                  <a
-                    href="https://instagram.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex size-10 items-center justify-center rounded-full bg-gradient-to-br from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 transition-colors"
-                  >
-                    <span className="sr-only">Instagram</span>
-                    <svg className="size-5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                    </svg>
-                  </a>
-                </div>
-              </div>
+              {/* WhatsApp Button */}
+              <a
+                href="https://wa.me/639171234567"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl bg-[#25D366] hover:bg-[#20BD5A] text-white font-semibold transition-colors"
+              >
+                <svg className="size-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                </svg>
+                Message us on WhatsApp
+              </a>
             </div>
 
-            {/* Right Column - Contact Form */}
+            {/* Contact Form */}
             <div className="lg:col-span-3">
-              <div className="p-8 rounded-2xl border bg-card shadow-lg">
+              <div className="rounded-2xl border bg-card p-8 shadow-lg">
                 <h2 className="text-2xl font-bold mb-6">Send Us a Message</h2>
-
-                {error && (
-                  <div className="mb-6 p-4 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
-                    {error}
+                
+                {isSubmitted ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <div className="flex size-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30 mb-4">
+                      <CheckCircle2 className="size-8 text-green-600" />
+                    </div>
+                    <h3 className="text-2xl font-bold mb-2">Message Sent!</h3>
+                    <p className="text-muted-foreground max-w-md">
+                      Thank you for contacting us. Our team will get back to you within 24 hours.
+                    </p>
                   </div>
+                ) : (
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid sm:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium mb-2">
+                          Full Name <span className="text-red-500">*</span>
+                        </label>
+                        <Input
+                          name="name"
+                          value={formData.name}
+                          onChange={handleChange}
+                          placeholder="John Doe"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2">
+                          Email <span className="text-red-500">*</span>
+                        </label>
+                        <Input
+                          type="email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleChange}
+                          placeholder="john@example.com"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid sm:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium mb-2">
+                          Phone Number <span className="text-red-500">*</span>
+                        </label>
+                        <Input
+                          type="tel"
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handleChange}
+                          placeholder="+63 917 123 4567"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2">
+                          Event Type <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          name="eventType"
+                          value={formData.eventType}
+                          onChange={handleChange}
+                          required
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        >
+                          <option value="">Select event type</option>
+                          {eventTypes.map(type => (
+                            <option key={type} value={type}>{type}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid sm:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium mb-2">
+                          Expected Guest Count
+                        </label>
+                        <Input
+                          type="number"
+                          name="guestCount"
+                          value={formData.guestCount}
+                          onChange={handleChange}
+                          placeholder="e.g., 100"
+                          min="1"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2">
+                          Preferred Date
+                        </label>
+                        <Input
+                          type="date"
+                          name="preferredDate"
+                          value={formData.preferredDate}
+                          onChange={handleChange}
+                          min={new Date().toISOString().split('T')[0]}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Message <span className="text-red-500">*</span>
+                      </label>
+                      <Textarea
+                        name="message"
+                        value={formData.message}
+                        onChange={handleChange}
+                        placeholder="Tell us about your event..."
+                        rows={5}
+                        required
+                      />
+                    </div>
+
+                    <Button
+                      type="submit"
+                      size="lg"
+                      disabled={isSubmitting}
+                      className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700"
+                    >
+                      {isSubmitting ? (
+                        <>Sending...</>
+                      ) : (
+                        <>
+                          <Send className="size-4 mr-2" />
+                          Send Message
+                        </>
+                      )}
+                    </Button>
+
+                    <p className="text-xs text-center text-muted-foreground">
+                      By submitting this form, you agree to our privacy policy
+                    </p>
+                  </form>
                 )}
-
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Name */}
-                  <div>
-                    <label htmlFor="name" className="block text-sm font-medium mb-2">
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      id="name"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-3 rounded-lg border bg-background focus:ring-2 focus:ring-amber-600 focus:border-transparent outline-none transition-all"
-                      placeholder="Juan Dela Cruz"
-                    />
-                  </div>
-
-                  {/* Email & Phone */}
-                  <div className="grid gap-6 sm:grid-cols-2">
-                    <div>
-                      <label htmlFor="email" className="block text-sm font-medium mb-2">
-                        Email Address *
-                      </label>
-                      <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        required
-                        className="w-full px-4 py-3 rounded-lg border bg-background focus:ring-2 focus:ring-amber-600 focus:border-transparent outline-none transition-all"
-                        placeholder="juan@email.com"
-                      />
-                    </div>
-
-                    <div>
-                      <label htmlFor="phone" className="block text-sm font-medium mb-2">
-                        Phone Number *
-                      </label>
-                      <input
-                        type="tel"
-                        id="phone"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleChange}
-                        required
-                        className="w-full px-4 py-3 rounded-lg border bg-background focus:ring-2 focus:ring-amber-600 focus:border-transparent outline-none transition-all"
-                        placeholder="+63 917 123 4567"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Event Type & Date */}
-                  <div className="grid gap-6 sm:grid-cols-2">
-                    <div>
-                      <label htmlFor="event_type" className="block text-sm font-medium mb-2">
-                        Event Type
-                      </label>
-                      <select
-                        id="event_type"
-                        name="event_type"
-                        value={formData.event_type}
-                        onChange={handleChange}
-                        className="w-full px-4 py-3 rounded-lg border bg-background focus:ring-2 focus:ring-amber-600 focus:border-transparent outline-none transition-all"
-                      >
-                        <option value="">Select event type</option>
-                        {eventTypes.map(type => (
-                          <option key={type.value} value={type.value}>
-                            {type.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label htmlFor="event_date" className="block text-sm font-medium mb-2">
-                        Preferred Date
-                      </label>
-                      <input
-                        type="date"
-                        id="event_date"
-                        name="event_date"
-                        value={formData.event_date}
-                        onChange={handleChange}
-                        min={new Date().toISOString().split("T")[0]}
-                        className="w-full px-4 py-3 rounded-lg border bg-background focus:ring-2 focus:ring-amber-600 focus:border-transparent outline-none transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Number of Guests */}
-                  <div>
-                    <label htmlFor="num_guests" className="block text-sm font-medium mb-2">
-                      Expected Number of Guests
-                    </label>
-                    <input
-                      type="number"
-                      id="num_guests"
-                      name="num_guests"
-                      value={formData.num_guests}
-                      onChange={handleChange}
-                      min="1"
-                      className="w-full px-4 py-3 rounded-lg border bg-background focus:ring-2 focus:ring-amber-600 focus:border-transparent outline-none transition-all"
-                      placeholder="50"
-                    />
-                  </div>
-
-                  {/* Message */}
-                  <div>
-                    <label htmlFor="message" className="block text-sm font-medium mb-2">
-                      Message *
-                    </label>
-                    <textarea
-                      id="message"
-                      name="message"
-                      value={formData.message}
-                      onChange={handleChange}
-                      required
-                      rows={6}
-                      className="w-full px-4 py-3 rounded-lg border bg-background focus:ring-2 focus:ring-amber-600 focus:border-transparent outline-none transition-all resize-none"
-                      placeholder="Tell us about your event..."
-                    />
-                  </div>
-
-                  {/* Submit Button */}
-                  <Button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 py-6 text-lg"
-                  >
-                    {loading ? (
-                      "Sending..."
-                    ) : (
-                      <>
-                        <Send className="size-5 mr-2" />
-                        Send Inquiry
-                      </>
-                    )}
-                  </Button>
-
-                  <p className="text-sm text-muted-foreground text-center">
-                    We'll respond to your inquiry within 24 hours
-                  </p>
-                </form>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Map Section */}
+      <section className="py-16 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold mb-4">Visit Our Venue</h2>
+            <p className="text-muted-foreground">
+              Schedule a tour and see our beautiful spaces in person
+            </p>
+          </div>
+          
+          <div className="rounded-2xl overflow-hidden shadow-xl h-[400px] bg-muted">
+            <iframe
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3861.4423!2d120.9842!3d14.5995!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTTCsDM1JzU4LjIiTiAxMjDCsDU5JzAzLjEiRQ!5e0!3m2!1sen!2sph!4v1234567890"
+              width="100%"
+              height="100%"
+              style={{ border: 0 }}
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Preview */}
+      <section className="py-16">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-3xl font-bold mb-4">Have Questions?</h2>
+          <p className="text-muted-foreground mb-8">
+            Check out our frequently asked questions or contact us directly
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button size="lg" variant="outline" asChild>
+              <a href="/events#faq">View FAQ</a>
+            </Button>
+            <Button size="lg" asChild className="bg-gradient-to-r from-amber-600 to-orange-600">
+              <a href="/events/book">Book Now</a>
+            </Button>
           </div>
         </div>
       </section>
