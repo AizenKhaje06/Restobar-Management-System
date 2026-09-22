@@ -324,6 +324,22 @@ export async function getAllVenues() {
 }
 
 /**
+ * Get single venue by ID
+ */
+export async function getVenueById(venueId: string) {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from("event_venues")
+    .select("*")
+    .eq("id", venueId)
+    .single()
+
+  if (error) return { error: error.message }
+  return { venue: data as EventVenue }
+}
+
+/**
  * Create new venue
  */
 export async function createVenue(data: {
@@ -448,7 +464,7 @@ export async function getAllPackages() {
 /**
  * Create new package
  */
-export async function createPackage(data: Omit<EventPackage, "id" | "created_at" | "updated_at">) {
+export async function createPackage(data: Omit<EventPackage, "id" | "created_at" | "updated_at" | "sort_order">) {
   const supabase = await createClient()
 
   // Get max sort_order

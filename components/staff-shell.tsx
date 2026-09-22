@@ -60,6 +60,13 @@ export interface NavItem {
   icon: keyof typeof ICONS
 }
 
+export interface NavSection {
+  label: string
+  items: NavItem[]
+}
+
+export type NavConfig = NavItem[] | NavSection[]
+
 // Icon registry: server components reference icons by name, the client
 // looks them up here. Add new icons to this map when you add new nav items.
 const ICONS = {
@@ -99,7 +106,7 @@ function initials(name?: string | null) {
 function NavLinks({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => void }) {
   const pathname = usePathname()
   return (
-    <nav className="flex flex-col gap-0.5 px-3">
+    <>
       {items.map((item) => {
         // Active when pathname exactly matches this item's href.
         // Child pages (/waiter/orders) do NOT activate the parent (/waiter).
@@ -134,7 +141,41 @@ function NavLinks({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => 
           </Link>
         )
       })}
-    </nav>
+    </>
+  )
+}
+
+function Navigation({ config, onNavigate }: { config: NavConfig; onNavigate?: () => void }) {
+  // Check if config is an array of sections or items
+  const isSectioned = config.length > 0 && 'label' in config[0] && 'items' in config[0]
+  
+  if (isSectioned) {
+    const sections = config as NavSection[]
+    return (
+      <>
+        {sections.map((section, index) => (
+          <div key={section.label}>
+            <SidebarSectionLabel>{section.label}</SidebarSectionLabel>
+            <nav className="flex flex-col gap-0.5 px-3">
+              <NavLinks items={section.items} onNavigate={onNavigate} />
+            </nav>
+            {index < sections.length - 1 && (
+              <div className="mx-5 my-3 border-t border-sidebar-border" />
+            )}
+          </div>
+        ))}
+      </>
+    )
+  }
+  
+  // Legacy flat list
+  return (
+    <>
+      <SidebarSectionLabel>Workspace</SidebarSectionLabel>
+      <nav className="flex flex-col gap-0.5 px-3">
+        <NavLinks items={config as NavItem[]} onNavigate={onNavigate} />
+      </nav>
+    </>
   )
 }
 
@@ -187,14 +228,14 @@ function LiveStatusPill() {
 }
 
 function Sidebar({
-  items,
+  config,
   profile,
   restaurantName,
   restaurantTagline,
   restaurantLogo,
   onLogoutClick,
 }: {
-  items: NavItem[]
+  config: NavConfig
   profile: Profile
   restaurantName?: string
   restaurantTagline?: string
@@ -212,8 +253,7 @@ function Sidebar({
         />
       </div>
       <div className="flex-1 overflow-y-auto">
-        <SidebarSectionLabel>Workspace</SidebarSectionLabel>
-        <NavLinks items={items} />
+        <Navigation config={config} />
       </div>
       <SidebarFooter profile={profile} onLogoutClick={onLogoutClick} />
     </div>
@@ -231,7 +271,7 @@ export function StaffShell({
   searchElement,
 }: {
   profile: Profile
-  items: NavItem[]
+  items: NavConfig
   title: string
   children: React.ReactNode
   restaurantName?: string
@@ -262,7 +302,7 @@ export function StaffShell({
       {/* Desktop sidebar */}
       <aside className="sticky top-0 hidden h-svh w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
         <Sidebar
-          items={items}
+          config={items}
           profile={profile}
           restaurantName={restaurantName}
           restaurantTagline={restaurantTagline}
@@ -283,7 +323,7 @@ export function StaffShell({
             <SheetContent side="left" className="w-72 border-sidebar-border bg-sidebar p-0">
               <SheetTitle className="sr-only">Navigation</SheetTitle>
               <Sidebar
-                items={items}
+                config={items}
                 profile={profile}
                 restaurantName={restaurantName}
                 restaurantTagline={restaurantTagline}
