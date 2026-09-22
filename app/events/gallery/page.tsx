@@ -1,47 +1,80 @@
+"use client"
+
+import { useState, useEffect } from "react"
 import { getVenues, getEventPackages } from "@/app/actions/events"
 import { ImageIcon, Building2, Package, Sparkles } from "lucide-react"
 
-export const metadata = {
-  title: "Photo Gallery - Event Venue",
-  description: "Browse our stunning venues and past events. Get inspired for your special occasion.",
+type Photo = {
+  url: string
+  title: string
+  category: string
+  location?: string
+  eventType?: string
 }
 
-export default async function GalleryPage() {
-  const { venues } = await getVenues()
-  const { packages } = await getEventPackages()
+export default function GalleryPage() {
+  const [allPhotos, setAllPhotos] = useState<Photo[]>([])
+  const [filteredPhotos, setFilteredPhotos] = useState<Photo[]>([])
+  const [activeFilter, setActiveFilter] = useState<"all" | "venues" | "events">("all")
+  const [loading, setLoading] = useState(true)
 
-  // Collect all photos from venues and packages
-  const venuePhotos = venues?.flatMap(venue => 
-    (venue.photos || []).map(photo => ({
-      url: photo,
-      title: venue.name,
-      category: "Venues",
-      location: venue.location,
-    }))
-  ) || []
+  useEffect(() => {
+    async function loadGallery() {
+      const { venues } = await getVenues()
+      const { packages } = await getEventPackages()
 
-  const packagePhotos = packages?.flatMap(pkg => {
-    const photos = []
-    if (pkg.featured_image) {
-      photos.push({
-        url: pkg.featured_image,
-        title: pkg.name,
-        category: "Packages",
-        eventType: pkg.event_type,
-      })
+      // Collect all photos from venues and packages
+      const venuePhotos = venues?.flatMap(venue => 
+        (venue.photos || []).map(photo => ({
+          url: photo,
+          title: venue.name,
+          category: "Venues",
+          location: venue.location,
+        }))
+      ) || []
+
+      const packagePhotos = packages?.flatMap(pkg => {
+        const photos = []
+        if (pkg.featured_image) {
+          photos.push({
+            url: pkg.featured_image,
+            title: pkg.name,
+            category: "Packages",
+            eventType: pkg.event_type,
+          })
+        }
+        if (pkg.gallery) {
+          photos.push(...pkg.gallery.map(photo => ({
+            url: photo,
+            title: pkg.name,
+            category: "Packages",
+            eventType: pkg.event_type,
+          })))
+        }
+        return photos
+      }) || []
+
+      const photos = [...venuePhotos, ...packagePhotos]
+      setAllPhotos(photos)
+      setFilteredPhotos(photos)
+      setLoading(false)
     }
-    if (pkg.gallery) {
-      photos.push(...pkg.gallery.map(photo => ({
-        url: photo,
-        title: pkg.name,
-        category: "Packages",
-        eventType: pkg.event_type,
-      })))
-    }
-    return photos
-  }) || []
 
-  const allPhotos = [...venuePhotos, ...packagePhotos]
+    loadGallery()
+  }, [])
+
+  useEffect(() => {
+    if (activeFilter === "all") {
+      setFilteredPhotos(allPhotos)
+    } else if (activeFilter === "venues") {
+      setFilteredPhotos(allPhotos.filter(p => p.category === "Venues"))
+    } else if (activeFilter === "events") {
+      setFilteredPhotos(allPhotos.filter(p => p.category === "Packages"))
+    }
+  }, [activeFilter, allPhotos])
+
+  const venueCount = allPhotos.filter(p => p.category === "Venues").length
+  const eventCount = allPhotos.filter(p => p.category === "Packages").length
 
   return (
     <div className="min-h-screen bg-background">
@@ -68,16 +101,37 @@ export default async function GalleryPage() {
       <section className="py-8 border-b">
         <div className="container mx-auto px-4">
           <div className="flex flex-wrap items-center justify-center gap-3">
-            <button className="px-4 py-2 rounded-full bg-amber-600 text-white text-sm font-medium">
+            <button 
+              onClick={() => setActiveFilter("all")}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                activeFilter === "all" 
+                  ? "bg-amber-600 text-white" 
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
               All Photos ({allPhotos.length})
             </button>
-            <button className="px-4 py-2 rounded-full bg-muted text-muted-foreground hover:bg-muted/80 text-sm font-medium transition-colors">
+            <button 
+              onClick={() => setActiveFilter("venues")}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                activeFilter === "venues" 
+                  ? "bg-amber-600 text-white" 
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
               <Building2 className="size-4 inline mr-1.5" />
-              Venues ({venuePhotos.length})
+              Venues ({venueCount})
             </button>
-            <button className="px-4 py-2 rounded-full bg-muted text-muted-foreground hover:bg-muted/80 text-sm font-medium transition-colors">
+            <button 
+              onClick={() => setActiveFilter("events")}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                activeFilter === "events" 
+                  ? "bg-amber-600 text-white" 
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
               <Package className="size-4 inline mr-1.5" />
-              Events ({packagePhotos.length})
+              Events ({eventCount})
             </button>
           </div>
         </div>
@@ -86,9 +140,14 @@ export default async function GalleryPage() {
       {/* Masonry Gallery */}
       <section className="py-16">
         <div className="container mx-auto px-4">
-          {allPhotos.length > 0 ? (
+          {loading ? (
+            <div className="text-center py-16">
+              <div className="inline-block size-12 border-4 border-amber-600 border-t-transparent rounded-full animate-spin mb-4" />
+              <p className="text-muted-foreground">Loading gallery...</p>
+            </div>
+          ) : filteredPhotos.length > 0 ? (
             <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4">
-              {allPhotos.map((photo, idx) => (
+              {filteredPhotos.map((photo, idx) => (
                 <div
                   key={idx}
                   className="break-inside-avoid group relative overflow-hidden rounded-2xl bg-muted shadow-lg hover:shadow-2xl transition-all duration-300"
@@ -120,7 +179,7 @@ export default async function GalleryPage() {
                                   Event
                                 </span>
                               )}
-                              {('location' in photo) && photo.location && (
+                              {photo.location && (
                                 <span className="text-xs text-white/80 line-clamp-1">
                                   {photo.location}
                                 </span>
@@ -140,7 +199,11 @@ export default async function GalleryPage() {
           ) : (
             <div className="text-center py-16">
               <ImageIcon className="size-16 text-muted-foreground/30 mx-auto mb-4" />
-              <p className="text-muted-foreground">No photos available at the moment.</p>
+              <p className="text-muted-foreground">
+                {activeFilter === "all" 
+                  ? "No photos available at the moment." 
+                  : `No ${activeFilter} photos available.`}
+              </p>
             </div>
           )}
         </div>
