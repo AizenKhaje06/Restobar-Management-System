@@ -20,7 +20,7 @@ export function WhatsAppButton() {
       href="https://wa.me/639171234567?text=Hi!%20I'm%20interested%20in%20booking%20an%20event%20at%20your%20venue."
       target="_blank"
       rel="noopener noreferrer"
-      className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-full bg-[#25D366] hover:bg-[#20BD5A] text-white shadow-2xl hover:shadow-3xl transition-all duration-300 group ${
+      className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-full bg-[#25D366] hover:bg-[#20BD5A] text-white shadow-2xl hover:shadow-3xl transition-all duration-300 group animate-glow ${
         isVisible ? "translate-y-0 opacity-100" : "translate-y-20 opacity-0"
       }`}
       aria-label="Chat on WhatsApp"

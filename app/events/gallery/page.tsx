@@ -150,7 +150,11 @@ export default function GalleryPage() {
               {filteredPhotos.map((photo, idx) => (
                 <div
                   key={idx}
-                  className="break-inside-avoid group relative overflow-hidden rounded-2xl bg-muted shadow-lg hover:shadow-2xl transition-all duration-300"
+                  className="break-inside-avoid group relative overflow-hidden rounded-2xl bg-muted shadow-lg hover:shadow-2xl transition-all duration-300 animate-in fade-in zoom-in"
+                  style={{
+                    animationDelay: `${idx * 50}ms`,
+                    animationDuration: '500ms'
+                  }}
                 >
                   {/* Image */}
                   <div className="relative">

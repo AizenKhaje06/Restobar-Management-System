@@ -4,6 +4,7 @@ import { PromoBanner } from "@/components/events/promo-banner"
 import { WhatsAppButton } from "@/components/events/whatsapp-button"
 import { StickyCTA } from "@/components/events/sticky-cta"
 import { ExitIntentPopup } from "@/components/events/exit-intent-popup"
+import "./globals.css"
 
 export default function EventsLayout({
   children,

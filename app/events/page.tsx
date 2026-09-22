@@ -201,8 +201,20 @@ export default async function EventsLandingPage() {
               { icon: Users, label: "50,000+", sublabel: "Happy Guests" },
               { icon: Heart, label: "100%", sublabel: "Satisfaction Rate" },
             ].map((stat, i) => (
-              <div key={i} className="flex flex-col items-center">
-                <stat.icon className="size-8 mb-3 text-amber-400" />
+              <div 
+                key={i} 
+                className="flex flex-col items-center animate-in fade-in slide-in-from-bottom-4"
+                style={{
+                  animationDelay: `${600 + (i * 100)}ms`,
+                  animationDuration: '600ms'
+                }}
+              >
+                <stat.icon className="size-8 mb-3 text-amber-400 animate-in zoom-in" 
+                  style={{
+                    animationDelay: `${700 + (i * 100)}ms`,
+                    animationDuration: '400ms'
+                  }}
+                />
                 <div className="text-2xl font-bold text-white">{stat.label}</div>
                 <div className="text-sm text-slate-400">{stat.sublabel}</div>
               </div>
@@ -211,7 +223,7 @@ export default async function EventsLandingPage() {
         </div>
 
         {/* Scroll Indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce-subtle">
           <div className="flex flex-col items-center gap-2 text-slate-400">
             <span className="text-xs uppercase tracking-wider">Scroll to explore</span>
             <ChevronRight className="size-5 rotate-90" />
@@ -244,11 +256,15 @@ export default async function EventsLandingPage() {
 
           {/* Venues Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {venues.slice(0, 3).map((venue) => (
+            {venues.slice(0, 3).map((venue, index) => (
               <Link
                 key={venue.id}
                 href={`/events/venues/${venue.id}`}
-                className="group relative overflow-hidden rounded-2xl bg-slate-100 dark:bg-slate-900 transition-all hover:shadow-2xl hover:scale-[1.02]"
+                className="group relative overflow-hidden rounded-2xl bg-slate-100 dark:bg-slate-900 transition-all hover:shadow-2xl hover:scale-[1.02] animate-in fade-in slide-in-from-bottom-8"
+                style={{
+                  animationDelay: `${index * 150}ms`,
+                  animationDuration: '600ms'
+                }}
               >
                 {/* Image */}
                 <div className="aspect-[4/3] overflow-hidden bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-800 dark:to-slate-900">
@@ -315,11 +331,15 @@ export default async function EventsLandingPage() {
 
           {/* Packages Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {packages.map((pkg) => (
+            {packages.map((pkg, index) => (
               <Link
                 key={pkg.id}
                 href={`/events/packages/${pkg.slug}`}
-                className="group relative overflow-hidden rounded-2xl border bg-white dark:bg-slate-950 p-8 transition-all hover:shadow-2xl hover:border-rose-400 dark:hover:border-rose-600"
+                className="group relative overflow-hidden rounded-2xl border bg-white dark:bg-slate-950 p-8 transition-all hover:shadow-2xl hover:border-rose-400 dark:hover:border-rose-600 animate-in fade-in slide-in-from-bottom-8"
+                style={{
+                  animationDelay: `${index * 150}ms`,
+                  animationDuration: '600ms'
+                }}
               >
                 {/* Featured Badge */}
                 {pkg.is_featured && (
