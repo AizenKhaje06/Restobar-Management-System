@@ -17,6 +17,10 @@ import { HowItWorksSection } from "@/components/events/how-it-works-section"
 import { WhyChooseUsSection } from "@/components/events/why-choose-us-section"
 import { FaqSection } from "@/components/events/faq-section"
 import { RecentEventsSection } from "@/components/events/recent-events-section"
+import { TrustBadgesSection } from "@/components/events/trust-badges-section"
+import { PricingCalculator } from "@/components/events/pricing-calculator"
+import { LiveAvailability } from "@/components/events/live-availability"
+import { ComparisonTool } from "@/components/events/comparison-tool"
 
 export const metadata = {
   title: "Lumière Events - Luxury Event Venue & Catering in Manila",
@@ -218,6 +222,9 @@ export default async function EventsLandingPage() {
       {/* Testimonials Section */}
       <TestimonialsSection />
 
+      {/* Trust Badges Section */}
+      <TrustBadgesSection />
+
       {/* Featured Venues Section */}
       <section className="py-24 bg-white dark:bg-slate-950">
         <div className="container mx-auto px-4">
@@ -372,6 +379,12 @@ export default async function EventsLandingPage() {
         </div>
       </section>
 
+      {/* Package Comparison Tool */}
+      <ComparisonTool />
+
+      {/* Pricing Calculator */}
+      <PricingCalculator />
+
       {/* Why Choose Us Section */}
       <WhyChooseUsSection />
 
@@ -380,6 +393,9 @@ export default async function EventsLandingPage() {
 
       {/* Recent Events Showcase */}
       <RecentEventsSection />
+
+      {/* Live Availability */}
+      <LiveAvailability />
 
       {/* FAQ Section */}
       <FaqSection />
