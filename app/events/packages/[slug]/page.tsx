@@ -43,8 +43,9 @@ const eventTypeLabels: Record<EventType, string> = {
   other: "Other Event",
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }) {
-  const { package: pkg } = await getEventPackage(params.slug)
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  const { package: pkg } = await getEventPackage(slug)
   
   if (!pkg) {
     return {
@@ -58,8 +59,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   }
 }
 
-export default async function PackageDetailPage({ params }: { params: { slug: string } }) {
-  const { package: pkg, error } = await getEventPackage(params.slug)
+export default async function PackageDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  const { package: pkg, error } = await getEventPackage(slug)
 
   if (error || !pkg) {
     notFound()

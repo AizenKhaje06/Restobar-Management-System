@@ -233,21 +233,21 @@ export async function getEventPackage(slugOrId: string) {
     .from("event_packages")
     .select("*")
     .eq("slug", slugOrId)
-    .single()
 
   // If not found by slug, try by ID
-  if (error) {
+  if (!data || data.length === 0) {
     const result = await supabase
       .from("event_packages")
       .select("*")
       .eq("id", slugOrId)
-      .single()
     data = result.data
     error = result.error
   }
 
   if (error) return { error: error.message }
-  return { package: data as EventPackage }
+  if (!data || data.length === 0) return { error: "Package not found" }
+  
+  return { package: data[0] as EventPackage }
 }
 
 // ============================================================
