@@ -30,6 +30,7 @@ const NAV: NavSection[] = [
       { href: "/admin/events/payments", label: "Event Payments", icon: "CreditCard" },
       { href: "/admin/events/venues", label: "Event Venues", icon: "Building2" },
       { href: "/admin/events/packages", label: "Event Packages", icon: "Package" },
+      { href: "/admin/events/menu", label: "Menu Packages", icon: "UtensilsCrossed" },
       { href: "/admin/events/gallery", label: "Gallery Manager", icon: "PartyPopper" },
       { href: "/admin/events/content", label: "Homepage Content", icon: "MessageSquare" },
       { href: "/admin/events/settings", label: "Event Settings", icon: "Settings" },

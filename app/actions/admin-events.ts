@@ -641,3 +641,158 @@ export async function updateInquiryStatus(
 
   return { inquiry: data as EventInquiry }
 }
+
+// ============================================================
+// MENU PACKAGE MANAGEMENT
+// ============================================================
+
+/**
+ * Get all menu packages (including inactive)
+ */
+export async function getAllMenuPackages(category?: string) {
+  const supabase = await createClient()
+
+  let query = supabase
+    .from("event_menu_packages")
+    .select("*")
+    .order("sort_order")
+
+  if (category) {
+    query = query.eq("category", category)
+  }
+
+  const { data, error } = await query
+
+  if (error) return { error: error.message }
+  return { menuPackages: data as any[] }
+}
+
+/**
+ * Get single menu package by ID
+ */
+export async function getMenuPackageById(id: string) {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from("event_menu_packages")
+    .select("*")
+    .eq("id", id)
+
+  if (error) return { error: error.message }
+  
+  if (!data || data.length === 0) {
+    return { error: "Menu package not found" }
+  }
+
+  return { menuPackage: data[0] as any }
+}
+
+/**
+ * Create new menu package
+ */
+export async function createMenuPackage(data: {
+  name: string
+  category: string
+  description?: string
+  price_per_person: number
+  min_order: number
+  items: any[]
+  dietary_info?: any
+  photo?: string
+  is_active?: boolean
+}) {
+  const supabase = await createClient()
+
+  // Get max sort_order
+  const { data: packages } = await supabase
+    .from("event_menu_packages")
+    .select("sort_order")
+    .order("sort_order", { ascending: false })
+    .limit(1)
+
+  const sort_order = packages && packages.length > 0 ? packages[0].sort_order + 1 : 1
+
+  const { data: newPackages, error } = await supabase
+    .from("event_menu_packages")
+    .insert({
+      ...data,
+      sort_order,
+      is_active: data.is_active ?? true,
+      dietary_info: data.dietary_info || {},
+    })
+    .select()
+
+  if (error) return { error: error.message }
+  
+  if (!newPackages || newPackages.length === 0) {
+    return { error: "Failed to create menu package" }
+  }
+
+  const menuPackage = newPackages[0]
+
+  revalidatePath("/admin/events/menu")
+  revalidatePath("/events/menu")
+
+  return { menuPackage: menuPackage as any }
+}
+
+/**
+ * Update menu package
+ */
+export async function updateMenuPackage(
+  id: string,
+  data: any
+) {
+  const supabase = await createClient()
+
+  const { data: packages, error } = await supabase
+    .from("event_menu_packages")
+    .update(data)
+    .eq("id", id)
+    .select()
+
+  if (error) return { error: error.message }
+  
+  if (!packages || packages.length === 0) {
+    return { error: "Menu package not found" }
+  }
+
+  const menuPackage = packages[0]
+
+  revalidatePath("/admin/events/menu")
+  revalidatePath("/events/menu")
+
+  return { menuPackage: menuPackage as any }
+}
+
+/**
+ * Delete menu package
+ */
+export async function deleteMenuPackage(id: string) {
+  const supabase = await createClient()
+
+  // Check if menu package has bookings
+  const { data: bookings } = await supabase
+    .from("event_bookings")
+    .select("id")
+    .eq("menu_package_id", id)
+    .limit(1)
+
+  if (bookings && bookings.length > 0) {
+    return { 
+      error: "Cannot delete menu package with existing bookings. Set as inactive instead." 
+    }
+  }
+
+  const { error } = await supabase
+    .from("event_menu_packages")
+    .delete()
+    .eq("id", id)
+
+  if (error) return { error: error.message }
+
+  revalidatePath("/admin/events/menu")
+  revalidatePath("/events/menu")
+
+  return { success: true }
+}
