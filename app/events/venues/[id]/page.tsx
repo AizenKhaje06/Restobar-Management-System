@@ -1,7 +1,7 @@
 import { getVenue } from "@/app/actions/events"
 import { notFound } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Calendar } from "lucide-react"
+import { ArrowLeft, Calendar, Image as ImageIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export default async function VenueDetailPage({ 
@@ -33,14 +33,48 @@ export default async function VenueDetailPage({
           <h1 className="text-4xl font-bold mb-4">{venue.name}</h1>
           <p className="text-xl text-muted-foreground mb-8">{venue.location}</p>
 
-          {/* Image */}
-          {venue.photos && venue.photos[0] && (
-            <div className="aspect-video rounded-2xl overflow-hidden mb-8">
-              <img
-                src={venue.photos[0]}
-                alt={venue.name}
-                className="w-full h-full object-cover"
-              />
+          {/* Hero Image & Gallery */}
+          {venue.photos && venue.photos.length > 0 ? (
+            <div className="mb-8 space-y-4">
+              {/* Main/Hero Image */}
+              <div className="aspect-video rounded-2xl overflow-hidden">
+                <img
+                  src={venue.photos[0]}
+                  alt={venue.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              {/* Gallery Grid - Show all remaining images */}
+              {venue.photos.length > 1 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <ImageIcon className="size-4 text-muted-foreground" />
+                    <h3 className="font-semibold">Photo Gallery ({venue.photos.length} photos)</h3>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {venue.photos.map((photo, index) => (
+                      <div
+                        key={index}
+                        className="aspect-square rounded-lg overflow-hidden border hover:border-amber-500 transition-colors cursor-pointer group"
+                      >
+                        <img
+                          src={photo}
+                          alt={`${venue.name} - Photo ${index + 1}`}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="aspect-video rounded-2xl overflow-hidden mb-8 bg-muted flex items-center justify-center">
+              <div className="text-center">
+                <ImageIcon className="size-16 mx-auto text-muted-foreground/30 mb-2" />
+                <p className="text-muted-foreground">No photos available</p>
+              </div>
             </div>
           )}
 

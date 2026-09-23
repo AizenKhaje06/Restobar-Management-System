@@ -98,6 +98,15 @@ export default function EditVenuePage() {
     const files = e.target.files
     if (!files || files.length === 0) return
 
+    // Check if already at max limit (5 photos)
+    if (venue.photos.length >= 5) {
+      toast.error("Maximum 5 photos allowed per venue")
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+      return
+    }
+
     setUploadingPhoto(true)
     const file = files[0]
 
@@ -243,7 +252,12 @@ export default function EditVenuePage() {
 
       {/* Photos */}
       <div className="rounded-xl border bg-card p-6 space-y-4">
-        <h2 className="text-xl font-bold">Photos</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold">Photos</h2>
+          <span className="text-sm text-muted-foreground">
+            {venue.photos.length} / 5 photos
+          </span>
+        </div>
 
         <div className="space-y-4">
           {/* Upload Button */}
@@ -254,11 +268,11 @@ export default function EditVenuePage() {
               accept="image/*"
               onChange={handleFileSelect}
               className="hidden"
-              disabled={uploadingPhoto}
+              disabled={uploadingPhoto || venue.photos.length >= 5}
             />
             <Button 
               onClick={() => fileInputRef.current?.click()}
-              disabled={uploadingPhoto}
+              disabled={uploadingPhoto || venue.photos.length >= 5}
               type="button"
               variant="outline"
               className="w-full"
@@ -268,15 +282,20 @@ export default function EditVenuePage() {
                   <Loader2 className="size-4 mr-2 animate-spin" />
                   Uploading...
                 </>
+              ) : venue.photos.length >= 5 ? (
+                <>
+                  <ImageIcon className="size-4 mr-2" />
+                  Maximum 5 Photos Reached
+                </>
               ) : (
                 <>
                   <Upload className="size-4 mr-2" />
-                  Upload Photo
+                  Upload Photo ({venue.photos.length}/5)
                 </>
               )}
             </Button>
             <p className="text-xs text-muted-foreground mt-2">
-              Supported: JPG, PNG, WebP (Max 5MB)
+              Supported: JPG, PNG, WebP (Max 5MB, up to 5 photos)
             </p>
           </div>
 
