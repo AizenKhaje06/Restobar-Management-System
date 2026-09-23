@@ -100,14 +100,19 @@ export async function updateBookingStatus(
     updateData.cancellation_reason = notes
   }
 
-  const { data, error } = await supabase
+  const { data: bookings, error } = await supabase
     .from("event_bookings")
     .update(updateData)
     .eq("id", bookingId)
     .select()
-    .single()
 
   if (error) return { error: error.message }
+  
+  if (!bookings || bookings.length === 0) {
+    return { error: "Booking not found" }
+  }
+
+  const data = bookings[0]
 
   // Log activity (ignore errors if log_activity doesn't exist)
   try {
@@ -249,7 +254,7 @@ export async function verifyPayment(
   const status: PaymentVerificationStatus = verified ? "verified" : "rejected"
 
   // 1. Update payment status
-  const { data: payment, error: paymentError } = await supabase
+  const { data: payments, error: paymentError } = await supabase
     .from("event_payments")
     .update({
       status,
@@ -260,9 +265,14 @@ export async function verifyPayment(
     })
     .eq("id", paymentId)
     .select()
-    .single()
 
   if (paymentError) return { error: paymentError.message }
+  
+  if (!payments || payments.length === 0) {
+    return { error: "Payment not found" }
+  }
+
+  const payment = payments[0]
 
   // 2. If verified, update booking total_paid and payment_status
   if (verified) {
@@ -333,10 +343,14 @@ export async function getVenueById(venueId: string) {
     .from("event_venues")
     .select("*")
     .eq("id", venueId)
-    .single()
 
   if (error) return { error: error.message }
-  return { venue: data as EventVenue }
+  
+  if (!data || data.length === 0) {
+    return { error: "Venue not found" }
+  }
+
+  return { venue: data[0] as EventVenue }
 }
 
 /**
@@ -367,7 +381,7 @@ export async function createVenue(data: {
 
   const sort_order = venues && venues.length > 0 ? venues[0].sort_order + 1 : 1
 
-  const { data: venue, error } = await supabase
+  const { data: newVenues, error } = await supabase
     .from("event_venues")
     .insert({
       ...data,
@@ -375,9 +389,14 @@ export async function createVenue(data: {
       is_active: data.is_active ?? true,
     })
     .select()
-    .single()
 
   if (error) return { error: error.message }
+  
+  if (!newVenues || newVenues.length === 0) {
+    return { error: "Failed to create venue" }
+  }
+
+  const venue = newVenues[0]
 
   revalidatePath("/admin/events/venues")
   revalidatePath("/events/venues")
@@ -394,14 +413,19 @@ export async function updateVenue(
 ) {
   const supabase = await createClient()
 
-  const { data: venue, error } = await supabase
+  const { data: venues, error } = await supabase
     .from("event_venues")
     .update(data)
     .eq("id", venueId)
     .select()
-    .single()
 
   if (error) return { error: error.message }
+  
+  if (!venues || venues.length === 0) {
+    return { error: "Venue not found" }
+  }
+
+  const venue = venues[0]
 
   revalidatePath("/admin/events/venues")
   revalidatePath("/events/venues")
@@ -476,16 +500,21 @@ export async function createPackage(data: Omit<EventPackage, "id" | "created_at"
 
   const sort_order = packages && packages.length > 0 ? packages[0].sort_order + 1 : 1
 
-  const { data: pkg, error } = await supabase
+  const { data: newPackages, error } = await supabase
     .from("event_packages")
     .insert({
       ...data,
       sort_order,
     })
     .select()
-    .single()
 
   if (error) return { error: error.message }
+  
+  if (!newPackages || newPackages.length === 0) {
+    return { error: "Failed to create package" }
+  }
+
+  const pkg = newPackages[0]
 
   revalidatePath("/admin/events/packages")
   revalidatePath("/events/packages")
@@ -502,14 +531,19 @@ export async function updatePackage(
 ) {
   const supabase = await createClient()
 
-  const { data: pkg, error } = await supabase
+  const { data: packages, error } = await supabase
     .from("event_packages")
     .update(data)
     .eq("id", packageId)
     .select()
-    .single()
 
   if (error) return { error: error.message }
+  
+  if (!packages || packages.length === 0) {
+    return { error: "Package not found" }
+  }
+
+  const pkg = packages[0]
 
   revalidatePath("/admin/events/packages")
   revalidatePath("/events/packages")
@@ -584,7 +618,7 @@ export async function updateInquiryStatus(
 ) {
   const supabase = await createClient()
 
-  const { data, error } = await supabase
+  const { data: inquiries, error } = await supabase
     .from("event_inquiries")
     .update({
       status,
@@ -594,9 +628,14 @@ export async function updateInquiryStatus(
     })
     .eq("id", inquiryId)
     .select()
-    .single()
 
   if (error) return { error: error.message }
+  
+  if (!inquiries || inquiries.length === 0) {
+    return { error: "Inquiry not found" }
+  }
+
+  const data = inquiries[0]
 
   revalidatePath("/admin/events/inquiries")
 
