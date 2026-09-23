@@ -13,7 +13,8 @@ import {
   Phone,
   User,
   LogOut,
-  Settings
+  Settings,
+  UtensilsCrossed
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -89,6 +90,7 @@ export function EventsNavbar() {
     { href: "/events", label: "Home", icon: Home },
     { href: "/events/venues", label: "Venues", icon: Building2 },
     { href: "/events/packages", label: "Packages", icon: Package },
+    { href: "/events/menu", label: "Menu", icon: UtensilsCrossed },
     { href: "/events/gallery", label: "Gallery", icon: ImageIcon },
     { href: "/events/contact", label: "Contact", icon: Phone },
   ]
