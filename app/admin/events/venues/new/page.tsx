@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,14 +10,20 @@ import {
   ArrowLeft,
   Plus,
   X,
-  Trash2
+  Trash2,
+  Upload,
+  Image as ImageIcon,
+  Loader2
 } from "lucide-react"
 import { createVenue } from "@/app/actions/admin-events"
+import { uploadImage, deleteImage } from "@/lib/utils/upload"
 import { toast } from "sonner"
 
 export default function NewVenuePage() {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [venue, setVenue] = useState({
     name: "",
     location: "",
@@ -31,7 +37,6 @@ export default function NewVenuePage() {
   })
 
   const [newAmenity, setNewAmenity] = useState("")
-  const [newPhoto, setNewPhoto] = useState("")
 
   const handleSave = async () => {
     if (!venue.name || !venue.location) {
@@ -66,18 +71,48 @@ export default function NewVenuePage() {
     })
   }
 
-  const addPhoto = () => {
-    if (newPhoto.trim()) {
-      setVenue({...venue, photos: [...venue.photos, newPhoto.trim()]})
-      setNewPhoto("")
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    setUploadingPhoto(true)
+    const file = files[0]
+
+    try {
+      const { url, error } = await uploadImage(file, 'event-images', 'venues')
+      
+      if (error) {
+        toast.error(error)
+      } else if (url) {
+        setVenue({...venue, photos: [...venue.photos, url]})
+        toast.success("Photo uploaded successfully!")
+      }
+    } catch (error) {
+      toast.error("Failed to upload photo")
+    } finally {
+      setUploadingPhoto(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
     }
   }
 
-  const removePhoto = (index: number) => {
+  const removePhoto = async (index: number) => {
+    const photoUrl = venue.photos[index]
+    
+    // Remove from state first
     setVenue({
       ...venue,
       photos: venue.photos.filter((_, i) => i !== index)
     })
+
+    // Try to delete from storage
+    try {
+      await deleteImage(photoUrl, 'event-images')
+      toast.success("Photo removed")
+    } catch (error) {
+      console.log("Could not delete image from storage:", error)
+    }
   }
 
   return (
@@ -179,43 +214,85 @@ export default function NewVenuePage() {
       {/* Photos */}
       <div className="rounded-xl border bg-card p-6 space-y-4">
         <h2 className="text-xl font-bold">Photos</h2>
-        <p className="text-sm text-muted-foreground">Add photos to showcase your venue</p>
+        <p className="text-sm text-muted-foreground">Upload photos to showcase your venue</p>
 
-        <div className="flex gap-2">
-          <Input
-            value={newPhoto}
-            onChange={(e) => setNewPhoto(e.target.value)}
-            placeholder="Enter photo URL (e.g., https://...)"
-            onKeyPress={(e) => e.key === 'Enter' && addPhoto()}
-          />
-          <Button onClick={addPhoto} type="button">
-            <Plus className="size-4 mr-2" />
-            Add
-          </Button>
-        </div>
-
-        {venue.photos.length > 0 && (
-          <div className="grid sm:grid-cols-2 gap-4">
-            {venue.photos.map((photo, index) => (
-              <div key={index} className="relative group rounded-lg overflow-hidden border">
-                <img
-                  src={photo}
-                  alt={`Venue photo ${index + 1}`}
-                  className="w-full h-48 object-cover"
-                  onError={(e) => {
-                    e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23ddd' width='200' height='200'/%3E%3Ctext fill='%23999' x='50%25' y='50%25' text-anchor='middle' dominant-baseline='middle' font-family='sans-serif'%3EInvalid URL%3C/text%3E%3C/svg%3E"
-                  }}
-                />
-                <button
-                  onClick={() => removePhoto(index)}
-                  className="absolute top-2 right-2 p-2 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Trash2 className="size-4" />
-                </button>
-              </div>
-            ))}
+        <div className="space-y-4">
+          {/* Upload Button */}
+          <div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="hidden"
+              disabled={uploadingPhoto}
+            />
+            <Button 
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingPhoto}
+              type="button"
+              variant="outline"
+              className="w-full"
+            >
+              {uploadingPhoto ? (
+                <>
+                  <Loader2 className="size-4 mr-2 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Upload className="size-4 mr-2" />
+                  Upload Photo
+                </>
+              )}
+            </Button>
+            <p className="text-xs text-muted-foreground mt-2">
+              Supported: JPG, PNG, WebP (Max 5MB)
+            </p>
           </div>
-        )}
+
+          {/* Photo Grid */}
+          {venue.photos.length > 0 ? (
+            <div className="grid sm:grid-cols-2 gap-4">
+              {venue.photos.map((photo, index) => (
+                <div key={index} className="relative group rounded-lg overflow-hidden border">
+                  <img
+                    src={photo}
+                    alt={`Venue photo ${index + 1}`}
+                    className="w-full h-48 object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <button
+                      onClick={() => removePhoto(index)}
+                      className="p-3 rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors"
+                      type="button"
+                    >
+                      <Trash2 className="size-5" />
+                    </button>
+                  </div>
+                  <div className="absolute top-2 left-2 px-2 py-1 rounded-full bg-black/70 text-white text-xs">
+                    Photo {index + 1}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 border-2 border-dashed rounded-lg">
+              <ImageIcon className="size-12 mx-auto text-muted-foreground/30 mb-3" />
+              <p className="text-sm text-muted-foreground mb-3">No photos uploaded yet</p>
+              <Button 
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingPhoto}
+                type="button"
+                variant="outline"
+                size="sm"
+              >
+                <Upload className="size-4 mr-2" />
+                Upload First Photo
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Amenities */}
