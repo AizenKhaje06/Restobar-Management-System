@@ -106,11 +106,11 @@ export default async function AdminVenuesPage() {
             </Link>
           </div>
         ) : (
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid gap-6 lg:grid-cols-2 xl:gap-8">
             {activeVenues.map((venue) => (
               <div
                 key={venue.id}
-                className="p-6 rounded-xl border bg-card hover:shadow-lg transition-all"
+                className="p-6 rounded-xl border-2 bg-card shadow-md hover:shadow-xl hover:border-amber-300 transition-all duration-300"
               >
                 {/* Venue Image */}
                 {venue.photos && venue.photos.length > 0 && (
@@ -231,11 +231,11 @@ export default async function AdminVenuesPage() {
             Inactive Venues ({inactiveVenues.length})
           </summary>
 
-          <div className="grid gap-4 lg:grid-cols-2 mt-4">
+          <div className="grid gap-6 lg:grid-cols-2 xl:gap-8 mt-4">
             {inactiveVenues.map((venue) => (
               <div
                 key={venue.id}
-                className="p-6 rounded-xl border bg-card opacity-60 hover:opacity-100 transition-all"
+                className="p-6 rounded-xl border-2 bg-card shadow-md opacity-60 hover:opacity-100 hover:shadow-lg transition-all duration-300"
               >
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-4">

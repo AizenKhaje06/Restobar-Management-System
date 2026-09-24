@@ -172,7 +172,7 @@ export default function NewMenuPackagePage() {
             </label>
             <Select
               value={menuPackage.category}
-              onValueChange={(value) => setMenuPackage({...menuPackage, category: value})}
+              onValueChange={(value) => value && setMenuPackage({...menuPackage, category: value})}
             >
               <SelectTrigger>
                 <SelectValue />
