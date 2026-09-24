@@ -28,11 +28,12 @@ const statusColors = {
 export default async function AdminPaymentsPage({
   searchParams,
 }: {
-  searchParams: { status?: string }
+  searchParams: Promise<{ status?: string }>
 }) {
+  const params = await searchParams
   const [pendingResult, allResult] = await Promise.all([
     getPendingPayments(),
-    getAllPayments({ status: searchParams.status }),
+    getAllPayments({ status: params.status }),
   ])
 
   if (pendingResult.error || allResult.error) {
@@ -121,7 +122,7 @@ export default async function AdminPaymentsPage({
       <div className="flex gap-2 p-2 rounded-lg border bg-muted/30">
         <Link href="/admin/events/payments">
           <Button
-            variant={!searchParams.status ? "default" : "ghost"}
+            variant={!params.status ? "default" : "ghost"}
             size="sm"
           >
             All Payments
@@ -129,7 +130,7 @@ export default async function AdminPaymentsPage({
         </Link>
         <Link href="/admin/events/payments?status=pending">
           <Button
-            variant={searchParams.status === "pending" ? "default" : "ghost"}
+            variant={params.status === "pending" ? "default" : "ghost"}
             size="sm"
           >
             Pending ({pendingPayments.length})
@@ -137,7 +138,7 @@ export default async function AdminPaymentsPage({
         </Link>
         <Link href="/admin/events/payments?status=verified">
           <Button
-            variant={searchParams.status === "verified" ? "default" : "ghost"}
+            variant={params.status === "verified" ? "default" : "ghost"}
             size="sm"
           >
             Verified
@@ -145,7 +146,7 @@ export default async function AdminPaymentsPage({
         </Link>
         <Link href="/admin/events/payments?status=rejected">
           <Button
-            variant={searchParams.status === "rejected" ? "default" : "ghost"}
+            variant={params.status === "rejected" ? "default" : "ghost"}
             size="sm"
           >
             Rejected
@@ -154,7 +155,7 @@ export default async function AdminPaymentsPage({
       </div>
 
       {/* Pending Payments (Priority) */}
-      {pendingPayments.length > 0 && !searchParams.status && (
+      {pendingPayments.length > 0 && !params.status && (
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <AlertCircle className="size-5 text-amber-600" />
@@ -272,8 +273,8 @@ export default async function AdminPaymentsPage({
       {/* All Payments List */}
       <div className="space-y-4">
         <h2 className="text-xl font-bold">
-          {searchParams.status
-            ? `${searchParams.status.charAt(0).toUpperCase() + searchParams.status.slice(1)} Payments`
+          {params.status
+            ? `${params.status.charAt(0).toUpperCase() + params.status.slice(1)} Payments`
             : "All Payments"}
         </h2>
 
@@ -282,8 +283,8 @@ export default async function AdminPaymentsPage({
             <CreditCard className="size-16 text-muted-foreground/30 mx-auto mb-4" />
             <h3 className="text-xl font-bold mb-2">No payments found</h3>
             <p className="text-muted-foreground">
-              {searchParams.status
-                ? `No ${searchParams.status} payments at the moment`
+              {params.status
+                ? `No ${params.status} payments at the moment`
                 : "Payments will appear here once customers upload proof"}
             </p>
           </div>
