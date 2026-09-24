@@ -668,6 +668,35 @@ export async function getAllMenuPackages(category?: string) {
 }
 
 /**
+ * Get all available menu items (for choosing items in event packages)
+ */
+export async function getAllAvailableMenuItems() {
+  const supabase = await createClient()
+  
+  const { data, error } = await supabase
+    .from("menu_items")
+    .select(`
+      id,
+      name,
+      description,
+      price,
+      image_url,
+      category:category_id (
+        id,
+        name
+      )
+    `)
+    .eq("is_available", true)
+    .order("name")
+
+  if (error) {
+    return { menuItems: null, error: error.message }
+  }
+
+  return { menuItems: data, error: null }
+}
+
+/**
  * Get single menu package by ID
  */
 export async function getMenuPackageById(id: string) {

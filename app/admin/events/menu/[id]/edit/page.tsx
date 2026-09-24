@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -33,7 +33,7 @@ import {
   ListChecks,
   Search,
 } from "lucide-react"
-import { createMenuPackage, getAllAvailableMenuItems } from "@/app/actions/admin-events"
+import { getMenuPackageById, updateMenuPackage, getAllAvailableMenuItems } from "@/app/actions/admin-events"
 import { uploadImage } from "@/lib/utils/upload"
 import { toast } from "sonner"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -44,9 +44,11 @@ interface MenuItem {
   is_signature: boolean
 }
 
-export default function NewMenuPackagePage() {
+export default function EditMenuPackagePage() {
   const router = useRouter()
+  const params = useParams()
   const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [showMenuModal, setShowMenuModal] = useState(false)
   const [availableMenuItems, setAvailableMenuItems] = useState<any[]>([])
@@ -77,6 +79,41 @@ export default function NewMenuPackagePage() {
     is_signature: false,
   })
 
+  // Fetch existing menu package data
+  useEffect(() => {
+    const loadMenuPackage = async () => {
+      const id = params.id as string
+      const { menuPackage: data, error } = await getMenuPackageById(id)
+      
+      if (error || !data) {
+        toast.error(error || "Menu package not found")
+        router.push("/admin/events/menu")
+        return
+      }
+
+      setMenuPackage({
+        name: data.name,
+        category: data.category,
+        description: data.description || "",
+        price_per_person: data.price_per_person,
+        min_order: data.min_order,
+        items: data.items || [],
+        dietary_info: data.dietary_info || {
+          vegetarian: false,
+          vegan: false,
+          halal: false,
+          gluten_free: false,
+        },
+        photo: data.photo || "",
+        is_active: data.is_active,
+      })
+
+      setLoading(false)
+    }
+
+    loadMenuPackage()
+  }, [params.id, router])
+
   // Load available menu items when modal opens
   useEffect(() => {
     const loadMenuItems = async () => {
@@ -103,13 +140,14 @@ export default function NewMenuPackagePage() {
 
     setSaving(true)
     
-    const { error } = await createMenuPackage(menuPackage)
+    const id = params.id as string
+    const { error } = await updateMenuPackage(id, menuPackage)
     
     if (error) {
       toast.error(error)
       setSaving(false)
     } else {
-      toast.success("Menu package created successfully!")
+      toast.success("Menu package updated successfully!")
       router.push("/admin/events/menu")
     }
   }
@@ -178,6 +216,14 @@ export default function NewMenuPackagePage() {
     }
   }
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-4xl space-y-6">
       {/* Header */}
@@ -191,8 +237,8 @@ export default function NewMenuPackagePage() {
           Back
         </Button>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold">Add Menu Package</h1>
-          <p className="text-muted-foreground">Create a new catering menu package</p>
+          <h1 className="text-3xl font-bold">Edit Menu Package</h1>
+          <p className="text-muted-foreground">Update menu package details</p>
         </div>
       </div>
 
@@ -241,6 +287,17 @@ export default function NewMenuPackagePage() {
             placeholder="Describe this menu package..."
             rows={3}
           />
+        </div>
+
+        {/* Active Status */}
+        <div className="flex items-center gap-3 p-3 rounded-lg border">
+          <Checkbox
+            checked={menuPackage.is_active}
+            onCheckedChange={(checked) => setMenuPackage({...menuPackage, is_active: checked as boolean})}
+          />
+          <label className="text-sm cursor-pointer">
+            Active (visible to customers)
+          </label>
         </div>
       </div>
 
@@ -581,11 +638,11 @@ export default function NewMenuPackagePage() {
           className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700"
         >
           {saving ? (
-            <>Creating...</>
+            <>Saving...</>
           ) : (
             <>
               <Save className="size-4 mr-2" />
-              Create Menu Package
+              Save Changes
             </>
           )}
         </Button>
