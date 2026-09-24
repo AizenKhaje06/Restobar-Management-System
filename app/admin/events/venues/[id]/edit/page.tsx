@@ -159,22 +159,24 @@ export default function EditVenuePage() {
   }
 
   return (
-    <div className="max-w-4xl space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => router.back()}
-        >
-          <ArrowLeft className="size-4 mr-2" />
-          Back
-        </Button>
-        <div className="flex-1">
+    <div className="space-y-6">
+      {/* Back Button - Left aligned */}
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => router.back()}
+      >
+        <ArrowLeft className="size-4 mr-2" />
+        Back
+      </Button>
+
+      {/* Content - Centered */}
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Header */}
+        <div>
           <h1 className="text-3xl font-bold">Edit Venue</h1>
           <p className="text-muted-foreground">Update venue information and settings</p>
         </div>
-      </div>
 
       {/* Basic Information */}
       <div className="rounded-xl border bg-card p-6 space-y-4">
@@ -433,6 +435,7 @@ export default function EditVenuePage() {
           )}
         </Button>
       </div>
+    </div>
     </div>
   )
 }

@@ -43,14 +43,46 @@ export default function GalleryManagerPage() {
 
   const loadPhotos = async () => {
     const supabase = createClient()
-    const { data, error } = await supabase
+    
+    // Get photos from event_gallery table
+    const { data: galleryPhotos } = await supabase
       .from("event_gallery")
       .select("*")
       .order("sort_order", { ascending: true })
 
-    if (data) {
-      setPhotos(data)
+    // Get photos from venue photos
+    const { data: venues } = await supabase
+      .from("event_venues")
+      .select("id, name, photos")
+      .not("photos", "is", null)
+
+    // Combine both sources
+    const allPhotos: GalleryPhoto[] = []
+    
+    // Add gallery photos
+    if (galleryPhotos) {
+      allPhotos.push(...galleryPhotos)
     }
+
+    // Add venue photos
+    if (venues) {
+      venues.forEach((venue) => {
+        if (venue.photos && Array.isArray(venue.photos)) {
+          venue.photos.forEach((photoUrl: string, index: number) => {
+            allPhotos.push({
+              id: `venue-${venue.id}-${index}`,
+              url: photoUrl,
+              category: 'venue',
+              title: `${venue.name} - Photo ${index + 1}`,
+              sort_order: 0,
+              created_at: new Date().toISOString()
+            })
+          })
+        }
+      })
+    }
+
+    setPhotos(allPhotos)
     setLoading(false)
   }
 
