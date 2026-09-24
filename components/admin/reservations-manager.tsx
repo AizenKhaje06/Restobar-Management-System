@@ -153,7 +153,7 @@ export function ReservationsManager({
         description={`${stats.total} total • ${stats.today} today • ${stats.pending} pending confirmation`}
         crumbs={[{ label: "Admin", href: "/admin" }, { label: "Reservations" }]}
         actions={
-          <Button size="sm" onClick={() => setNewDialog(true)}>
+          <Button size="sm" onClick={() => setNewDialog(true)} className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700">
             <Plus className="mr-2 size-4" />
             New Reservation
           </Button>
@@ -609,7 +609,7 @@ function NewReservationDialog({
             <Button type="button" variant="outline" onClick={onClose} className="h-10">
               Cancel
             </Button>
-            <Button type="submit" disabled={pending} className="h-10">
+            <Button type="submit" disabled={pending} className="h-10 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700">
               <CalendarClock className="mr-2 size-4" />
               {pending ? "Creating..." : "Create Reservation"}
             </Button>

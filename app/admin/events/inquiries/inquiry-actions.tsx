@@ -93,7 +93,7 @@ export function InquiryActions({ inquiry }: { inquiry: EventInquiry }) {
                 <Button
                   onClick={() => handleStatusChange("responded")}
                   disabled={loading || !responseNotes.trim()}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                  className="flex-1 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700"
                   size="sm"
                 >
                   {loading ? (

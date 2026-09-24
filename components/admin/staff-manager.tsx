@@ -124,7 +124,7 @@ export function StaffManager({
         description={`${stats.total} members • ${stats.active} active • ${stats.inactive} inactive`}
         crumbs={[{ label: "Admin", href: "/admin" }, { label: "Staff" }]}
         actions={
-          <Button onClick={() => setAddDialog({ open: true })}>
+          <Button onClick={() => setAddDialog({ open: true })} className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700">
             <UserPlus className="mr-2 size-4" />
             Add Staff
           </Button>
@@ -735,7 +735,7 @@ function AddStaffDialog({
               <Button type="button" variant="outline" onClick={handleClose} disabled={pending}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={pending}>
+              <Button type="submit" disabled={pending} className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700">
                 <Plus className="mr-2 size-4" />
                 {pending ? "Creating account..." : "Create Account"}
               </Button>

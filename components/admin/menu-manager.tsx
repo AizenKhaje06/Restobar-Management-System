@@ -154,13 +154,13 @@ export function MenuManager({
         actions={
           <>
             {!showCategoryManager && (
-              <Button size="sm" onClick={() => setItemDialog({ open: true, item: null })}>
+              <Button size="sm" onClick={() => setItemDialog({ open: true, item: null })} className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700">
                 <Plus className="mr-2 size-4" />
                 New Item
               </Button>
             )}
             {showCategoryManager && (
-              <Button size="sm" onClick={() => setCategoryDialog({ open: true, category: null })}>
+              <Button size="sm" onClick={() => setCategoryDialog({ open: true, category: null })} className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700">
                 <Plus className="mr-2 size-4" />
                 New Category
               </Button>
@@ -953,7 +953,7 @@ function ItemFormDialog({
             <Button type="button" variant="outline" onClick={onClose} disabled={pending || compressing}>
               Cancel
             </Button>
-            <Button type="submit" disabled={pending || compressing}>
+            <Button type="submit" disabled={pending || compressing} className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700">
               {pending ? "Saving..." : compressing ? "Compressing..." : item ? "Save Changes" : "Create Item"}
             </Button>
           </DialogFooter>
@@ -1050,7 +1050,7 @@ function CategoryFormDialog({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={pending}>
+            <Button type="submit" disabled={pending} className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700">
               {pending ? "Saving..." : category ? "Save Changes" : "Create Category"}
             </Button>
           </DialogFooter>

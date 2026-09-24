@@ -311,7 +311,7 @@ export function TablesManager({
                 All QR Codes
               </Link>
             </Button>
-            <Button size="sm" onClick={() => setEditDialog({ open: true, table: null })}>
+            <Button size="sm" onClick={() => setEditDialog({ open: true, table: null })} className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700">
               <Plus className="mr-2 size-4" />
               New Table
             </Button>
@@ -735,7 +735,7 @@ function TableFormDialog({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={pending}>
+            <Button type="submit" disabled={pending} className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700">
               {pending ? "Saving..." : table ? "Save Changes" : "Create Table"}
             </Button>
           </DialogFooter>

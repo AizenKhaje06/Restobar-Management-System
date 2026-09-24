@@ -131,7 +131,7 @@ export function SettingsManager({ settings }: { settings: RestaurantSettings | n
         description="Configure your restaurant's identity, tax rates, and operating hours."
         crumbs={[{ label: "Admin", href: "/admin" }, { label: "Settings" }]}
         actions={
-          <Button type="submit" form="settings-form" size="sm" disabled={pending || compressing}>
+          <Button type="submit" form="settings-form" size="sm" disabled={pending || compressing} className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700">
             {(pending || compressing) ? (
               <Loader2 className="mr-2 size-4 animate-spin" />
             ) : (
@@ -388,7 +388,7 @@ export function SettingsManager({ settings }: { settings: RestaurantSettings | n
             <SettingsIcon className="mr-1 size-3" />
             Last updated {new Date(s.updated_at).toLocaleString("en-PH")}
           </Badge>
-          <Button type="submit" size="sm" disabled={pending || compressing}>
+          <Button type="submit" size="sm" disabled={pending || compressing} className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700">
             {(pending || compressing) ? (
               <Loader2 className="mr-2 size-4 animate-spin" />
             ) : (
