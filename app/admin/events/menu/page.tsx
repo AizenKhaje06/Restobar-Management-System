@@ -54,7 +54,7 @@ export default async function AdminMenuPackagesPage() {
     if (!acc[pkg.category]) acc[pkg.category] = []
     acc[pkg.category].push(pkg)
     return acc
-  }, {} as Record<string, typeof activePackages>)
+  }, {} as Record<string, NonNullable<typeof activePackages>>)
 
   return (
     <div className="space-y-6">
@@ -119,7 +119,7 @@ export default async function AdminMenuPackagesPage() {
             </div>
 
             <div className="grid gap-4 lg:grid-cols-2">
-              {packages.map((pkg) => (
+              {(packages as any[]).map((pkg) => (
                 <div
                   key={pkg.id}
                   className="p-6 rounded-xl border bg-card hover:shadow-lg transition-all"
