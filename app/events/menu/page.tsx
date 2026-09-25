@@ -45,7 +45,7 @@ export default async function MenuPage() {
     if (!acc[pkg.category]) acc[pkg.category] = []
     acc[pkg.category].push(pkg)
     return acc
-  }, {} as Record<string, typeof menuPackages>) || {}
+  }, {} as Record<string, NonNullable<typeof menuPackages>>) || {}
 
   return (
     <div className="min-h-screen bg-background">
@@ -88,7 +88,7 @@ export default async function MenuPage() {
 
                 {/* Package Grid */}
                 <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-                  {packages.map((pkg) => (
+                  {(packages as any[]).map((pkg) => (
                     <div
                       key={pkg.id}
                       className="group relative overflow-hidden rounded-2xl border bg-card shadow-lg hover:shadow-2xl transition-all duration-300"
