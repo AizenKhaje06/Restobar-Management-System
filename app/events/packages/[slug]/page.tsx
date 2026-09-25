@@ -191,14 +191,22 @@ export default async function PackageDetailPage({ params }: { params: Promise<{ 
                     <p className="text-3xl font-bold text-amber-600">
                       ₱{Number(pkg.price_per_person).toLocaleString()}
                     </p>
-                    <p className="text-xs text-muted-foreground">per person</p>
+                    {(pkg.min_guests || pkg.max_guests) && (
+                      <p className="text-xs text-muted-foreground">
+                        Good for {pkg.min_guests}-{pkg.max_guests} persons
+                      </p>
+                    )}
                   </>
                 ) : pkg.base_price ? (
                   <>
                     <p className="text-3xl font-bold text-amber-600">
                       ₱{Number(pkg.base_price).toLocaleString()}
                     </p>
-                    <p className="text-xs text-muted-foreground">base price</p>
+                    {(pkg.min_guests || pkg.max_guests) && (
+                      <p className="text-xs text-muted-foreground">
+                        Good for {pkg.min_guests}-{pkg.max_guests} persons
+                      </p>
+                    )}
                   </>
                 ) : (
                   <p className="text-lg text-muted-foreground">Contact us for pricing</p>

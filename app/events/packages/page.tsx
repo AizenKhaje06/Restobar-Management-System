@@ -180,14 +180,22 @@ export default async function PackagesPage() {
                                 <p className="text-2xl font-bold text-amber-600">
                                   ₱{Number(pkg.price_per_person).toLocaleString()}
                                 </p>
-                                <p className="text-xs text-muted-foreground">per person</p>
+                                {(pkg.min_guests || pkg.max_guests) && (
+                                  <p className="text-xs text-muted-foreground">
+                                    For {pkg.min_guests}-{pkg.max_guests} pax
+                                  </p>
+                                )}
                               </>
                             ) : pkg.base_price ? (
                               <>
                                 <p className="text-2xl font-bold text-amber-600">
                                   ₱{Number(pkg.base_price).toLocaleString()}
                                 </p>
-                                <p className="text-xs text-muted-foreground">base price</p>
+                                {(pkg.min_guests || pkg.max_guests) && (
+                                  <p className="text-xs text-muted-foreground">
+                                    For {pkg.min_guests}-{pkg.max_guests} pax
+                                  </p>
+                                )}
                               </>
                             ) : (
                               <p className="text-sm text-muted-foreground">Contact for pricing</p>

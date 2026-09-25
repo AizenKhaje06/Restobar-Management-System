@@ -11,6 +11,8 @@ interface Package {
   is_featured: boolean
   price_per_person?: number
   base_price?: number
+  min_guests?: number
+  max_guests?: number
   inclusions: { item: string }[]
 }
 
@@ -63,8 +65,10 @@ export function PackagesCarousel({ packages }: PackagesCarouselProps) {
               <span className="text-3xl font-bold text-amber-600">
                 ₱{pkg.price_per_person ? Number(pkg.price_per_person).toLocaleString() : Number(pkg.base_price).toLocaleString()}
               </span>
-              {pkg.price_per_person && (
-                <span className="text-muted-foreground"> /person</span>
+              {(pkg.min_guests || pkg.max_guests) && (
+                <div className="mt-2 text-sm text-muted-foreground">
+                  Good for {pkg.min_guests}-{pkg.max_guests} persons
+                </div>
               )}
             </div>
 

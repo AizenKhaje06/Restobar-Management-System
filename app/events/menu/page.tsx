@@ -127,7 +127,7 @@ export default async function MenuPage() {
                             <p className="text-2xl font-bold text-amber-600">
                               ₱{Number(pkg.price_per_person).toLocaleString()}
                             </p>
-                            <p className="text-xs text-muted-foreground">per person</p>
+                            <p className="text-xs text-muted-foreground">Package Price</p>
                           </div>
                           <div>
                             <div className="flex items-center gap-1 text-sm">

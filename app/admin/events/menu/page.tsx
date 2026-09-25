@@ -142,11 +142,11 @@ export default async function AdminMenuPackagesPage() {
                   {/* Pricing & Min Order */}
                   <div className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b">
                     <div>
-                      <p className="text-xs text-muted-foreground mb-1">Price</p>
+                      <p className="text-xs text-muted-foreground mb-1">Package Price</p>
                       <div className="flex items-center gap-1">
                         <DollarSign className="size-4 text-amber-600" />
                         <span className="font-semibold">
-                          ₱{Number(pkg.price_per_person).toLocaleString()}/person
+                          ₱{Number(pkg.price_per_person).toLocaleString()}
                         </span>
                       </div>
                     </div>
