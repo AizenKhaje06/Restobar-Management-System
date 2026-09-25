@@ -259,7 +259,7 @@ export default async function EventsLandingPage() {
             {/* Carousel Container */}
             <div 
               id="venues-carousel" 
-              className="flex gap-6 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4 scrollbar-hide"
+              className="flex gap-6 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4 [&::-webkit-scrollbar]:hidden"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
               {venues.map((venue, index) => (
@@ -343,13 +343,6 @@ export default async function EventsLandingPage() {
             </Link>
           </div>
         </div>
-
-        {/* Hide scrollbar CSS */}
-        <style jsx>{`
-          .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-          }
-        `}</style>
       </section>
 
       {/* Packages Section - Carousel */}
@@ -374,7 +367,7 @@ export default async function EventsLandingPage() {
             {/* Carousel Container */}
             <div 
               id="packages-carousel" 
-              className="flex gap-6 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4 scrollbar-hide"
+              className="flex gap-6 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4 [&::-webkit-scrollbar]:hidden"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
               {packages.map((pkg, index) => (
@@ -470,13 +463,6 @@ export default async function EventsLandingPage() {
             </Link>
           </div>
         </div>
-
-        {/* Hide scrollbar CSS */}
-        <style jsx>{`
-          .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-          }
-        `}</style>
       </section>
 
       {/* Package Comparison Tool */}
