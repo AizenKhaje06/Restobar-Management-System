@@ -14,16 +14,9 @@ import {
   ChevronDown
 } from "lucide-react"
 import { TestimonialsSection } from "@/components/events/testimonials-section"
-import { HowItWorksSection } from "@/components/events/how-it-works-section"
-import { WhyChooseUsSection } from "@/components/events/why-choose-us-section"
-import { FaqSection } from "@/components/events/faq-section"
 import { RecentEventsSection } from "@/components/events/recent-events-section"
-import { TrustBadgesSection } from "@/components/events/trust-badges-section"
-import { PricingCalculator } from "@/components/events/pricing-calculator"
-import { LiveAvailability } from "@/components/events/live-availability"
-import { ComparisonTool } from "@/components/events/comparison-tool"
 import { VenuesCarousel } from "@/components/events/venues-carousel"
-import { PackagesCarousel } from "@/components/events/packages-carousel"
+import { PackagesGrid } from "@/components/events/packages-grid"
 import { VideoModal } from "@/components/events/video-modal"
 import { FeaturesSection } from "@/components/events/features-section"
 
@@ -235,28 +228,21 @@ export default async function EventsLandingPage() {
         </div>
       </section>
 
-      {/* Features Section - NEW Phase 2 */}
+      {/* Features Section - Phase 2 ✅ */}
       <FeaturesSection />
 
-      {/* Testimonials Section */}
-      <TestimonialsSection />
-
-      {/* Trust Badges Section */}
-      <TrustBadgesSection />
-
-      {/* Featured Venues Section - Carousel */}
+      {/* Venues Carousel - Phase 3 ✅ (Anthore: Signature Dishes position) */}
       <section className="py-24 bg-white dark:bg-slate-950">
         <div className="container mx-auto px-4">
           {/* Section Header */}
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 rounded-full bg-amber-50 dark:bg-amber-950/30 px-4 py-2 mb-4">
-              <Building2 className="size-4 text-amber-600" />
-              <span className="text-sm font-medium text-amber-900 dark:text-amber-400">Our Spaces</span>
-            </div>
+          <div className="mb-12">
+            <p className="text-amber-600 dark:text-amber-400 text-sm font-semibold uppercase tracking-wider mb-3">
+              Our Spaces
+            </p>
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
               Exceptional <span className="text-amber-600">Venues</span>
             </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-muted-foreground max-w-2xl text-lg">
               Discover our collection of meticulously designed spaces, each crafted to elevate your event experience
             </p>
           </div>
@@ -276,60 +262,16 @@ export default async function EventsLandingPage() {
         </div>
       </section>
 
-      {/* Packages Section - Carousel */}
-      <section className="py-24 bg-slate-50 dark:bg-slate-900">
-        <div className="container mx-auto px-4">
-          {/* Section Header */}
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 rounded-full bg-rose-50 dark:bg-rose-950/30 px-4 py-2 mb-4">
-              <Sparkles className="size-4 text-rose-600" />
-              <span className="text-sm font-medium text-rose-900 dark:text-rose-400">Curated Packages</span>
-            </div>
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              Tailored <span className="text-rose-600">Experiences</span>
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              From intimate gatherings to grand celebrations, we've crafted packages that exceed expectations
-            </p>
-          </div>
+      {/* Packages Grid - Phase 4 🆕 (Anthore: 2x2 Grid like Signature Dishes) */}
+      <PackagesGrid packages={packages} />
 
-          {/* Packages Carousel */}
-          <PackagesCarousel packages={packages} />
+      {/* Testimonials - Moved Here (Anthore position) */}
+      <TestimonialsSection />
 
-          {/* View All Link */}
-          <div className="text-center mt-12">
-            <Link href="/events/packages">
-              <Button size="lg" variant="outline" className="group">
-                View All Packages
-                <ChevronRight className="size-4 ml-2 transition-transform group-hover:translate-x-1" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Package Comparison Tool */}
-      <ComparisonTool />
-
-      {/* Pricing Calculator */}
-      <PricingCalculator />
-
-      {/* Why Choose Us Section */}
-      <WhyChooseUsSection />
-
-      {/* How It Works Section */}
-      <HowItWorksSection />
-
-      {/* Recent Events Showcase */}
+      {/* Recent Events Gallery - (Anthore: Moments of Good Food) */}
       <RecentEventsSection />
 
-      {/* Live Availability */}
-      <LiveAvailability />
-
-      {/* FAQ Section */}
-      <FaqSection />
-
-      {/* Final CTA Section */}
+      {/* Final CTA Section - (Anthore: Ready for Delicious Experience) */}
       <section className="relative py-24 overflow-hidden">
         {/* Background Image */}
         <div className="absolute inset-0">
