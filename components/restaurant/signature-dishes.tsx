@@ -33,23 +33,21 @@ export function SignatureDishes() {
   return (
     <section className="py-16 sm:py-20 bg-slate-50 dark:bg-slate-900">
       <div className="container mx-auto px-4 max-w-6xl">
-        {/* Header - Compact */}
-        <div className="mb-10">
-          <p className="text-amber-600 text-xs font-semibold uppercase tracking-wider mb-2">
-            Our Menu
+        {/* Header - Centered */}
+        <div className="mb-10 text-center max-w-4xl mx-auto">
+          <p className="text-amber-600 text-sm font-semibold uppercase tracking-wider mb-3">
+            Crafted by Tradition. Loved for Generations.
           </p>
-          <h2 className="text-3xl sm:text-4xl font-bold mb-3">
-            Discover Our
-            <br />
-            <span className="text-amber-600">Signature Dishes</span>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
+            60 Years of <span className="text-amber-600">Legendary Lechon</span>
           </h2>
-          <p className="text-muted-foreground text-sm sm:text-base max-w-xl">
-            From classic favorites to bold new creations, our menu is crafted to satisfy every craving
+          <p className="text-slate-600 dark:text-slate-400 text-base sm:text-lg max-w-3xl mx-auto leading-relaxed">
+            Since 1965, Lydia's Lechon has perfected the art of authentic Filipino lechon—bringing together rich heritage, signature crispy skin, and unforgettable flavor for every celebration.
           </p>
         </div>
 
-        {/* 2x2 Grid - Mobile First */}
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-8">
+        {/* 1 Row on Desktop (4 cards), 2x2 on Mobile */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
           {dishes.map((dish, index) => (
             <Link
               key={dish.id}

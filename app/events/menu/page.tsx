@@ -82,13 +82,12 @@ export default function MenuPage() {
             <span>Our Menu</span>
           </div>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-4">
-            Explore Our{" "}
             <span className="bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
-              Delicious Menu
+              Our Signature Menu
             </span>
           </h1>
-          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
-            From appetizers to desserts, discover our culinary creations
+          <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto">
+            Discover Lydia's Lechon favorites—from our iconic roasted lechon to authentic Filipino dishes, all freshly prepared with the same tradition since 1965.
           </p>
         </div>
       </section>
@@ -138,7 +137,7 @@ export default function MenuPage() {
               <p className="text-muted-foreground">Loading menu items...</p>
             </div>
           ) : filteredItems.length > 0 ? (
-            <div className="grid gap-6 sm:gap-8 grid-cols-2">
+            <div className="grid gap-6 sm:gap-8 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {filteredItems.map((item) => (
                     <div
                       key={item.id}

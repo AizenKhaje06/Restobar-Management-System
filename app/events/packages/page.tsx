@@ -53,17 +53,16 @@ export default async function PackagesPage() {
       <section className="relative py-16 sm:py-20 bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 dark:from-amber-950/20 dark:via-orange-950/20 dark:to-rose-950/20">
         <div className="container mx-auto px-4 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100 text-sm font-medium mb-4">
-            <ChefHat className="size-4" />
-            <span>Catering Packages</span>
+            <Sparkles className="size-4" />
+            <span>Made for sharing, made for memories.</span>
           </div>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-4">
-            Delicious{" "}
             <span className="bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
-              Menu Packages
+              Signature Celebration Packages
             </span>
           </h1>
           <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
-            From buffets to plated meals, we have the perfect menu for your celebration
+            Everything you need for a delicious celebration.
           </p>
         </div>
       </section>

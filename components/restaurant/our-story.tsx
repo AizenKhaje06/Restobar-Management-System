@@ -2,8 +2,20 @@ import { Button } from '@/components/ui/button'
 
 export function OurStory() {
   return (
-    <section className="py-16 sm:py-20 bg-gradient-to-br from-emerald-900 via-emerald-800 to-emerald-900 text-white">
-      <div className="container mx-auto px-4 max-w-6xl">
+    <section className="relative py-16 sm:py-20 text-white overflow-hidden">
+      {/* Background Image */}
+      <div className="absolute inset-0">
+        <img 
+          src="/OurStory.png" 
+          alt="Our Story Background" 
+          className="w-full h-full object-cover blur-sm"
+        />
+        {/* Dark Overlay for Text Readability */}
+        <div className="absolute inset-0 bg-black/60" />
+      </div>
+      
+      {/* Content */}
+      <div className="container mx-auto px-4 max-w-6xl relative z-10">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           
           {/* Left Side - Image */}
