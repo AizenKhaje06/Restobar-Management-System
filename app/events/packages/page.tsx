@@ -1,61 +1,51 @@
-import { getEventPackages } from "@/app/actions/events"
+import { getMenuPackages } from "@/app/actions/events"
 import Link from "next/link"
-import { Package, Users, Clock, Check, ChevronRight, Sparkles } from "lucide-react"
+import { Package, ChefHat, Pizza, Wine, Cake, Users, DollarSign, Check, Sparkles, Leaf, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import type { EventType } from "@/lib/types/events"
 
 export const metadata = {
-  title: "Event Packages - Event Venue",
-  description: "Explore our all-inclusive event packages for weddings, birthdays, corporate events, and more.",
+  title: "Menu Packages - Event Catering",
+  description: "Explore our delicious catering menu packages for your event",
 }
 
-const eventTypeColors: Record<EventType, { badge: string; gradient: string }> = {
-  birthday: { badge: "bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400", gradient: "from-pink-500 to-rose-500" },
-  wedding: { badge: "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400", gradient: "from-purple-500 to-pink-500" },
-  corporate: { badge: "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400", gradient: "from-blue-500 to-cyan-500" },
-  christening: { badge: "bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400", gradient: "from-sky-500 to-blue-500" },
-  graduation: { badge: "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400", gradient: "from-indigo-500 to-purple-500" },
-  anniversary: { badge: "bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400", gradient: "from-rose-500 to-red-500" },
-  reunion: { badge: "bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400", gradient: "from-orange-500 to-amber-500" },
-  seminar: { badge: "bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400", gradient: "from-teal-500 to-emerald-500" },
-  product_launch: { badge: "bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400", gradient: "from-violet-500 to-purple-500" },
-  team_building: { badge: "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400", gradient: "from-green-500 to-teal-500" },
-  other: { badge: "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400", gradient: "from-amber-500 to-orange-500" },
+const categoryIcons = {
+  buffet: ChefHat,
+  plated: Pizza,
+  drinks: Wine,
+  dessert: Cake,
 }
 
-const eventTypeLabels: Record<EventType, string> = {
-  birthday: "Birthday",
-  wedding: "Wedding",
-  corporate: "Corporate",
-  christening: "Christening",
-  graduation: "Graduation",
-  anniversary: "Anniversary",
-  reunion: "Reunion",
-  seminar: "Seminar",
-  product_launch: "Product Launch",
-  team_building: "Team Building",
-  other: "Other",
+const categoryColors = {
+  buffet: "from-orange-500 to-amber-500",
+  plated: "from-purple-500 to-pink-500",
+  drinks: "from-blue-500 to-cyan-500",
+  dessert: "from-pink-500 to-rose-500",
+}
+
+const categoryLabels = {
+  buffet: "Buffet Packages",
+  plated: "Plated Meal Packages",
+  drinks: "Beverage Packages",
+  dessert: "Dessert Packages",
 }
 
 export default async function PackagesPage() {
-  const { packages, error } = await getEventPackages()
+  const { menuPackages, error } = await getMenuPackages()
 
   if (error) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
-        <p className="text-destructive">Failed to load packages. Please try again later.</p>
+        <p className="text-destructive">Failed to load menu packages. Please try again later.</p>
       </div>
     )
   }
 
-  // Group packages by event type
-  const groupedPackages = packages?.reduce((acc, pkg) => {
-    if (!acc[pkg.event_type]) {
-      acc[pkg.event_type] = []
-    }
-    acc[pkg.event_type].push(pkg)
+  // Group by category
+  const byCategory = menuPackages?.reduce((acc, pkg) => {
+    if (!acc[pkg.category]) acc[pkg.category] = []
+    acc[pkg.category].push(pkg)
     return acc
-  }, {} as Record<EventType, typeof packages>)
+  }, {} as Record<string, NonNullable<typeof menuPackages>>) || {}
 
   return (
     <div className="min-h-screen bg-background">
@@ -63,166 +53,175 @@ export default async function PackagesPage() {
       <section className="relative py-16 sm:py-20 bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 dark:from-amber-950/20 dark:via-orange-950/20 dark:to-rose-950/20">
         <div className="container mx-auto px-4 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100 text-sm font-medium mb-4">
-            <Package className="size-4" />
-            <span>Event Packages</span>
+            <ChefHat className="size-4" />
+            <span>Catering Packages</span>
           </div>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-4">
-            All-Inclusive{" "}
+            Delicious{" "}
             <span className="bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
-              Event Packages
+              Menu Packages
             </span>
           </h1>
           <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
-            Everything you need for your perfect event, beautifully packaged
+            From buffets to plated meals, we have the perfect menu for your celebration
           </p>
         </div>
       </section>
 
-      {/* Packages by Category */}
+      {/* Menu Packages by Category */}
       <section className="py-16">
         <div className="container mx-auto px-4 space-y-16">
-          {groupedPackages && Object.entries(groupedPackages).map(([eventType, pkgs]) => {
-            const type = eventType as EventType
-            const colors = eventTypeColors[type] || eventTypeColors.other
-            
+          {Object.entries(byCategory).map(([category, packages]) => {
+            const Icon = categoryIcons[category as keyof typeof categoryIcons]
+            const gradient = categoryColors[category as keyof typeof categoryColors]
+            const label = categoryLabels[category as keyof typeof categoryLabels]
+
             return (
-              <div key={eventType} className="space-y-6">
+              <div key={category} className="space-y-6">
                 {/* Category Header */}
-                <div className="flex items-center gap-3">
-                  <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${colors.badge} font-semibold`}>
-                    <Sparkles className="size-4" />
-                    <span>{eventTypeLabels[type]} Packages</span>
+                <div className="text-center mb-8">
+                  <div className={`inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r ${gradient} text-white font-semibold shadow-lg mb-4`}>
+                    <Icon className="size-5" />
+                    <span>{label}</span>
                   </div>
-                  <div className="flex-1 h-px bg-border" />
                 </div>
 
-                {/* Package Grid */}
+                {/* Package Grid - Travel Card Style */}
                 <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-                  {pkgs.map((pkg) => (
-                    <div
+                  {(packages as any[]).map((pkg) => (
+                    <Link
                       key={pkg.id}
-                      className="group relative overflow-hidden rounded-2xl border bg-card shadow-lg hover:shadow-2xl transition-all duration-300"
+                      href={`/events/packages/${pkg.id}`}
+                      className="group relative"
                     >
-                      {/* Featured Badge */}
-                      {pkg.is_featured && (
-                        <div className="absolute top-4 right-4 z-10">
-                          <div className="px-3 py-1 rounded-full bg-amber-600 text-white text-xs font-bold shadow-lg">
-                            Featured
+                      {/* Card with stacked effect - Travel Style */}
+                      <div className="relative rounded-3xl overflow-hidden shadow-2xl hover:shadow-3xl transition-all duration-500 transform hover:-translate-y-2">
+                        {/* Main Image */}
+                        <div className="aspect-[3/4] overflow-hidden bg-muted relative">
+                          {pkg.photo ? (
+                            <img
+                              src={pkg.photo}
+                              alt={pkg.name}
+                              className="size-full object-cover group-hover:scale-110 transition-transform duration-700"
+                            />
+                          ) : (
+                            <div className="size-full flex items-center justify-center bg-gradient-to-br from-amber-100 to-orange-100">
+                              <Icon className="size-24 text-muted-foreground/30" />
+                            </div>
+                          )}
+                          
+                          {/* Gradient Overlay */}
+                          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/80" />
+
+                          {/* Menu Name Sidebar */}
+                          <div className="absolute right-0 top-0 bottom-0 w-12 bg-black/90 backdrop-blur-sm flex items-center justify-center">
+                            <p className="text-white font-bold text-sm tracking-wider transform -rotate-90 whitespace-nowrap origin-center">
+                              {pkg.category.toUpperCase()}
+                            </p>
                           </div>
-                        </div>
-                      )}
 
-                      {/* Image */}
-                      <div className="aspect-[4/3] overflow-hidden bg-muted relative">
-                        {pkg.featured_image ? (
-                          <img
-                            src={pkg.featured_image}
-                            alt={pkg.name}
-                            className="size-full object-cover group-hover:scale-110 transition-transform duration-500"
-                          />
-                        ) : (
-                          <div className="size-full flex items-center justify-center">
-                            <Package className="size-16 text-muted-foreground/30" />
+                          {/* Top Right Icons */}
+                          <div className="absolute top-4 right-14 flex gap-2">
+                            <button className="size-9 rounded-full bg-white/20 backdrop-blur-md hover:bg-white/30 transition-colors flex items-center justify-center">
+                              <svg className="size-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                              </svg>
+                            </button>
+                            <button className="size-9 rounded-full bg-white/20 backdrop-blur-md hover:bg-white/30 transition-colors flex items-center justify-center">
+                              <svg className="size-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                              </svg>
+                            </button>
                           </div>
-                        )}
-                        {/* Gradient Overlay */}
-                        <div className={`absolute inset-0 bg-gradient-to-t ${colors.gradient} opacity-0 group-hover:opacity-20 transition-opacity duration-300`} />
-                      </div>
 
-                      {/* Content */}
-                      <div className="p-6">
-                        <h3 className="text-xl font-bold mb-2 group-hover:text-amber-600 transition-colors">
-                          {pkg.name}
-                        </h3>
-
-                        {pkg.short_description && (
-                          <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                            {pkg.short_description}
-                          </p>
-                        )}
-
-                        {/* Stats */}
-                        <div className="flex flex-wrap gap-2 mb-4">
-                          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100 text-xs font-medium">
-                            <Users className="size-3" />
-                            <span>{pkg.min_guests}-{pkg.max_guests} guests</span>
-                          </div>
-                          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-900 dark:text-purple-100 text-xs font-medium">
-                            <Clock className="size-3" />
-                            <span>{pkg.duration_hours} hours</span>
-                          </div>
-                        </div>
-
-                        {/* Inclusions Preview */}
-                        {pkg.inclusions && pkg.inclusions.length > 0 && (
-                          <div className="mb-4 space-y-1.5">
-                            {pkg.inclusions.slice(0, 4).map((inclusion, idx) => (
-                              <div key={idx} className="flex items-start gap-2 text-sm">
-                                <Check className="size-4 flex-shrink-0 text-green-600 dark:text-green-400 mt-0.5" />
-                                <span className="text-muted-foreground line-clamp-1">
-                                  {typeof inclusion === "string" ? inclusion : inclusion.item}
-                                </span>
+                          {/* Overlay Content - Top */}
+                          <div className="absolute top-4 left-4 space-y-3">
+                            {/* Package Name */}
+                            <div className="px-4 py-3 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20">
+                              <div className="text-white">
+                                <Icon className="size-4 mb-1" />
+                                <span className="text-xs font-semibold">{pkg.name}</span>
                               </div>
-                            ))}
-                            {pkg.inclusions.length > 4 && (
-                              <p className="text-xs text-muted-foreground pl-6">
-                                +{pkg.inclusions.length - 4} more inclusions
-                              </p>
+                            </div>
+
+                            {/* Min Order */}
+                            <div className="px-4 py-3 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20">
+                              <div className="flex items-center gap-2 text-white">
+                                <Users className="size-4" />
+                                <span className="text-xs font-semibold">Min {pkg.min_order} pax</span>
+                              </div>
+                            </div>
+
+                            {/* Dietary Info */}
+                            {pkg.dietary_info && Object.values(pkg.dietary_info).some(v => v) && (
+                              <div className="px-4 py-3 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20">
+                                <div className="flex items-center gap-2 text-white">
+                                  <Leaf className="size-4" />
+                                  <span className="text-xs font-semibold">Special Diet</span>
+                                </div>
+                              </div>
                             )}
+
+                            {/* Items Count */}
+                            {pkg.items && pkg.items.length > 0 && (
+                              <div className="px-4 py-3 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20">
+                                <div className="flex items-center gap-2 text-white">
+                                  <ChefHat className="size-4" />
+                                  <span className="text-xs font-semibold">{pkg.items.length} Items</span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Overlay Content - Bottom */}
+                          <div className="absolute bottom-0 left-0 right-14 p-6 text-white">
+                            {/* Package Capacity Range */}
+                            <div className="flex items-center gap-6 mb-4">
+                              <div>
+                                <div className="text-3xl font-bold">{pkg.min_order}+</div>
+                                <div className="text-xs opacity-80">Minimum</div>
+                              </div>
+                              <div>
+                                <div className="text-3xl font-bold">
+                                  {pkg.capacity_max ? `${pkg.capacity_min}-${pkg.capacity_max}` : 'Flexible'}
+                                </div>
+                                <div className="text-xs opacity-80">Good for</div>
+                              </div>
+                            </div>
+
+                            {/* Price */}
+                            <div className="mb-4">
+                              <div className="text-sm opacity-80">Package Price</div>
+                              <div className="text-3xl font-bold">₱{Number(pkg.price_per_person).toLocaleString()}</div>
+                              <div className="text-xs opacity-80">per package</div>
+                            </div>
+
+                            {/* View Button */}
+                            <button className="w-full py-3 px-6 rounded-2xl bg-amber-600/80 backdrop-blur-md hover:bg-amber-600 transition-all font-semibold text-sm flex items-center justify-center gap-2 group-hover:gap-3">
+                              View Details
+                              <ChevronRight className="size-4" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Best Value Badge (optional) */}
+                        {pkg.items && pkg.items.length >= 8 && (
+                          <div className="absolute top-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-amber-500 text-white text-xs font-bold shadow-lg">
+                            Best Value
                           </div>
                         )}
-
-                        {/* Price & CTA */}
-                        <div className="flex items-center justify-between pt-4 border-t">
-                          <div>
-                            {pkg.price_per_person ? (
-                              <>
-                                <p className="text-2xl font-bold text-amber-600">
-                                  ₱{Number(pkg.price_per_person).toLocaleString()}
-                                </p>
-                                {(pkg.min_guests || pkg.max_guests) && (
-                                  <p className="text-xs text-muted-foreground">
-                                    For {pkg.min_guests}-{pkg.max_guests} pax
-                                  </p>
-                                )}
-                              </>
-                            ) : pkg.base_price ? (
-                              <>
-                                <p className="text-2xl font-bold text-amber-600">
-                                  ₱{Number(pkg.base_price).toLocaleString()}
-                                </p>
-                                {(pkg.min_guests || pkg.max_guests) && (
-                                  <p className="text-xs text-muted-foreground">
-                                    For {pkg.min_guests}-{pkg.max_guests} pax
-                                  </p>
-                                )}
-                              </>
-                            ) : (
-                              <p className="text-sm text-muted-foreground">Contact for pricing</p>
-                            )}
-                          </div>
-                          <Link href={`/events/packages/${pkg.slug}`}>
-                            <Button
-                              size="sm"
-                              className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 group-hover:gap-2 transition-all"
-                            >
-                              View Details
-                              <ChevronRight className="size-4 group-hover:translate-x-1 transition-transform" />
-                            </Button>
-                          </Link>
-                        </div>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               </div>
             )
           })}
 
-          {(!packages || packages.length === 0) && (
+          {(!menuPackages || menuPackages.length === 0) && (
             <div className="text-center py-16">
-              <Package className="size-16 text-muted-foreground/30 mx-auto mb-4" />
-              <p className="text-muted-foreground">No packages available at the moment.</p>
+              <ChefHat className="size-16 text-muted-foreground/30 mx-auto mb-4" />
+              <p className="text-muted-foreground">No menu packages available at the moment.</p>
             </div>
           )}
         </div>
@@ -232,10 +231,10 @@ export default async function PackagesPage() {
       <section className="py-16 bg-gradient-to-br from-amber-600 to-orange-600">
         <div className="container mx-auto px-4 text-center text-white">
           <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-            Need a Custom Package?
+            Need a Custom Menu?
           </h2>
           <p className="text-lg opacity-90 mb-8 max-w-2xl mx-auto">
-            We can create a personalized package tailored to your specific needs and budget
+            We can customize any menu to match your preferences and dietary requirements
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/events/contact">

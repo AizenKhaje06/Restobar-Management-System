@@ -22,9 +22,9 @@ export function VideoModal({
         size="lg"
         variant="outline"
         onClick={() => setIsOpen(true)}
-        className="group border-slate-600 bg-slate-800/50 px-8 py-6 text-lg font-semibold text-white backdrop-blur-sm hover:bg-slate-700/50 hover:border-slate-500"
+        className="group border-slate-600 bg-slate-800/50 px-6 sm:px-8 py-4 sm:py-6 text-sm sm:text-lg font-semibold text-white backdrop-blur-sm hover:bg-slate-700/50 hover:border-slate-500"
       >
-        <Play className="size-5 mr-2 fill-white" />
+        <Play className="size-4 sm:size-5 mr-1 sm:mr-2 fill-white" />
         Watch Video
       </Button>
 

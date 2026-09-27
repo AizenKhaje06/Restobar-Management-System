@@ -14,6 +14,10 @@ import { FeaturesSection } from "@/components/events/features-section"
 import { SignatureDishes } from "@/components/restaurant/signature-dishes"
 import { OurStory } from "@/components/restaurant/our-story"
 import { MomentsGallery } from "@/components/restaurant/moments-gallery"
+import { PopularItems } from "@/components/restaurant/popular-items"
+import { ChefSection } from "@/components/restaurant/chef-section"
+import { ValueSection } from "@/components/restaurant/value-section"
+import { BookingForm } from "@/components/restaurant/booking-form"
 
 export const metadata = {
   title: "Lumière Restaurant - Fine Dining Experience in Manila",
@@ -127,16 +131,16 @@ export default async function EventsLandingPage() {
             ultimate dining experience
           </p>
 
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-4 animate-in fade-in slide-in-from-bottom duration-700 delay-400">
+          {/* CTA Buttons - Side by side on mobile */}
+          <div className="flex flex-row items-center justify-center gap-3 mb-4 animate-in fade-in slide-in-from-bottom duration-700 delay-400">
             <Link href="/order">
               <Button 
                 size="lg"
-                className="group relative overflow-hidden bg-gradient-to-r from-amber-600 to-orange-600 px-8 py-6 text-lg font-semibold shadow-2xl shadow-amber-500/25 transition-all hover:shadow-amber-500/40 hover:scale-105 active:scale-95"
+                className="group relative overflow-hidden bg-gradient-to-r from-amber-600 to-orange-600 px-6 sm:px-8 py-4 sm:py-6 text-sm sm:text-lg font-semibold shadow-2xl shadow-amber-500/25 transition-all hover:shadow-amber-500/40 hover:scale-105 active:scale-95"
               >
-                <span className="relative z-10 flex items-center gap-2">
+                <span className="relative z-10 flex items-center gap-1 sm:gap-2">
                   Book A Table
-                  <ChevronRight className="size-5 transition-transform group-hover:translate-x-1" />
+                  <ChevronRight className="size-4 sm:size-5 transition-transform group-hover:translate-x-1" />
                 </span>
                 <div className="absolute inset-0 bg-gradient-to-r from-amber-500 to-orange-500 opacity-0 transition-opacity group-hover:opacity-100"></div>
               </Button>
@@ -146,12 +150,12 @@ export default async function EventsLandingPage() {
           </div>
 
           {/* Trust Badges */}
-          <p className="text-sm text-slate-400 mb-16 animate-in fade-in duration-700 delay-500">
+          <p className="text-xs sm:text-sm text-slate-400 mb-8 sm:mb-16 animate-in fade-in duration-700 delay-500">
             ✓ Fresh ingredients daily • ✓ Award-winning chefs • ✓ Cozy atmosphere
           </p>
 
-          {/* Trust Indicators - Keep existing animations */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
+          {/* Trust Indicators - 4 in 1 row on mobile, compact */}
+          <div className="grid grid-cols-4 gap-3 sm:gap-8 max-w-4xl mx-auto">
             {[
               { icon: Award, label: "500+ Events", sublabel: "Successfully Hosted" },
               { icon: Star, label: "5.0 Rating", sublabel: "Customer Reviews" },
@@ -166,14 +170,14 @@ export default async function EventsLandingPage() {
                   animationDuration: '600ms'
                 }}
               >
-                <stat.icon className="size-8 mb-3 text-amber-400 animate-in zoom-in" 
+                <stat.icon className="size-5 sm:size-8 mb-2 sm:mb-3 text-amber-400 animate-in zoom-in" 
                   style={{
                     animationDelay: `${700 + (i * 100)}ms`,
                     animationDuration: '400ms'
                   }}
                 />
-                <div className="text-2xl font-bold text-white">{stat.label}</div>
-                <div className="text-sm text-slate-400">{stat.sublabel}</div>
+                <div className="text-sm sm:text-2xl font-bold text-white leading-tight">{stat.label}</div>
+                <div className="text-[10px] sm:text-sm text-slate-400 leading-tight">{stat.sublabel}</div>
               </div>
             ))}
           </div>
@@ -200,8 +204,20 @@ export default async function EventsLandingPage() {
       {/* Moments Gallery 🆕 */}
       <MomentsGallery />
 
+      {/* Popular Items Carousel 🆕 */}
+      <PopularItems />
+
+      {/* Chef Section 🆕 */}
+      <ChefSection />
+
+      {/* Value Section 🆕 */}
+      <ValueSection />
+
       {/* Testimonials ✅ */}
       <TestimonialsSection />
+
+      {/* Booking Form 🆕 */}
+      <BookingForm />
 
       {/* Final CTA Section ✅ */}
       <section className="relative py-16 sm:py-20 overflow-hidden">

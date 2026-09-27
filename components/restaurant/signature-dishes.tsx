@@ -7,25 +7,25 @@ const dishes = [
     id: 1,
     name: "Appetizers",
     image: "/api/placeholder/400/300",
-    category: "appetizers"
+    category: "Appetizers"
   },
   {
     id: 2,
     name: "Main Course",
     image: "/api/placeholder/400/300",
-    category: "mains"
+    category: "Main Course"
   },
   {
     id: 3,
     name: "Burgers",
     image: "/api/placeholder/400/300",
-    category: "burgers"
+    category: "Burgers"
   },
   {
     id: 4,
     name: "Desserts",
     image: "/api/placeholder/400/300",
-    category: "desserts"
+    category: "Desserts"
   }
 ]
 
@@ -53,7 +53,7 @@ export function SignatureDishes() {
           {dishes.map((dish, index) => (
             <Link
               key={dish.id}
-              href={`/menu#${dish.category}`}
+              href={`/events/menu?category=${encodeURIComponent(dish.category)}`}
               className="group relative overflow-hidden rounded-xl sm:rounded-2xl aspect-[4/3] bg-slate-900 animate-in fade-in slide-in-from-bottom-4"
               style={{
                 animationDelay: `${index * 100}ms`,
@@ -79,15 +79,25 @@ export function SignatureDishes() {
           ))}
         </div>
 
-        {/* View Full Menu Button - Compact */}
-        <div className="text-center">
-          <Link href="/menu">
+        {/* CTA Buttons - 2 Buttons (Left & Right) */}
+        <div className="flex flex-row items-center justify-center gap-3">
+          <Link href="/events/menu">
             <Button 
               size="default"
-              className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-sm sm:text-base px-6"
+              className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-xs sm:text-base px-4 sm:px-6"
             >
               View Full Menu
-              <ChevronRight className="size-4 ml-1" />
+              <ChevronRight className="size-3 sm:size-4 ml-1" />
+            </Button>
+          </Link>
+          <Link href="/events/packages">
+            <Button 
+              size="default"
+              variant="outline"
+              className="border-amber-600 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/20 text-xs sm:text-base px-4 sm:px-6"
+            >
+              View Full Packages
+              <ChevronRight className="size-3 sm:size-4 ml-1" />
             </Button>
           </Link>
         </div>

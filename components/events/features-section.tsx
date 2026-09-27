@@ -29,35 +29,36 @@ const features = [
 
 export function FeaturesSection() {
   return (
-    <section className="py-16 sm:py-20 bg-white dark:bg-slate-950 border-b">
+    <section className="py-12 sm:py-16 bg-white dark:bg-slate-950 border-b">
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        {/* Mobile: 4 columns fixed, Desktop: 4 columns - NO SCROLL */}
+        <div className="grid grid-cols-4 gap-3 sm:gap-6 lg:gap-8">
           {features.map((feature, index) => {
             const Icon = feature.icon
             return (
               <div
                 key={index}
-                className="group flex flex-col items-center text-center p-6 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-all duration-300 animate-in fade-in slide-in-from-bottom-4"
+                className="group flex flex-col items-center text-center rounded-xl sm:rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-all duration-300 animate-in fade-in slide-in-from-bottom-4"
                 style={{
                   animationDelay: `${index * 100}ms`,
                   animationDuration: '600ms'
                 }}
               >
-                {/* Icon with Gradient Background */}
-                <div className={`relative mb-6 p-4 rounded-2xl bg-gradient-to-br ${feature.color} shadow-lg group-hover:scale-110 group-hover:shadow-xl transition-all duration-300`}>
-                  <Icon className="size-8 text-white" strokeWidth={2} />
+                {/* Icon with Gradient Background - Smaller on mobile */}
+                <div className={`relative mb-2 sm:mb-6 p-2 sm:p-4 rounded-lg sm:rounded-2xl bg-gradient-to-br ${feature.color} shadow-md sm:shadow-lg group-hover:scale-110 group-hover:shadow-xl transition-all duration-300`}>
+                  <Icon className="size-4 sm:size-8 text-white" strokeWidth={2} />
                   
                   {/* Glow Effect on Hover */}
-                  <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${feature.color} opacity-0 blur-xl group-hover:opacity-50 transition-opacity duration-300`} />
+                  <div className={`absolute inset-0 rounded-lg sm:rounded-2xl bg-gradient-to-br ${feature.color} opacity-0 blur-xl group-hover:opacity-50 transition-opacity duration-300`} />
                 </div>
 
-                {/* Title */}
-                <h3 className="text-xl font-bold mb-2 text-slate-900 dark:text-white">
+                {/* Title - Smaller on mobile */}
+                <h3 className="text-[10px] sm:text-xl font-bold mb-1 sm:mb-2 text-slate-900 dark:text-white leading-tight">
                   {feature.title}
                 </h3>
 
-                {/* Description */}
-                <p className="text-sm text-muted-foreground leading-relaxed">
+                {/* Description - Hidden on mobile, show on sm+ */}
+                <p className="hidden sm:block text-sm text-muted-foreground leading-relaxed">
                   {feature.description}
                 </p>
               </div>

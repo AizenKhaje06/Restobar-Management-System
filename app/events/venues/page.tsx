@@ -49,88 +49,119 @@ export default async function VenuesPage() {
                 <Link
                   key={venue.id}
                   href={`/events/venues/${venue.id}`}
-                  className="group relative overflow-hidden rounded-2xl border bg-card shadow-lg hover:shadow-2xl transition-all duration-300"
+                  className="group relative"
                 >
-                  {/* Image */}
-                  <div className="aspect-[4/3] overflow-hidden bg-muted">
-                    {venue.photos && venue.photos.length > 0 ? (
-                      <img
-                        src={venue.photos[0]}
-                        alt={venue.name}
-                        className="size-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      />
-                    ) : (
-                      <div className="size-full flex items-center justify-center">
-                        <Building2 className="size-16 text-muted-foreground/30" />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Content */}
-                  <div className="p-6">
-                    <h3 className="text-xl font-bold mb-2 group-hover:text-amber-600 transition-colors">
-                      {venue.name}
-                    </h3>
-                    
-                    <div className="flex items-center gap-2 text-muted-foreground mb-3">
-                      <MapPin className="size-4 flex-shrink-0" />
-                      <span className="text-sm line-clamp-1">{venue.location}</span>
-                    </div>
-
-                    {venue.description && (
-                      <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                        {venue.description}
-                      </p>
-                    )}
-
-                    {/* Stats */}
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100 text-xs font-medium">
-                        <Users className="size-3" />
-                        <span>{venue.capacity_min}-{venue.capacity_max} guests</span>
-                      </div>
-                      {venue.area_sqm && (
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-900 dark:text-green-100 text-xs font-medium">
-                          <Building2 className="size-3" />
-                          <span>{venue.area_sqm} sqm</span>
+                  {/* Card with stacked effect */}
+                  <div className="relative rounded-3xl overflow-hidden shadow-2xl hover:shadow-3xl transition-all duration-500 transform hover:-translate-y-2">
+                    {/* Main Image */}
+                    <div className="aspect-[3/4] overflow-hidden bg-muted relative">
+                      {venue.photos && venue.photos.length > 0 ? (
+                        <img
+                          src={venue.photos[0]}
+                          alt={venue.name}
+                          className="size-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        />
+                      ) : (
+                        <div className="size-full flex items-center justify-center bg-gradient-to-br from-amber-100 to-orange-100">
+                          <Building2 className="size-24 text-muted-foreground/30" />
                         </div>
                       )}
-                    </div>
+                      
+                      {/* Gradient Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/80" />
 
-                    {/* Amenities */}
-                    {venue.amenities && venue.amenities.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mb-4">
-                        {venue.amenities.slice(0, 3).map((amenity, idx) => (
-                          <span
-                            key={idx}
-                            className="text-xs px-2 py-1 rounded-md bg-muted text-muted-foreground"
-                          >
-                            {amenity}
-                          </span>
-                        ))}
-                        {venue.amenities.length > 3 && (
-                          <span className="text-xs px-2 py-1 rounded-md bg-muted text-muted-foreground">
-                            +{venue.amenities.length - 3} more
-                          </span>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Price & CTA */}
-                    <div className="flex items-center justify-between pt-4 border-t">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Starting at</p>
-                        <p className="text-lg font-bold text-amber-600">
-                          ₱{Number(venue.base_rate).toLocaleString()}
+                      {/* Venue Name Sidebar */}
+                      <div className="absolute right-0 top-0 bottom-0 w-12 bg-black/90 backdrop-blur-sm flex items-center justify-center">
+                        <p className="text-white font-bold text-sm tracking-wider transform -rotate-90 whitespace-nowrap origin-center">
+                          {venue.name}
                         </p>
                       </div>
-                      <Button
-                        size="sm"
-                        className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 group-hover:gap-2 transition-all"
-                      >
-                        View Details
-                        <ChevronRight className="size-4 group-hover:translate-x-1 transition-transform" />
-                      </Button>
+
+                      {/* Top Right Icons */}
+                      <div className="absolute top-4 right-14 flex gap-2">
+                        <button className="size-9 rounded-full bg-white/20 backdrop-blur-md hover:bg-white/30 transition-colors flex items-center justify-center">
+                          <svg className="size-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                          </svg>
+                        </button>
+                        <button className="size-9 rounded-full bg-white/20 backdrop-blur-md hover:bg-white/30 transition-colors flex items-center justify-center">
+                          <svg className="size-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                          </svg>
+                        </button>
+                      </div>
+
+                      {/* Overlay Content - Top */}
+                      <div className="absolute top-4 left-4 space-y-3">
+                        {/* Location */}
+                        <div className="px-4 py-3 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20">
+                          <div className="flex items-center gap-2 text-white mb-1">
+                            <MapPin className="size-4" />
+                            <span className="text-xs font-semibold">{venue.location}</span>
+                          </div>
+                        </div>
+
+                        {/* Capacity */}
+                        <div className="px-4 py-3 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20">
+                          <div className="flex items-center gap-2 text-white mb-1">
+                            <Users className="size-4" />
+                            <span className="text-xs font-semibold">{venue.capacity_min}-{venue.capacity_max}</span>
+                          </div>
+                        </div>
+
+                        {/* Season/Type */}
+                        {venue.amenities && venue.amenities.length > 0 && (
+                          <div className="px-4 py-3 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20">
+                            <div className="flex items-center gap-2 text-white mb-1">
+                              <Building2 className="size-4" />
+                              <span className="text-xs font-semibold">{venue.amenities[0]}</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Area */}
+                        {venue.area_sqm && (
+                          <div className="px-4 py-3 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20">
+                            <div className="flex items-center gap-2 text-white mb-1">
+                              <DollarSign className="size-4" />
+                              <span className="text-xs font-semibold">{venue.area_sqm} sqm</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Overlay Content - Bottom */}
+                      <div className="absolute bottom-0 left-0 right-14 p-6 text-white">
+                        {/* Rating & Reviews */}
+                        <div className="flex items-center gap-6 mb-4">
+                          <div>
+                            <div className="text-3xl font-bold">9.6</div>
+                            <div className="text-xs opacity-80">Guest Rating</div>
+                          </div>
+                          <div>
+                            <div className="text-3xl font-bold">88%</div>
+                            <div className="text-xs opacity-80">Return Visitors</div>
+                          </div>
+                        </div>
+
+                        {/* Price */}
+                        <div className="mb-4">
+                          <div className="text-sm opacity-80">From</div>
+                          <div className="text-3xl font-bold">₱{Number(venue.base_rate).toLocaleString()}</div>
+                          <div className="text-xs opacity-80">per event</div>
+                        </div>
+
+                        {/* View Button */}
+                        <button className="w-full py-3 px-6 rounded-2xl bg-amber-600/80 backdrop-blur-md hover:bg-amber-600 transition-all font-semibold text-sm flex items-center justify-center gap-2 group-hover:gap-3">
+                          View Venue
+                          <ChevronRight className="size-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Editor's Choice Badge (optional) */}
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-amber-500 text-white text-xs font-bold shadow-lg">
+                      Editor's Choice
                     </div>
                   </div>
                 </Link>
