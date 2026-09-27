@@ -3,26 +3,26 @@ import { Building2, UtensilsCrossed, Calendar, Award } from "lucide-react"
 const features = [
   {
     icon: Building2,
-    title: "Premium Venues",
-    description: "Multiple stunning locations to choose from",
+    title: "Fresh Ingredients",
+    description: "Farm-to-table, always fresh",
     color: "from-amber-500 to-orange-500"
   },
   {
     icon: UtensilsCrossed,
-    title: "World-Class Catering",
-    description: "Award-winning chefs and exquisite menus",
+    title: "Expert Chefs",
+    description: "World-class culinary team",
     color: "from-rose-500 to-pink-500"
   },
   {
     icon: Calendar,
-    title: "Full Event Planning",
-    description: "End-to-end coordination and support",
+    title: "Cozy Ambiance",
+    description: "Perfect for every occasion",
     color: "from-blue-500 to-cyan-500"
   },
   {
     icon: Award,
-    title: "Proven Excellence",
-    description: "500+ successful events and counting",
+    title: "Great Service",
+    description: "Five-star hospitality, every visit",
     color: "from-purple-500 to-violet-500"
   }
 ]

@@ -21,21 +21,21 @@ import { VideoModal } from "@/components/events/video-modal"
 import { FeaturesSection } from "@/components/events/features-section"
 
 export const metadata = {
-  title: "Lumière Events - Luxury Event Venue & Catering in Manila",
+  title: "Lumière Restaurant - Fine Dining Experience in Manila",
   description:
-    "Premier event venue in Manila. Stunning venues, award-winning catering, and flawless execution for weddings, corporate events, and celebrations. Book your perfect event today!",
-  keywords: "event venue Manila, wedding venue Philippines, corporate event space, birthday party venue, luxury event hall, event catering Manila",
+    "Experience culinary excellence at Lumière Restaurant. Award-winning chefs, fresh ingredients, and an unforgettable dining atmosphere. Reserve your table today!",
+  keywords: "fine dining Manila, restaurant Philippines, best food Manila, gourmet restaurant, luxury dining, table reservation Manila",
   openGraph: {
-    title: "Lumière Events - Luxury Event Venue & Catering in Manila",
-    description: "Premier event venue with stunning spaces, award-winning catering, and exceptional service for all your celebrations.",
+    title: "Lumière Restaurant - Fine Dining Experience in Manila",
+    description: "Experience culinary excellence with award-winning chefs, fresh ingredients, and exceptional service.",
     type: "website",
-    url: "https://yourdomain.com/events",
+    url: "https://yourdomain.com",
     images: [
       {
         url: "/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "Lumière Events Venue"
+        alt: "Lumière Restaurant"
       }
     ]
   }
@@ -50,15 +50,15 @@ export default async function EventsLandingPage() {
   const venues = venuesResult.venues || []
   const packages = packagesResult.packages || []
 
-  // Structured Data for SEO
+  // Structured Data for Restaurant SEO
   const structuredData = {
     "@context": "https://schema.org",
-    "@type": "EventVenue",
-    "name": "Lumière Events",
-    "description": "Premier event venue in Manila offering stunning spaces for weddings, corporate events, and celebrations",
-    "url": "https://yourdomain.com/events",
+    "@type": "Restaurant",
+    "name": "Lumière Restaurant",
+    "description": "Fine dining restaurant in Manila offering exquisite cuisine and exceptional service",
+    "url": "https://yourdomain.com",
     "telephone": "+639171234567",
-    "email": "events@restaurant.com",
+    "email": "info@restaurant.com",
     "address": {
       "@type": "PostalAddress",
       "streetAddress": "123 Main Street",
@@ -66,6 +66,7 @@ export default async function EventsLandingPage() {
       "addressCountry": "Philippines",
       "postalCode": "1000"
     },
+    "servesCuisine": ["International", "Asian Fusion", "Fine Dining"],
     "priceRange": "₱₱₱",
     "aggregateRating": {
       "@type": "AggregateRating",
@@ -73,11 +74,6 @@ export default async function EventsLandingPage() {
       "reviewCount": "500",
       "bestRating": "5",
       "worstRating": "1"
-    },
-    "geo": {
-      "@type": "GeoCoordinates",
-      "latitude": "14.5995",
-      "longitude": "120.9842"
     },
     "openingHoursSpecification": {
       "@type": "OpeningHoursSpecification",
@@ -90,30 +86,9 @@ export default async function EventsLandingPage() {
         "Saturday",
         "Sunday"
       ],
-      "opens": "08:00",
+      "opens": "11:00",
       "closes": "22:00"
-    },
-    "amenityFeature": [
-      {
-        "@type": "LocationFeatureSpecification",
-        "name": "Parking",
-        "value": true
-      },
-      {
-        "@type": "LocationFeatureSpecification",
-        "name": "Air Conditioning",
-        "value": true
-      },
-      {
-        "@type": "LocationFeatureSpecification",
-        "name": "Catering",
-        "value": true
-      }
-    ],
-    "sameAs": [
-      "https://facebook.com/lumiereevents",
-      "https://instagram.com/lumiereevents"
-    ]
+    }
   }
 
   return (
@@ -140,42 +115,40 @@ export default async function EventsLandingPage() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black/80"></div>
         
         <div className="container relative z-10 mx-auto px-4 py-20 text-center">
-          {/* Tagline - NEW */}
+          {/* Tagline */}
           <div className="mb-4 animate-in fade-in slide-in-from-top duration-700">
             <p className="text-amber-400 text-sm md:text-base font-semibold tracking-[0.3em] uppercase">
-              Luxury Venues • World-Class Service • Unforgettable Moments
+              Good Food • Great Vibes
             </p>
           </div>
 
-          {/* Premium Badge */}
-          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-4 py-2 backdrop-blur-sm animate-in fade-in slide-in-from-top duration-700 delay-100">
-            <Sparkles className="size-4 text-amber-400" />
-            <span className="text-sm font-medium text-amber-100">Premium Event Experiences</span>
-          </div>
-
-          {/* Main Heading - Enhanced Animation */}
+          {/* Main Heading */}
           <h1 className="mb-6 text-5xl font-bold leading-tight tracking-tight text-white md:text-6xl lg:text-7xl animate-in fade-in slide-in-from-bottom duration-700 delay-200">
-            Where Moments Become
+            Taste the
             <br />
             <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 bg-clip-text text-transparent">
-              Timeless Memories
+              Extraordinary
             </span>
           </h1>
 
-          {/* Subheading - Enhanced Animation */}
+          {/* Subheading */}
           <p className="mx-auto mb-10 max-w-2xl text-lg text-slate-300 md:text-xl animate-in fade-in slide-in-from-bottom duration-700 delay-300">
-            Exquisite venues, world-class catering, and impeccable service for your most cherished celebrations
+            At Lumière Restaurant, we bring together fresh ingredients,
+            <br />
+            skilled chefs, and a welcoming atmosphere to give you the
+            <br />
+            ultimate dining experience
           </p>
 
-          {/* CTA Buttons - Enhanced with Video Modal */}
+          {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-4 animate-in fade-in slide-in-from-bottom duration-700 delay-400">
-            <Link href="/events/book">
+            <Link href="/order">
               <Button 
                 size="lg"
                 className="group relative overflow-hidden bg-gradient-to-r from-amber-600 to-orange-600 px-8 py-6 text-lg font-semibold shadow-2xl shadow-amber-500/25 transition-all hover:shadow-amber-500/40 hover:scale-105 active:scale-95"
               >
                 <span className="relative z-10 flex items-center gap-2">
-                  Check Availability
+                  Book A Table
                   <ChevronRight className="size-5 transition-transform group-hover:translate-x-1" />
                 </span>
                 <div className="absolute inset-0 bg-gradient-to-r from-amber-500 to-orange-500 opacity-0 transition-opacity group-hover:opacity-100"></div>
@@ -185,9 +158,9 @@ export default async function EventsLandingPage() {
             <VideoModal />
           </div>
 
-          {/* Trust Badges - Enhanced */}
+          {/* Trust Badges */}
           <p className="text-sm text-slate-400 mb-16 animate-in fade-in duration-700 delay-500">
-            ✓ No credit card required • ✓ Free consultation • ✓ Flexible cancellation
+            ✓ Fresh ingredients daily • ✓ Award-winning chefs • ✓ Cozy atmosphere
           </p>
 
           {/* Trust Indicators - Keep existing animations */}
