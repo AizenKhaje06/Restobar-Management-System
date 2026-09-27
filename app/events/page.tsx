@@ -25,6 +25,7 @@ import { ComparisonTool } from "@/components/events/comparison-tool"
 import { VenuesCarousel } from "@/components/events/venues-carousel"
 import { PackagesCarousel } from "@/components/events/packages-carousel"
 import { VideoModal } from "@/components/events/video-modal"
+import { FeaturesSection } from "@/components/events/features-section"
 
 export const metadata = {
   title: "Lumière Events - Luxury Event Venue & Catering in Manila",
@@ -233,6 +234,9 @@ export default async function EventsLandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Features Section - NEW Phase 2 */}
+      <FeaturesSection />
 
       {/* Testimonials Section */}
       <TestimonialsSection />
