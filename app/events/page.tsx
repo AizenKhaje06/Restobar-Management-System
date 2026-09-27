@@ -10,7 +10,8 @@ import {
   Building2,
   ChevronRight,
   Check,
-  Star
+  Star,
+  ChevronDown
 } from "lucide-react"
 import { TestimonialsSection } from "@/components/events/testimonials-section"
 import { HowItWorksSection } from "@/components/events/how-it-works-section"
@@ -23,6 +24,7 @@ import { LiveAvailability } from "@/components/events/live-availability"
 import { ComparisonTool } from "@/components/events/comparison-tool"
 import { VenuesCarousel } from "@/components/events/venues-carousel"
 import { PackagesCarousel } from "@/components/events/packages-carousel"
+import { VideoModal } from "@/components/events/video-modal"
 
 export const metadata = {
   title: "Lumière Events - Luxury Event Venue & Catering in Manila",
@@ -129,7 +131,7 @@ export default async function EventsLandingPage() {
       />
 
     <div className="flex flex-col">
-      {/* Hero Section - Premium */}
+      {/* Hero Section - Enhanced Premium */}
       <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
         {/* Background Image */}
         <div className="absolute inset-0">
@@ -144,14 +146,21 @@ export default async function EventsLandingPage() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black/80"></div>
         
         <div className="container relative z-10 mx-auto px-4 py-20 text-center">
+          {/* Tagline - NEW */}
+          <div className="mb-4 animate-in fade-in slide-in-from-top duration-700">
+            <p className="text-amber-400 text-sm md:text-base font-semibold tracking-[0.3em] uppercase">
+              Luxury Venues • World-Class Service • Unforgettable Moments
+            </p>
+          </div>
+
           {/* Premium Badge */}
-          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-4 py-2 backdrop-blur-sm">
+          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-4 py-2 backdrop-blur-sm animate-in fade-in slide-in-from-top duration-700 delay-100">
             <Sparkles className="size-4 text-amber-400" />
             <span className="text-sm font-medium text-amber-100">Premium Event Experiences</span>
           </div>
 
-          {/* Main Heading */}
-          <h1 className="mb-6 text-5xl font-bold leading-tight tracking-tight text-white md:text-6xl lg:text-7xl">
+          {/* Main Heading - Enhanced Animation */}
+          <h1 className="mb-6 text-5xl font-bold leading-tight tracking-tight text-white md:text-6xl lg:text-7xl animate-in fade-in slide-in-from-bottom duration-700 delay-200">
             Where Moments Become
             <br />
             <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 bg-clip-text text-transparent">
@@ -159,17 +168,17 @@ export default async function EventsLandingPage() {
             </span>
           </h1>
 
-          {/* Subheading */}
-          <p className="mx-auto mb-10 max-w-2xl text-lg text-slate-300 md:text-xl">
+          {/* Subheading - Enhanced Animation */}
+          <p className="mx-auto mb-10 max-w-2xl text-lg text-slate-300 md:text-xl animate-in fade-in slide-in-from-bottom duration-700 delay-300">
             Exquisite venues, world-class catering, and impeccable service for your most cherished celebrations
           </p>
 
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-4">
+          {/* CTA Buttons - Enhanced with Video Modal */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-4 animate-in fade-in slide-in-from-bottom duration-700 delay-400">
             <Link href="/events/book">
               <Button 
                 size="lg"
-                className="group relative overflow-hidden bg-gradient-to-r from-amber-600 to-orange-600 px-8 py-6 text-lg font-semibold shadow-2xl shadow-amber-500/25 transition-all hover:shadow-amber-500/40 hover:scale-105"
+                className="group relative overflow-hidden bg-gradient-to-r from-amber-600 to-orange-600 px-8 py-6 text-lg font-semibold shadow-2xl shadow-amber-500/25 transition-all hover:shadow-amber-500/40 hover:scale-105 active:scale-95"
               >
                 <span className="relative z-10 flex items-center gap-2">
                   Check Availability
@@ -179,23 +188,15 @@ export default async function EventsLandingPage() {
               </Button>
             </Link>
             
-            <Link href="/events/venues">
-              <Button 
-                size="lg" 
-                variant="outline"
-                className="border-slate-600 bg-slate-800/50 px-8 py-6 text-lg font-semibold text-white backdrop-blur-sm hover:bg-slate-700/50 hover:border-slate-500"
-              >
-                Explore Venues
-              </Button>
-            </Link>
+            <VideoModal />
           </div>
 
-          {/* Trust Badges */}
-          <p className="text-sm text-slate-400 mb-16">
+          {/* Trust Badges - Enhanced */}
+          <p className="text-sm text-slate-400 mb-16 animate-in fade-in duration-700 delay-500">
             ✓ No credit card required • ✓ Free consultation • ✓ Flexible cancellation
           </p>
 
-          {/* Trust Indicators */}
+          {/* Trust Indicators - Keep existing animations */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
             {[
               { icon: Award, label: "500+ Events", sublabel: "Successfully Hosted" },
@@ -224,11 +225,11 @@ export default async function EventsLandingPage() {
           </div>
         </div>
 
-        {/* Scroll Indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce-subtle">
-          <div className="flex flex-col items-center gap-2 text-slate-400">
-            <span className="text-xs uppercase tracking-wider">Scroll to explore</span>
-            <ChevronRight className="size-5 rotate-90" />
+        {/* Enhanced Scroll Indicator */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+          <div className="flex flex-col items-center gap-2 text-slate-400 cursor-pointer hover:text-amber-400 transition-colors">
+            <span className="text-xs uppercase tracking-wider font-medium">Scroll to explore</span>
+            <ChevronDown className="size-5" />
           </div>
         </div>
       </section>
