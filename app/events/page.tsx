@@ -1,24 +1,19 @@
-import { getVenues, getEventPackages } from "@/app/actions/events"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { 
-  Calendar, 
-  Users, 
-  Sparkles, 
   Award, 
   Heart,
-  Building2,
   ChevronRight,
-  Check,
+  ChevronDown,
   Star,
-  ChevronDown
+  Users
 } from "lucide-react"
 import { TestimonialsSection } from "@/components/events/testimonials-section"
-import { RecentEventsSection } from "@/components/events/recent-events-section"
-import { VenuesCarousel } from "@/components/events/venues-carousel"
-import { PackagesGrid } from "@/components/events/packages-grid"
 import { VideoModal } from "@/components/events/video-modal"
 import { FeaturesSection } from "@/components/events/features-section"
+import { SignatureDishes } from "@/components/restaurant/signature-dishes"
+import { OurStory } from "@/components/restaurant/our-story"
+import { MomentsGallery } from "@/components/restaurant/moments-gallery"
 
 export const metadata = {
   title: "Lumière Restaurant - Fine Dining Experience in Manila",
@@ -42,14 +37,6 @@ export const metadata = {
 }
 
 export default async function EventsLandingPage() {
-  const [venuesResult, packagesResult] = await Promise.all([
-    getVenues(),
-    getEventPackages({ featured_only: true }),
-  ])
-
-  const venues = venuesResult.venues || []
-  const packages = packagesResult.packages || []
-
   // Structured Data for Restaurant SEO
   const structuredData = {
     "@context": "https://schema.org",
@@ -201,56 +188,28 @@ export default async function EventsLandingPage() {
         </div>
       </section>
 
-      {/* Features Section - Phase 2 ✅ */}
+      {/* Features Section ✅ */}
       <FeaturesSection />
 
-      {/* Venues Carousel - Phase 3 ✅ (Anthore: Signature Dishes position) */}
-      <section className="py-24 bg-white dark:bg-slate-950">
-        <div className="container mx-auto px-4">
-          {/* Section Header */}
-          <div className="mb-12">
-            <p className="text-amber-600 dark:text-amber-400 text-sm font-semibold uppercase tracking-wider mb-3">
-              Our Spaces
-            </p>
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              Exceptional <span className="text-amber-600">Venues</span>
-            </h2>
-            <p className="text-muted-foreground max-w-2xl text-lg">
-              Discover our collection of meticulously designed spaces, each crafted to elevate your event experience
-            </p>
-          </div>
+      {/* Signature Dishes - 2x2 Grid 🆕 */}
+      <SignatureDishes />
 
-          {/* Venues Carousel */}
-          <VenuesCarousel venues={venues} />
+      {/* Our Story Section 🆕 */}
+      <OurStory />
 
-          {/* View All Link */}
-          <div className="text-center mt-12">
-            <Link href="/events/venues">
-              <Button size="lg" variant="outline" className="group">
-                View All Venues
-                <ChevronRight className="size-4 ml-2 transition-transform group-hover:translate-x-1" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
+      {/* Moments Gallery 🆕 */}
+      <MomentsGallery />
 
-      {/* Packages Grid - Phase 4 🆕 (Anthore: 2x2 Grid like Signature Dishes) */}
-      <PackagesGrid packages={packages} />
-
-      {/* Testimonials - Moved Here (Anthore position) */}
+      {/* Testimonials ✅ */}
       <TestimonialsSection />
 
-      {/* Recent Events Gallery - (Anthore: Moments of Good Food) */}
-      <RecentEventsSection />
-
-      {/* Final CTA Section - (Anthore: Ready for Delicious Experience) */}
-      <section className="relative py-24 overflow-hidden">
+      {/* Final CTA Section ✅ */}
+      <section className="relative py-16 sm:py-20 overflow-hidden">
         {/* Background Image */}
         <div className="absolute inset-0">
           <img 
             src="/LydiasBG3.png" 
-            alt="Lumière Events"
+            alt="Lumière Restaurant"
             className="w-full h-full object-cover"
           />
         </div>
@@ -258,39 +217,27 @@ export default async function EventsLandingPage() {
         {/* Dark Overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/70 to-black/80"></div>
         
-        <div className="container relative z-10 mx-auto px-4 text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-            Ready to Create Something
+        <div className="container relative z-10 mx-auto px-4 text-center max-w-4xl">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 sm:mb-6">
+            Ready for a
             <br />
             <span className="bg-gradient-to-r from-amber-400 to-rose-400 bg-clip-text text-transparent">
-              Extraordinary?
+              Delicious Experience?
             </span>
           </h2>
           
-          <p className="text-xl text-slate-300 mb-10 max-w-2xl mx-auto">
-            Let us help you craft an unforgettable experience for you and your guests
+          <p className="text-base sm:text-lg text-slate-300 mb-8 sm:mb-10 max-w-2xl mx-auto">
+            Book your table now and enjoy a memorable meal at Lumière Restaurant
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/events/book">
-              <Button 
-                size="lg"
-                className="bg-gradient-to-r from-amber-600 to-orange-600 px-8 py-6 text-lg font-semibold shadow-2xl shadow-amber-500/25 hover:shadow-amber-500/40 hover:scale-105 transition-all"
-              >
-                Start Planning Your Event
-              </Button>
-            </Link>
-            
-            <Link href="/events/contact">
-              <Button 
-                size="lg" 
-                variant="outline"
-                className="border-slate-600 bg-slate-800/50 px-8 py-6 text-lg font-semibold text-white backdrop-blur-sm hover:bg-slate-700/50"
-              >
-                Contact Our Team
-              </Button>
-            </Link>
-          </div>
+          <Link href="/order">
+            <Button 
+              size="lg"
+              className="bg-gradient-to-r from-amber-600 to-orange-600 px-6 sm:px-8 py-5 sm:py-6 text-base sm:text-lg font-semibold shadow-2xl shadow-amber-500/25 hover:shadow-amber-500/40 hover:scale-105 transition-all"
+            >
+              Book A Table
+            </Button>
+          </Link>
         </div>
       </section>
     </div>
