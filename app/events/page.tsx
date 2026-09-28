@@ -14,7 +14,7 @@ import { FeaturesSection } from "@/components/events/features-section"
 import { SignatureDishes } from "@/components/restaurant/signature-dishes"
 import { OurStory } from "@/components/restaurant/our-story"
 import { MomentsGallery } from "@/components/restaurant/moments-gallery"
-import { PopularItems } from "@/components/restaurant/popular-items"
+import { EventsPlace } from "@/components/restaurant/events-place"
 import { ChefSection } from "@/components/restaurant/chef-section"
 import { ValueSection } from "@/components/restaurant/value-section"
 import { BookingForm } from "@/components/restaurant/booking-form"
@@ -91,91 +91,103 @@ export default async function EventsLandingPage() {
       />
 
     <div className="flex flex-col">
-      {/* Hero Section - Enhanced Premium */}
-      <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
+      {/* Hero Section - Content on Left Side */}
+      <section className="relative min-h-[90vh] flex items-center overflow-hidden">
         {/* Background Image */}
         <div className="absolute inset-0">
           <img 
-            src="/LydiasBG3.png" 
+            src="/LydiasBG2.png" 
             alt="Lumière Events Background"
             className="w-full h-full object-cover"
           />
         </div>
         
-        {/* Dark Overlay for Text Readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black/80"></div>
+        {/* Dark Overlay for Text Readability - Stronger on Left */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/70 to-transparent lg:from-black lg:via-black/50"></div>
         
-        <div className="container relative z-10 mx-auto px-4 py-20 text-center">
-          {/* Tagline */}
-          <div className="mb-4 animate-in fade-in slide-in-from-top duration-700">
-            <p className="text-amber-400 text-sm md:text-base font-semibold tracking-[0.2em] uppercase">
-              Crafted by Tradition. Loved for Generations.
-            </p>
-          </div>
-
-          {/* Main Heading */}
-          <h1 className="mb-6 text-5xl font-bold leading-tight tracking-tight text-white md:text-6xl lg:text-7xl animate-in fade-in slide-in-from-bottom duration-700 delay-200">
-            60 Years of
-            <br />
-            <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 bg-clip-text text-transparent">
-              Legendary Lechon
-            </span>
-          </h1>
-
-          {/* Subheading */}
-          <p className="mx-auto mb-10 max-w-3xl text-lg text-slate-300 md:text-xl animate-in fade-in slide-in-from-bottom duration-700 delay-300 leading-relaxed">
-            Since 1965, Lydia's Lechon has perfected the art of authentic Filipino lechon—bringing together rich heritage, signature crispy skin, and unforgettable flavor for every celebration.
-          </p>
-
-          {/* CTA Buttons - Side by side on mobile */}
-          <div className="flex flex-row items-center justify-center gap-3 mb-4 animate-in fade-in slide-in-from-bottom duration-700 delay-400">
-            <Link href="/order">
-              <Button 
-                size="lg"
-                className="group relative overflow-hidden bg-gradient-to-r from-amber-600 to-orange-600 px-6 sm:px-8 py-4 sm:py-6 text-sm sm:text-lg font-semibold shadow-2xl shadow-amber-500/25 transition-all hover:shadow-amber-500/40 hover:scale-105 active:scale-95"
-              >
-                <span className="relative z-10 flex items-center gap-1 sm:gap-2">
-                  Book A Table
-                  <ChevronRight className="size-4 sm:size-5 transition-transform group-hover:translate-x-1" />
-                </span>
-                <div className="absolute inset-0 bg-gradient-to-r from-amber-500 to-orange-500 opacity-0 transition-opacity group-hover:opacity-100"></div>
-              </Button>
-            </Link>
-            
-            <VideoModal />
-          </div>
-
-          {/* Trust Badges */}
-          <p className="text-xs sm:text-sm text-slate-400 mb-8 sm:mb-16 animate-in fade-in duration-700 delay-500">
-            ✓ Fresh ingredients daily • ✓ Award-winning chefs • ✓ Cozy atmosphere
-          </p>
-
-          {/* Trust Indicators - 4 in 1 row on mobile, compact */}
-          <div className="grid grid-cols-4 gap-3 sm:gap-8 max-w-4xl mx-auto">
-            {[
-              { icon: Award, label: "500+ Events", sublabel: "Successfully Hosted" },
-              { icon: Star, label: "5.0 Rating", sublabel: "Customer Reviews" },
-              { icon: Users, label: "50,000+", sublabel: "Happy Guests" },
-              { icon: Heart, label: "100%", sublabel: "Satisfaction Rate" },
-            ].map((stat, i) => (
-              <div 
-                key={i} 
-                className="flex flex-col items-center animate-in fade-in slide-in-from-bottom-4"
-                style={{
-                  animationDelay: `${600 + (i * 100)}ms`,
-                  animationDuration: '600ms'
-                }}
-              >
-                <stat.icon className="size-5 sm:size-8 mb-2 sm:mb-3 text-amber-400 animate-in zoom-in" 
-                  style={{
-                    animationDelay: `${700 + (i * 100)}ms`,
-                    animationDuration: '400ms'
-                  }}
-                />
-                <div className="text-sm sm:text-2xl font-bold text-white leading-tight">{stat.label}</div>
-                <div className="text-[10px] sm:text-sm text-slate-400 leading-tight">{stat.sublabel}</div>
+        <div className="relative z-10 px-4 lg:px-20 py-20">
+          <div className="grid lg:grid-cols-2 gap-8 items-center">
+            {/* Left Side - All Content */}
+            <div className="text-center lg:text-left lg:pr-8">
+              {/* Tagline */}
+              <div className="mb-3 animate-in fade-in slide-in-from-top duration-700">
+                <p className="text-amber-400 text-sm md:text-base font-semibold tracking-[0.2em] uppercase">
+                  Crafted by Tradition. Loved for Generations.
+                </p>
               </div>
-            ))}
+
+              {/* Main Heading */}
+              <h1 className="mb-5 text-5xl font-bold leading-tight tracking-tight text-white md:text-6xl lg:text-7xl animate-in fade-in slide-in-from-bottom duration-700 delay-200">
+                60 Years of
+                <br />
+                <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 bg-clip-text text-transparent">
+                  Legendary Lechon
+                </span>
+              </h1>
+
+              {/* Subheading */}
+              <p className="mb-8 text-lg text-slate-300 md:text-xl animate-in fade-in slide-in-from-bottom duration-700 delay-300 leading-relaxed">
+                Since 1965, Lydia's Lechon has perfected the art of authentic Filipino lechon—bringing together rich heritage, signature crispy skin, and unforgettable flavor for every celebration.
+              </p>
+
+              {/* CTA Buttons - Side by side on mobile */}
+              <div className="flex flex-row items-center justify-center lg:justify-start gap-3 mb-6 animate-in fade-in slide-in-from-bottom duration-700 delay-400">
+                <Link href="/order">
+                  <Button 
+                    size="lg"
+                    className="group relative overflow-hidden bg-gradient-to-r from-amber-600 to-orange-600 px-6 sm:px-8 py-4 sm:py-6 text-sm sm:text-lg font-semibold shadow-2xl shadow-amber-500/25 transition-all hover:shadow-amber-500/40 hover:scale-105 active:scale-95"
+                  >
+                    <span className="relative z-10 flex items-center gap-1 sm:gap-2">
+                      Book A Table
+                      <ChevronRight className="size-4 sm:size-5 transition-transform group-hover:translate-x-1" />
+                    </span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-amber-500 to-orange-500 opacity-0 transition-opacity group-hover:opacity-100"></div>
+                  </Button>
+                </Link>
+                
+                <VideoModal />
+              </div>
+
+              {/* Trust Badges */}
+              <p className="text-xs sm:text-sm text-slate-400 mb-10 animate-in fade-in duration-700 delay-500">
+                ✓ Fresh ingredients daily • ✓ Award-winning chefs • ✓ Cozy atmosphere
+              </p>
+
+              {/* Trust Indicators - Horizontal Layout with Icons Left, Text Right */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                {[
+                  { icon: Award, label: "500+ Events", sublabel: "Successfully Hosted" },
+                  { icon: Star, label: "5.0 Rating", sublabel: "Customer Reviews" },
+                  { icon: Users, label: "50,000+", sublabel: "Happy Guests" },
+                  { icon: Heart, label: "100%", sublabel: "Satisfaction Rate" },
+                ].map((stat, i) => (
+                  <div 
+                    key={i} 
+                    className="flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4"
+                    style={{
+                      animationDelay: `${600 + (i * 100)}ms`,
+                      animationDuration: '600ms'
+                    }}
+                  >
+                    {/* Icon on Left */}
+                    <stat.icon className="size-8 sm:size-10 text-amber-500 flex-shrink-0 animate-in zoom-in" 
+                      style={{
+                        animationDelay: `${700 + (i * 100)}ms`,
+                        animationDuration: '400ms'
+                      }}
+                    />
+                    {/* Text on Right */}
+                    <div className="flex flex-col items-start">
+                      <div className="text-base sm:text-xl font-bold text-white leading-tight">{stat.label}</div>
+                      <div className="text-xs sm:text-sm text-slate-400 leading-tight">{stat.sublabel}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Right Side - Empty Space (Image shows through) */}
+            <div className="hidden lg:block"></div>
           </div>
         </div>
 
@@ -197,11 +209,11 @@ export default async function EventsLandingPage() {
       {/* Our Story Section 🆕 */}
       <OurStory />
 
+      {/* Events Place Section 🆕 */}
+      <EventsPlace />
+
       {/* Moments Gallery 🆕 */}
       <MomentsGallery />
-
-      {/* Popular Items Carousel 🆕 */}
-      <PopularItems />
 
       {/* Chef Section 🆕 */}
       <ChefSection />
