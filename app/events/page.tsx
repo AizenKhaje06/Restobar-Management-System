@@ -108,27 +108,23 @@ export default async function EventsLandingPage() {
         <div className="container relative z-10 mx-auto px-4 py-20 text-center">
           {/* Tagline */}
           <div className="mb-4 animate-in fade-in slide-in-from-top duration-700">
-            <p className="text-amber-400 text-sm md:text-base font-semibold tracking-[0.3em] uppercase">
-              Good Food • Great Vibes
+            <p className="text-amber-400 text-sm md:text-base font-semibold tracking-[0.2em] uppercase">
+              Crafted by Tradition. Loved for Generations.
             </p>
           </div>
 
           {/* Main Heading */}
           <h1 className="mb-6 text-5xl font-bold leading-tight tracking-tight text-white md:text-6xl lg:text-7xl animate-in fade-in slide-in-from-bottom duration-700 delay-200">
-            Taste the
+            60 Years of
             <br />
             <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 bg-clip-text text-transparent">
-              Extraordinary
+              Legendary Lechon
             </span>
           </h1>
 
           {/* Subheading */}
-          <p className="mx-auto mb-10 max-w-2xl text-lg text-slate-300 md:text-xl animate-in fade-in slide-in-from-bottom duration-700 delay-300">
-            At Lumière Restaurant, we bring together fresh ingredients,
-            <br />
-            skilled chefs, and a welcoming atmosphere to give you the
-            <br />
-            ultimate dining experience
+          <p className="mx-auto mb-10 max-w-3xl text-lg text-slate-300 md:text-xl animate-in fade-in slide-in-from-bottom duration-700 delay-300 leading-relaxed">
+            Since 1965, Lydia's Lechon has perfected the art of authentic Filipino lechon—bringing together rich heritage, signature crispy skin, and unforgettable flavor for every celebration.
           </p>
 
           {/* CTA Buttons - Side by side on mobile */}
