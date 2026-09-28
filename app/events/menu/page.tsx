@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 
+// Force dynamic rendering to avoid build-time prerendering
+export const dynamic = 'force-dynamic'
+
 // Category icons and colors
 const categoryConfig: Record<string, { color: string; gradient: string }> = {
   appetizers: { color: "text-orange-600", gradient: "from-orange-500 to-amber-500" },
