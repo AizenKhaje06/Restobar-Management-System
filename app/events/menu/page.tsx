@@ -4,11 +4,8 @@ import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
 import { UtensilsCrossed, ChevronRight, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
-
-// Force dynamic rendering to avoid build-time prerendering
-export const dynamic = 'force-dynamic'
 
 // Category icons and colors
 const categoryConfig: Record<string, { color: string; gradient: string }> = {
@@ -20,7 +17,7 @@ const categoryConfig: Record<string, { color: string; gradient: string }> = {
   sides: { color: "text-green-600", gradient: "from-green-500 to-emerald-500" },
 }
 
-export default function MenuPage() {
+function MenuContent() {
   const searchParams = useSearchParams()
   const categoryFromUrl = searchParams.get('category')
   
@@ -341,5 +338,20 @@ export default function MenuPage() {
         </div>
       </section>
     </div>
+  )
+}
+
+export default function MenuPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading menu...</p>
+        </div>
+      </div>
+    }>
+      <MenuContent />
+    </Suspense>
   )
 }
