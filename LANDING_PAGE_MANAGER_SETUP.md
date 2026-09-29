@@ -7,34 +7,49 @@ You've already completed the database migration!
 
 ## 📝 Step 2: Create Manager Account
 
-### Option A: Using Supabase SQL Editor
+### Method 1: Create New User in Supabase Auth (Recommended)
 
-1. Go to Supabase Dashboard → SQL Editor
-2. Run this SQL:
+1. **Go to Supabase Dashboard** → Authentication → Users
+2. **Click "Add user"** (or "Invite user")
+3. **Fill in details:**
+   - Email: `manager@example.com`
+   - Password: (set a secure password)
+   - Auto Confirm User: ✅ Enable this
+4. **Copy the User ID** from the created user
+5. **Run this SQL** (replace the UUID):
 
 ```sql
 INSERT INTO profiles (
   id,
+  email,
   full_name,
   role,
-  pin,
   is_active
 ) VALUES (
-  gen_random_uuid(),
+  'PASTE_USER_ID_HERE'::uuid, -- Replace with actual UUID from step 4
+  'manager@example.com',
   'Content Manager',
   'landing_page_manager',
-  '111111', -- Change this PIN!
   true
-);
+)
+ON CONFLICT (id) DO UPDATE
+SET role = 'landing_page_manager',
+    is_active = true;
 ```
 
-Or simply run the file: `supabase/create_manager_account.sql`
+### Method 2: Update Existing User (Easier)
 
-### Option B: Using Admin Panel (If available)
+If you already have an account, just update its role:
 
-1. Go to your admin panel
-2. Navigate to Staff Management
-3. Add new user with role: `landing_page_manager`
+```sql
+UPDATE profiles 
+SET role = 'landing_page_manager'
+WHERE email = 'your.email@example.com';
+```
+
+### Method 3: Use Admin Account
+
+Since `admin` role also has access to the manager dashboard, you can use your existing admin account to test!
 
 ---
 
@@ -45,14 +60,16 @@ Or simply run the file: `supabase/create_manager_account.sql`
    npm run dev
    ```
 
-2. **Navigate to the manager login**:
+2. **Navigate to the manager dashboard**:
    ```
    http://localhost:3000/manager
    ```
 
-3. **Login with**:
-   - PIN: `111111` (or the PIN you set)
-   - Select: Content Manager account
+3. **Login with your Supabase credentials**:
+   - Email: The email you used/updated in Step 2
+   - Password: Your Supabase Auth password
+
+**Note:** The system uses Supabase Authentication, not PIN-based auth.
 
 ---
 
