@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { updateSocialMedia } from "@/app/actions/manager-settings"
 import { toast } from "sonner"
-import { Facebook, Instagram, Twitter, Youtube } from "lucide-react"
+import { Link } from "lucide-react"
 
 interface SocialMediaFormProps {
   settings: any
@@ -52,7 +52,7 @@ export function SocialMediaForm({ settings }: SocialMediaFormProps) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="facebook_url" className="flex items-center gap-2">
-              <Facebook className="size-4" />
+              <Link className="size-4" />
               Facebook
             </Label>
             <Input
@@ -66,7 +66,7 @@ export function SocialMediaForm({ settings }: SocialMediaFormProps) {
 
           <div className="space-y-2">
             <Label htmlFor="instagram_url" className="flex items-center gap-2">
-              <Instagram className="size-4" />
+              <Link className="size-4" />
               Instagram
             </Label>
             <Input
@@ -80,7 +80,7 @@ export function SocialMediaForm({ settings }: SocialMediaFormProps) {
 
           <div className="space-y-2">
             <Label htmlFor="twitter_url" className="flex items-center gap-2">
-              <Twitter className="size-4" />
+              <Link className="size-4" />
               Twitter / X
             </Label>
             <Input
@@ -94,7 +94,7 @@ export function SocialMediaForm({ settings }: SocialMediaFormProps) {
 
           <div className="space-y-2">
             <Label htmlFor="youtube_url" className="flex items-center gap-2">
-              <Youtube className="size-4" />
+              <Link className="size-4" />
               YouTube
             </Label>
             <Input

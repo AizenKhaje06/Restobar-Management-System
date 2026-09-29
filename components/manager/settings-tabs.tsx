@@ -16,14 +16,28 @@ interface SettingsTabsProps {
 export function SettingsTabs({ settings }: SettingsTabsProps) {
   return (
     <Tabs defaultValue="business" className="space-y-6">
-      <TabsList className="grid w-full grid-cols-6">
-        <TabsTrigger value="business">Business</TabsTrigger>
-        <TabsTrigger value="contact">Contact</TabsTrigger>
-        <TabsTrigger value="hours">Hours</TabsTrigger>
-        <TabsTrigger value="social">Social Media</TabsTrigger>
-        <TabsTrigger value="hero">Hero Section</TabsTrigger>
-        <TabsTrigger value="features">Features</TabsTrigger>
-      </TabsList>
+      <div className="border-b pb-4">
+        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 h-auto">
+          <TabsTrigger value="business" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            Business
+          </TabsTrigger>
+          <TabsTrigger value="contact" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            Contact
+          </TabsTrigger>
+          <TabsTrigger value="hours" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            Hours
+          </TabsTrigger>
+          <TabsTrigger value="social" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            Social Media
+          </TabsTrigger>
+          <TabsTrigger value="hero" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            Hero Section
+          </TabsTrigger>
+          <TabsTrigger value="features" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            Features
+          </TabsTrigger>
+        </TabsList>
+      </div>
 
       <TabsContent value="business">
         <BusinessInfoForm settings={settings} />
