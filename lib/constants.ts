@@ -41,12 +41,14 @@ export const ROLE_LABELS: Record<string, string> = {
   admin: "Administrator",
   pos: "Cashier / POS",
   waiter: "Waiter",
+  landing_page_manager: "Landing Page Manager",
 }
 
 export const ROLE_HOME: Record<string, string> = {
   admin: "/admin",
   pos: "/pos",
   waiter: "/waiter",
+  landing_page_manager: "/manager",
 }
 
 /**
