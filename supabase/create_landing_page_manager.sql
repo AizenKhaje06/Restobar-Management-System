@@ -3,17 +3,10 @@
 -- Separate role for managing website content, bookings, and customer orders
 -- =====================================================
 
--- Add new role to user_roles enum if not exists
-DO $$ 
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_type t 
-    JOIN pg_enum e ON t.oid = e.enumtypid  
-    WHERE t.typname = 'user_role' AND e.enumlabel = 'landing_page_manager'
-  ) THEN
-    ALTER TYPE user_role ADD VALUE 'landing_page_manager';
-  END IF;
-END $$;
+-- Add new role to roles table if not exists
+INSERT INTO public.roles (id, label, description)
+VALUES ('landing_page_manager', 'Landing Page Manager', 'Manages website content, online orders, and event bookings')
+ON CONFLICT (id) DO NOTHING;
 
 -- =====================================================
 -- LANDING PAGE SETTINGS TABLE
@@ -114,7 +107,7 @@ CREATE TABLE IF NOT EXISTS online_orders (
   cancellation_reason text,
   
   -- Manager Assignment
-  assigned_to uuid REFERENCES users(id),
+  assigned_to uuid REFERENCES profiles(id),
   
   -- Timestamps
   created_at timestamptz DEFAULT now(),
@@ -151,7 +144,7 @@ CREATE TABLE IF NOT EXISTS customer_reviews (
   -- Response
   admin_response text,
   responded_at timestamptz,
-  responded_by uuid REFERENCES users(id),
+  responded_by uuid REFERENCES profiles(id),
   
   -- Timestamps
   created_at timestamptz DEFAULT now(),
@@ -178,7 +171,7 @@ CREATE TABLE IF NOT EXISTS content_updates_log (
   new_data jsonb,
   
   -- Who changed it
-  changed_by uuid REFERENCES users(id) NOT NULL,
+  changed_by uuid REFERENCES profiles(id) NOT NULL,
   
   -- Timestamp
   created_at timestamptz DEFAULT now()
@@ -200,9 +193,9 @@ CREATE POLICY "Landing page managers can view settings"
   TO authenticated
   USING (
     EXISTS (
-      SELECT 1 FROM users
-      WHERE users.id = auth.uid()
-      AND users.role IN ('admin', 'landing_page_manager')
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role IN ('admin', 'landing_page_manager')
     )
   );
 
@@ -211,9 +204,9 @@ CREATE POLICY "Landing page managers can update settings"
   TO authenticated
   USING (
     EXISTS (
-      SELECT 1 FROM users
-      WHERE users.id = auth.uid()
-      AND users.role IN ('admin', 'landing_page_manager')
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role IN ('admin', 'landing_page_manager')
     )
   );
 
@@ -225,9 +218,9 @@ CREATE POLICY "Landing page managers can view all orders"
   TO authenticated
   USING (
     EXISTS (
-      SELECT 1 FROM users
-      WHERE users.id = auth.uid()
-      AND users.role IN ('admin', 'landing_page_manager')
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role IN ('admin', 'landing_page_manager')
     )
   );
 
@@ -236,9 +229,9 @@ CREATE POLICY "Landing page managers can update orders"
   TO authenticated
   USING (
     EXISTS (
-      SELECT 1 FROM users
-      WHERE users.id = auth.uid()
-      AND users.role IN ('admin', 'landing_page_manager')
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role IN ('admin', 'landing_page_manager')
     )
   );
 
@@ -260,9 +253,9 @@ CREATE POLICY "Landing page managers can manage reviews"
   TO authenticated
   USING (
     EXISTS (
-      SELECT 1 FROM users
-      WHERE users.id = auth.uid()
-      AND users.role IN ('admin', 'landing_page_manager')
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role IN ('admin', 'landing_page_manager')
     )
   );
 
@@ -274,9 +267,9 @@ CREATE POLICY "Landing page managers can view content logs"
   TO authenticated
   USING (
     EXISTS (
-      SELECT 1 FROM users
-      WHERE users.id = auth.uid()
-      AND users.role IN ('admin', 'landing_page_manager')
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role IN ('admin', 'landing_page_manager')
     )
   );
 

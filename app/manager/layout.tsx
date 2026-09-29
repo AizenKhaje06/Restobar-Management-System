@@ -18,7 +18,7 @@ export default async function ManagerLayout({
 
   // Check if user has landing_page_manager or admin role
   const { data: userData } = await supabase
-    .from("users")
+    .from("profiles")
     .select("role, full_name")
     .eq("id", user.id)
     .single()

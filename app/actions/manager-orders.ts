@@ -231,7 +231,7 @@ export async function getAvailableStaff() {
   const supabase = await createClient()
 
   const { data, error } = await supabase
-    .from("users")
+    .from("profiles")
     .select("id, full_name, role")
     .in("role", ["admin", "landing_page_manager", "waiter"])
     .eq("is_active", true)
