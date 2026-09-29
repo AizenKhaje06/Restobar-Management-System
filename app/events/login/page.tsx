@@ -43,6 +43,22 @@ export default function LoginPage() {
       }
 
       if (data.user) {
+        // Check user role from profiles table
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", data.user.id)
+          .maybeSingle()
+
+        if (profile) {
+          // If landing_page_manager, redirect to manager dashboard
+          if (profile.role === 'landing_page_manager') {
+            router.push("/manager")
+            router.refresh()
+            return
+          }
+        }
+
         // Check if user has event customer profile
         const { data: customer, error: customerError } = await supabase
           .from("event_customers")
@@ -51,7 +67,7 @@ export default function LoginPage() {
           .maybeSingle()
 
         if (customer) {
-          // Redirect to dashboard
+          // Redirect to customer dashboard
           router.push("/events/dashboard")
           router.refresh()
         } else {

@@ -49,6 +49,7 @@ export const ROLE_HOME: Record<string, string> = {
   pos: "/pos",
   waiter: "/waiter",
   landing_page_manager: "/manager",
+  customer: "/events", // For event customers
 }
 
 /**
