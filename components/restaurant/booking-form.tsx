@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useState } from 'react'
+import { ScrollReveal } from '@/components/ui/scroll-reveal'
 
 export function BookingForm() {
   const [formData, setFormData] = useState({

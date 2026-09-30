@@ -1,48 +1,82 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ChevronLeft, ChevronRight, MapPin, Users, Calendar, Star, Clock } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { createClient } from '@/lib/supabase/client'
 
-const eventSpaces = [
-  { 
-    id: 1, 
-    name: "Grand Ballroom", 
-    capacity: "200-300 guests",
-    image: "https://images.unsplash.com/photo-1519167758481-83f29da8c89a?w=800&q=80",
-    features: "Perfect for weddings and large celebrations",
-    amenities: ["Air Conditioned", "Stage & Sound System", "LED Screens", "Premium Lighting"]
-  },
-  { 
-    id: 2, 
-    name: "Garden Pavilion", 
-    capacity: "100-150 guests",
-    image: "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=800&q=80",
-    features: "Outdoor setting with natural ambiance",
-    amenities: ["Natural Garden View", "Open Air Setup", "Garden Lights", "Tent Available"]
-  },
-  { 
-    id: 3, 
-    name: "Private Dining Room", 
-    capacity: "20-50 guests",
-    image: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&q=80",
-    features: "Intimate gatherings and corporate events",
-    amenities: ["Private Entrance", "AV Equipment", "WiFi", "Catering Service"]
-  },
-  { 
-    id: 4, 
-    name: "Rooftop Terrace", 
-    capacity: "80-120 guests",
-    image: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80",
-    features: "Stunning city views for cocktail parties",
-    amenities: ["City View", "Bar Counter", "Lounge Setup", "Ambient Music"]
-  }
-]
+interface EventSpace {
+  id: string
+  name: string
+  capacity?: number
+  location?: string
+  description?: string
+  image_url?: string
+  amenities?: string[]
+  features?: string[]
+  is_active: boolean
+}
 
 export function EventsPlace() {
   const [currentIndex, setCurrentIndex] = useState(0)
+  const [eventSpaces, setEventSpaces] = useState<EventSpace[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchVenues() {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('event_venues')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+
+      if (data && !error) {
+        setEventSpaces(data)
+      }
+      setLoading(false)
+    }
+
+    fetchVenues()
+  }, [])
+
+  if (loading) {
+    return (
+      <section className="relative py-12 sm:py-16 overflow-hidden bg-slate-900">
+        <div className="container mx-auto px-4 text-center text-white">
+          <p>Loading venues...</p>
+        </div>
+      </section>
+    )
+  }
+
+  if (eventSpaces.length === 0) {
+    return (
+      <section className="relative py-12 sm:py-16 overflow-hidden bg-slate-900">
+        <div className="container mx-auto px-4 text-center text-white">
+          <p className="text-amber-400 mb-2">No venues available</p>
+          <p className="text-slate-300">Please check back later</p>
+        </div>
+      </section>
+    )
+  }
+
   const currentSpace = eventSpaces[currentIndex]
+  
+  // Format capacity display
+  const capacityDisplay = currentSpace.capacity 
+    ? `${currentSpace.capacity} guests` 
+    : 'Contact us'
+
+  // Parse amenities and features from JSON or array
+  const amenities = Array.isArray(currentSpace.amenities) 
+    ? currentSpace.amenities 
+    : currentSpace.amenities 
+      ? JSON.parse(currentSpace.amenities as any)
+      : []
+
+  const features = currentSpace.description || 'Perfect for all types of events'
 
   const nextSlide = () => {
     setCurrentIndex((prev) => (prev === eventSpaces.length - 1 ? 0 : prev + 1))
@@ -57,7 +91,7 @@ export function EventsPlace() {
       {/* Blurred Background Image */}
       <div className="absolute inset-0">
         <img 
-          src={currentSpace.image}
+          src={currentSpace.image_url || 'https://images.unsplash.com/photo-1519167758481-83f29da8c89a?w=800&q=80'}
           alt="Background"
           className="w-full h-full object-cover blur-2xl scale-110 transition-all duration-700"
         />
@@ -68,37 +102,73 @@ export function EventsPlace() {
 
       <div className="relative z-10 container mx-auto px-4 lg:px-16 max-w-[1600px]">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
-          {/* Left Side - Image Carousel */}
+          {/* Left Side - Image Carousel with Overlay Details */}
           <div className="relative order-2 lg:order-1">
             <div className="relative aspect-[4/3] rounded-3xl overflow-hidden shadow-2xl">
               {/* Main Image */}
               <img 
-                src={currentSpace.image}
+                src={currentSpace.image_url || 'https://images.unsplash.com/photo-1519167758481-83f29da8c89a?w=800&q=80'}
                 alt={currentSpace.name}
                 className="w-full h-full object-cover transition-transform duration-700"
               />
               
-              {/* Gradient Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              {/* Gradient Overlay - Stronger at bottom */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
               
-              {/* Capacity Badge */}
-              <div className="absolute top-4 right-4 px-4 py-2 bg-white/90 backdrop-blur-md rounded-full flex items-center gap-2">
+              {/* Capacity Badge - Top Right */}
+              <div className="absolute top-4 right-4 px-4 py-2 bg-white/90 backdrop-blur-md rounded-full flex items-center gap-2 z-20">
                 <Users className="size-4 text-amber-600" />
-                <span className="text-sm font-bold text-slate-900">{currentSpace.capacity}</span>
+                <span className="text-sm font-bold text-slate-900">{capacityDisplay}</span>
+              </div>
+
+              {/* Venue Details Overlay - Bottom */}
+              <div className="absolute bottom-0 left-0 right-0 p-6 z-10">
+                {/* Featured Venue Label */}
+                <p className="text-amber-400 text-xs font-semibold uppercase tracking-wider mb-2">
+                  Featured Venue
+                </p>
+                
+                {/* Venue Name */}
+                <h3 className="text-2xl sm:text-3xl font-bold mb-2 text-white">
+                  {currentSpace.name}
+                </h3>
+                
+                {/* Features Description */}
+                <p className="text-slate-200 text-sm mb-4">
+                  {features}
+                </p>
+
+                {/* Amenities List */}
+                {amenities.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="text-sm font-semibold mb-2 flex items-center gap-2 text-white">
+                      <Star className="size-4 text-amber-500" />
+                      Venue Amenities
+                    </h4>
+                    <ul className="grid grid-cols-2 gap-2">
+                      {amenities.slice(0, 4).map((amenity: string, index: number) => (
+                        <li key={index} className="flex items-center gap-2 text-xs text-slate-200">
+                          <div className="size-1 rounded-full bg-amber-500" />
+                          {amenity}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
 
               {/* Navigation Arrows */}
               <button
                 onClick={prevSlide}
-                className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/90 dark:bg-slate-800/90 shadow-lg flex items-center justify-center hover:bg-white dark:hover:bg-slate-800 transition-colors z-10"
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 dark:bg-slate-800/90 shadow-lg flex items-center justify-center hover:bg-white dark:hover:bg-slate-800 transition-colors z-20"
               >
-                <ChevronLeft className="size-6 text-slate-900 dark:text-white" />
+                <ChevronLeft className="size-5 text-slate-900 dark:text-white" />
               </button>
               <button
                 onClick={nextSlide}
-                className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/90 dark:bg-slate-800/90 shadow-lg flex items-center justify-center hover:bg-white dark:hover:bg-slate-800 transition-colors z-10"
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 dark:bg-slate-800/90 shadow-lg flex items-center justify-center hover:bg-white dark:hover:bg-slate-800 transition-colors z-20"
               >
-                <ChevronRight className="size-6 text-slate-900 dark:text-white" />
+                <ChevronRight className="size-5 text-slate-900 dark:text-white" />
               </button>
             </div>
 
@@ -116,66 +186,30 @@ export function EventsPlace() {
             </div>
           </div>
 
-          {/* Right Side - Text Details */}
+          {/* Right Side - About Our Venue Only */}
           <div className="order-1 lg:order-2">
-            <p className="text-amber-400 text-xs font-semibold uppercase tracking-wider mb-2">
-              Our Venues
-            </p>
-            <h2 className="text-3xl sm:text-4xl font-bold mb-3 text-white">
-              {currentSpace.name}
-            </h2>
-            <p className="text-slate-300 text-base mb-6">
-              {currentSpace.features}
-            </p>
-
-            {/* Amenities List */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-white">
-                <Star className="size-5 text-amber-500" />
-                Venue Amenities
-              </h3>
-              <ul className="grid grid-cols-2 gap-3">
-                {currentSpace.amenities.map((amenity, index) => (
-                  <li key={index} className="flex items-center gap-2 text-sm text-slate-300">
-                    <div className="size-1.5 rounded-full bg-amber-500" />
-                    {amenity}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Info Cards */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="p-4 rounded-xl bg-white/10 backdrop-blur-md border border-white/20">
-                <Users className="size-5 text-amber-500 mb-2" />
-                <p className="text-xs text-slate-400 mb-1">Capacity</p>
-                <p className="font-bold text-sm text-white">{currentSpace.capacity}</p>
-              </div>
-              <div className="p-4 rounded-xl bg-white/10 backdrop-blur-md border border-white/20">
-                <Clock className="size-5 text-amber-500 mb-2" />
-                <p className="text-xs text-slate-400 mb-1">Availability</p>
-                <p className="font-bold text-sm text-white">Book Anytime</p>
-              </div>
-            </div>
-
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Link href="/events/inquiry" className="flex-1">
+            <div className="space-y-4">
+              <p className="text-amber-400 text-xs font-semibold uppercase tracking-wider">
+                About Our Venue
+              </p>
+              <h2 className="text-3xl sm:text-4xl font-bold text-white">
+                Looking for the
+                <br />
+                <span className="text-amber-400 italic font-serif">Perfect Venue?</span>
+              </h2>
+              <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
+                Lydia's Lechon Restaurant offers a beautiful and versatile event space, perfect for weddings, birthdays, corporate gatherings, and special celebrations.
+              </p>
+              <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
+                Our elegant venue combines comfort, style, and top-notch service to make your event truly memorable. With customizable packages and dedicated event coordination, we ensure every detail is perfect.
+              </p>
+              <Link href="/events/venues">
                 <Button 
                   size="lg"
-                  className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 shadow-lg"
+                  className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 shadow-lg"
                 >
-                  <Calendar className="size-4 mr-2" />
-                  Book This Venue
-                </Button>
-              </Link>
-              <Link href="/events/gallery" className="flex-1">
-                <Button 
-                  size="lg"
-                  variant="outline"
-                  className="w-full border-white/30 text-white hover:bg-white/10 backdrop-blur-sm"
-                >
-                  View Gallery
+                  Explore Our Venues
+                  <ChevronRight className="size-4 ml-1" />
                 </Button>
               </Link>
             </div>

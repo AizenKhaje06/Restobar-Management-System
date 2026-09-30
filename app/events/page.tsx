@@ -9,13 +9,16 @@ import {
   Users
 } from "lucide-react"
 import { TestimonialsSection } from "@/components/events/testimonials-section"
+import { DigitalPartners } from "@/components/events/digital-partners"
+import { FAQSection } from "@/components/events/faq-section"
+import { MediaFeatures } from "@/components/events/media-features"
 import { VideoModal } from "@/components/events/video-modal"
 import { FeaturesSection } from "@/components/events/features-section"
 import { SignatureDishes } from "@/components/restaurant/signature-dishes"
 import { OurStory } from "@/components/restaurant/our-story"
 import { MomentsGallery } from "@/components/restaurant/moments-gallery"
 import { EventsPlace } from "@/components/restaurant/events-place"
-import { ChefSection } from "@/components/restaurant/chef-section"
+import { FoodCategories } from "@/components/restaurant/food-categories"
 import { ValueSection } from "@/components/restaurant/value-section"
 import { BookingForm } from "@/components/restaurant/booking-form"
 
@@ -145,7 +148,18 @@ export default async function EventsLandingPage() {
                   </Button>
                 </Link>
                 
-                <VideoModal />
+                <Link href="/events/venues">
+                  <Button 
+                    size="lg"
+                    variant="outline"
+                    className="group border-2 border-amber-400/50 bg-amber-400/20 backdrop-blur-sm hover:bg-amber-400 hover:border-amber-400 text-amber-100 hover:text-slate-900 px-6 sm:px-8 py-4 sm:py-6 text-sm sm:text-lg font-semibold transition-all shadow-lg shadow-amber-500/20"
+                  >
+                    <span className="flex items-center gap-1 sm:gap-2">
+                      Book A Venue
+                      <ChevronRight className="size-4 sm:size-5 transition-transform group-hover:translate-x-1" />
+                    </span>
+                  </Button>
+                </Link>
               </div>
 
               {/* Trust Badges */}
@@ -203,8 +217,14 @@ export default async function EventsLandingPage() {
       {/* Features Section ✅ */}
       <FeaturesSection />
 
+      {/* Media Features 🆕 - Early Credibility */}
+      <MediaFeatures />
+
       {/* Signature Dishes - 2x2 Grid 🆕 */}
       <SignatureDishes />
+
+      {/* Food Categories 🆕 */}
+      <FoodCategories />
 
       {/* Our Story Section 🆕 */}
       <OurStory />
@@ -215,14 +235,17 @@ export default async function EventsLandingPage() {
       {/* Moments Gallery 🆕 */}
       <MomentsGallery />
 
-      {/* Chef Section 🆕 */}
-      <ChefSection />
-
       {/* Value Section 🆕 */}
       <ValueSection />
 
       {/* Testimonials ✅ */}
       <TestimonialsSection />
+
+      {/* Digital Partners 🆕 */}
+      <DigitalPartners />
+
+      {/* FAQ Section 🆕 */}
+      <FAQSection />
 
       {/* Booking Form 🆕 */}
       <BookingForm />

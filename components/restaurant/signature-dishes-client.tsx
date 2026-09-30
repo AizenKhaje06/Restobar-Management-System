@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { ChevronRight, ChevronLeft } from "lucide-react"
+import { ChevronRight, ChevronLeft, X } from "lucide-react"
 
 interface Dish {
   id: string
@@ -21,6 +21,7 @@ interface SignatureDishesProps {
 
 export function SignatureDishesClient({ dishes }: SignatureDishesProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
+  const [selectedDish, setSelectedDish] = useState<Dish | null>(null)
   
   const nextSlide = () => {
     setCurrentIndex((prev) => (prev + 1) % (dishes.length - 2))
@@ -30,8 +31,16 @@ export function SignatureDishesClient({ dishes }: SignatureDishesProps) {
     setCurrentIndex((prev) => (prev - 1 + (dishes.length - 2)) % (dishes.length - 2))
   }
 
+  const openModal = (dish: Dish) => {
+    setSelectedDish(dish)
+  }
+
+  const closeModal = () => {
+    setSelectedDish(null)
+  }
+
   return (
-    <section className="py-12 sm:py-16 bg-slate-50 dark:bg-slate-900">
+    <section className="pt-12 pb-2 sm:pt-16 sm:pb-4 bg-slate-50 dark:bg-slate-900">
       <div className="mx-auto px-4 lg:px-16 max-w-[1600px]">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
           {/* Left Side - Text Content */}
@@ -63,7 +72,7 @@ export function SignatureDishesClient({ dishes }: SignatureDishesProps) {
           <div className="relative">
             {/* Card Container */}
             <div className="relative h-[400px] lg:h-[500px] flex items-center justify-center">
-              <div className="relative flex items-center justify-center w-full">
+              <div className="relative flex items-center justify-center w-full -translate-x-16 lg:-translate-x-24">
                 {/* Display 5 cards with overlap effect */}
                 {[0, 1, 2, 3, 4].map((offset) => {
                   const dishIndex = (currentIndex + offset) % dishes.length
@@ -78,35 +87,42 @@ export function SignatureDishesClient({ dishes }: SignatureDishesProps) {
                   
                   if (!dish) return null
                   
-                  // Calculate position and styling - 5% overlap only (95% visible)
+                  // Calculate position and styling - tighter overlap to fit within boundary
                   let cardStyles = ''
+                  let imageFilter = ''
                   if (isCenter) {
                     cardStyles = 'w-[280px] sm:w-[340px] aspect-[3/4] scale-100 z-30 translate-x-0'
+                    imageFilter = 'brightness-110 saturate-125 contrast-110' // Make center image vibrant
                   } else if (isLeftFront) {
-                    cardStyles = 'w-[240px] sm:w-[280px] aspect-[3/4] scale-90 z-20 -translate-x-[215px] sm:-translate-x-[255px] opacity-80'
+                    cardStyles = 'w-[240px] sm:w-[280px] aspect-[3/4] scale-90 z-20 -translate-x-[170px] sm:-translate-x-[200px] opacity-80'
+                    imageFilter = 'brightness-95 saturate-100' // Slightly dimmed
                   } else if (isRightFront) {
-                    cardStyles = 'w-[240px] sm:w-[280px] aspect-[3/4] scale-90 z-20 translate-x-[215px] sm:translate-x-[255px] opacity-80'
+                    cardStyles = 'w-[240px] sm:w-[280px] aspect-[3/4] scale-90 z-20 translate-x-[170px] sm:translate-x-[200px] opacity-80'
+                    imageFilter = 'brightness-95 saturate-100' // Slightly dimmed
                   } else if (isFarLeft) {
-                    cardStyles = 'w-[200px] sm:w-[240px] aspect-[3/4] scale-75 z-10 -translate-x-[380px] sm:-translate-x-[455px] opacity-50'
+                    cardStyles = 'w-[200px] sm:w-[240px] aspect-[3/4] scale-75 z-10 -translate-x-[300px] sm:-translate-x-[360px] opacity-50'
+                    imageFilter = 'brightness-90 saturate-75' // More dimmed
                   } else if (isFarRight) {
-                    cardStyles = 'w-[200px] sm:w-[240px] aspect-[3/4] scale-75 z-10 translate-x-[380px] sm:translate-x-[455px] opacity-50'
+                    cardStyles = 'w-[200px] sm:w-[240px] aspect-[3/4] scale-75 z-10 translate-x-[300px] sm:translate-x-[360px] opacity-50'
+                    imageFilter = 'brightness-90 saturate-75' // More dimmed
                   }
                   
                   return (
-                    <Link
+                    <button
                       key={`${dish.id}-${dishIndex}`}
-                      href={`/events/menu?category=${encodeURIComponent(dish.category)}`}
-                      className={`group absolute rounded-3xl overflow-hidden bg-slate-900 shadow-2xl transition-all duration-500 hover:scale-105 ${cardStyles}`}
+                      onClick={() => isCenter ? openModal(dish) : undefined}
+                      disabled={!isCenter}
+                      className={`group absolute rounded-3xl overflow-hidden bg-slate-900 transition-all duration-500 ${isCenter ? 'hover:scale-105 cursor-pointer' : 'cursor-default'} ${cardStyles} ${isCenter ? 'shadow-2xl shadow-amber-500/20 ring-2 ring-amber-500/30' : 'shadow-2xl'}`}
                     >
-                      {/* Image */}
+                      {/* Image with Dynamic Filter */}
                       <img 
                         src={dish.image} 
                         alt={dish.name}
-                        className="absolute inset-0 w-full h-full object-cover"
+                        className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${imageFilter}`}
                       />
                       
-                      {/* Gradient Overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/20" />
+                      {/* Lighter Gradient Overlay - Only at bottom for text readability */}
+                      <div className={`absolute inset-0 ${isCenter ? 'bg-gradient-to-t from-black/70 via-transparent to-transparent' : 'bg-gradient-to-t from-black/80 via-black/30 to-black/10'}`} />
                       
                       {/* Top Badge */}
                       <div className="absolute top-4 right-4 px-3 py-1 bg-white/20 backdrop-blur-md text-white text-xs font-semibold rounded-full">
@@ -135,7 +151,7 @@ export function SignatureDishesClient({ dishes }: SignatureDishesProps) {
                           </div>
                         </div>
                       </div>
-                    </Link>
+                    </button>
                   )
                 })}
               </div>
@@ -172,6 +188,82 @@ export function SignatureDishesClient({ dishes }: SignatureDishesProps) {
 
 
       </div>
+
+      {/* Full View Modal */}
+      {selectedDish && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 animate-in fade-in duration-300"
+          onClick={closeModal}
+        >
+          {/* Close Button */}
+          <button
+            onClick={closeModal}
+            className="absolute top-4 right-4 z-50 w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-colors"
+          >
+            <X className="size-6 text-white" />
+          </button>
+
+          {/* Modal Content */}
+          <div 
+            className="relative max-w-4xl w-full max-h-[90vh] bg-slate-900 rounded-3xl overflow-hidden animate-in zoom-in-95 duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="grid md:grid-cols-2 gap-0">
+              {/* Left: Image */}
+              <div className="relative aspect-square md:aspect-auto">
+                <img
+                  src={selectedDish.image}
+                  alt={selectedDish.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              {/* Right: Details */}
+              <div className="p-8 flex flex-col justify-center">
+                {/* Category Badge */}
+                <div className="inline-flex items-center gap-2 mb-4">
+                  <span className="px-3 py-1 bg-amber-500/20 text-amber-500 text-xs font-semibold rounded-full">
+                    {selectedDish.category}
+                  </span>
+                  {selectedDish.isBestSeller && (
+                    <span className="px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-full">
+                      Best Seller
+                    </span>
+                  )}
+                </div>
+
+                {/* Title */}
+                <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+                  {selectedDish.name}
+                </h2>
+
+                {/* Description */}
+                <p className="text-white/80 text-base mb-6 leading-relaxed">
+                  {selectedDish.description}
+                </p>
+
+                {/* Price */}
+                <div className="flex items-center justify-between mb-8">
+                  <span className="text-4xl font-bold text-white">
+                    ₱{selectedDish.price}
+                  </span>
+                </div>
+
+                {/* View Full Menu Button */}
+                <Link href="/events/menu" onClick={closeModal}>
+                  <Button 
+                    size="lg"
+                    className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 py-6 text-lg"
+                  >
+                    View Full Menu
+                    <ChevronRight className="size-5 ml-2" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   )
 }
