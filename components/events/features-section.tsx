@@ -1,5 +1,6 @@
 import { Truck, Store, Award, ChefHat } from "lucide-react"
 import { ScrollReveal } from "@/components/ui/scroll-reveal"
+import { StaggerContainer, StaggerItem } from "@/components/ui/scroll-animations"
 
 const features = [
   {
@@ -30,12 +31,12 @@ export function FeaturesSection() {
     <section className="w-full bg-gradient-to-r from-orange-500 to-orange-600 py-4">
       <div className="container mx-auto px-4">
         {/* Responsive Grid: 1 col mobile, 2 cols tablet, 4 cols desktop */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+        <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
           {features.map((feature, index) => {
             const Icon = feature.icon
             return (
+              <StaggerItem key={index} index={index}>
               <div
-                key={index}
                 className="flex items-center gap-4"
               >
                 {/* Icon - White with slight opacity */}
@@ -53,9 +54,10 @@ export function FeaturesSection() {
                   </p>
                 </div>
               </div>
+              </StaggerItem>
             )
           })}
-        </div>
+        </StaggerContainer>
       </div>
     </section>
     </ScrollReveal>

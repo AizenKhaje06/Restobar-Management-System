@@ -21,6 +21,9 @@ import { EventsPlace } from "@/components/restaurant/events-place"
 import { FoodCategories } from "@/components/restaurant/food-categories"
 import { ValueSection } from "@/components/restaurant/value-section"
 import { BookingForm } from "@/components/restaurant/booking-form"
+import { WaveDivider } from "@/components/ui/wave-divider"
+import { FadeUp, ScaleFade } from "@/components/ui/scroll-animations"
+import { GoldDivider } from "@/components/ui/gold-divider"
 
 export const metadata = {
   title: "Lumière Restaurant - Fine Dining Experience in Manila",
@@ -215,43 +218,71 @@ export default async function EventsLandingPage() {
       </section>
 
       {/* Features Section ✅ */}
-      <FeaturesSection />
+      <FadeUp>
+        <FeaturesSection />
+      </FadeUp>
 
       {/* Media Features 🆕 - Early Credibility */}
-      <MediaFeatures />
+      <FadeUp>
+        <MediaFeatures />
+      </FadeUp>
 
       {/* Signature Dishes - 2x2 Grid 🆕 */}
-      <SignatureDishes />
+      <div id="menu">
+        <ScaleFade>
+          <SignatureDishes />
+        </ScaleFade>
+      </div>
 
       {/* Food Categories 🆕 */}
-      <FoodCategories />
+      <div id="packages">
+        <FadeUp>
+          <FoodCategories />
+        </FadeUp>
+      </div>
+
+      {/* Wave Divider - White wave over dark Our Story background */}
+      <WaveDivider topColor="fill-slate-100" className="-mb-1" />
 
       {/* Our Story Section 🆕 */}
       <OurStory />
 
       {/* Events Place Section 🆕 */}
-      <EventsPlace />
+      <div id="venues">
+        <EventsPlace />
+      </div>
 
       {/* Moments Gallery 🆕 */}
-      <MomentsGallery />
+      <div id="gallery">
+        <MomentsGallery />
+      </div>
 
       {/* Value Section 🆕 */}
       <ValueSection />
 
       {/* Testimonials ✅ */}
-      <TestimonialsSection />
+      <ScaleFade>
+        <TestimonialsSection />
+      </ScaleFade>
 
       {/* Digital Partners 🆕 */}
-      <DigitalPartners />
+      <FadeUp>
+        <DigitalPartners />
+      </FadeUp>
 
       {/* FAQ Section 🆕 */}
-      <FAQSection />
+      <FadeUp>
+        <FAQSection />
+      </FadeUp>
 
       {/* Booking Form 🆕 */}
-      <BookingForm />
+      <ScaleFade>
+        <BookingForm />
+      </ScaleFade>
 
       {/* Final CTA Section ✅ */}
-      <section className="relative py-16 sm:py-20 overflow-hidden">
+      <FadeUp>
+        <section className="relative py-16 sm:py-20 overflow-hidden">
         {/* Background Image */}
         <div className="absolute inset-0">
           <img 
@@ -287,6 +318,7 @@ export default async function EventsLandingPage() {
           </Link>
         </div>
       </section>
+      </FadeUp>
     </div>
     </>
   )

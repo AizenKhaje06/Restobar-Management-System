@@ -1,4 +1,5 @@
 import { Award, Utensils, Home, Users } from 'lucide-react'
+import { StaggerContainer, StaggerItem, FadeUp } from '@/components/ui/scroll-animations'
 
 const values = [
   {
@@ -60,14 +61,11 @@ export function ValueSection() {
 
         {/* Center Ambient Light */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-gradient-radial from-amber-100/30 via-transparent to-transparent dark:from-amber-500/10 rounded-full blur-3xl"></div>
-
-        {/* Decorative Border Elements */}
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-300/40 to-transparent"></div>
-        <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-300/40 to-transparent"></div>
       </div>
 
       <div className="container relative z-10 mx-auto px-4 max-w-6xl">
         {/* Header */}
+        <FadeUp>
         <div className="text-center mb-12">
           <p className="text-amber-600 dark:text-amber-500 text-xs font-semibold uppercase tracking-[0.2em] mb-2">
             Why Choose Us
@@ -79,19 +77,16 @@ export function ValueSection() {
             We offer a complete dining experience, from exceptional food to warm, inviting atmosphere
           </p>
         </div>
+        </FadeUp>
 
         {/* Value Grid - 2x2 on mobile, 4 columns on desktop */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+        <StaggerContainer className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
           {values.map((value, index) => {
             const Icon = value.icon
             return (
+              <StaggerItem key={index} index={index}>
               <div
-                key={index}
-                className="group relative text-center space-y-3 animate-in fade-in slide-in-from-bottom-4"
-                style={{
-                  animationDelay: `${index * 100}ms`,
-                  animationDuration: '500ms'
-                }}
+                className="group relative text-center space-y-3"
               >
                 {/* Card Background with Glass Effect */}
                 <div className="absolute inset-0 bg-white/60 dark:bg-slate-800/40 backdrop-blur-sm rounded-2xl border border-amber-200/40 dark:border-amber-700/30 shadow-lg group-hover:shadow-xl group-hover:border-amber-300/60 dark:group-hover:border-amber-600/50 transition-all duration-300"></div>
@@ -125,9 +120,10 @@ export function ValueSection() {
                   </div>
                 </div>
               </div>
+              </StaggerItem>
             )
           })}
-        </div>
+        </StaggerContainer>
       </div>
     </section>
   )

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { ChevronRight, ChevronLeft, Package } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { StaggerContainer, StaggerItem, FadeUp } from '@/components/ui/scroll-animations'
 
 interface FoodCategory {
   id: string
@@ -170,7 +171,7 @@ export function FoodCategories() {
             </button>
 
             {/* Dots Indicator */}
-            <div className="flex justify-center gap-2 mt-6">
+            <div className="flex justify-center gap-2 mt-4">
               {categories.map((_, index) => (
                 <button
                   key={index}
@@ -184,8 +185,8 @@ export function FoodCategories() {
           </div>
 
           {/* Right Side - Text Content */}
-          <div className="order-1 lg:order-2 lg:pl-8 lg:-mr-8">
-            <div className="space-y-4 text-right">
+          <FadeUp className="order-1 lg:order-2 lg:pl-8 lg:-mr-8">
+          <div className="space-y-4 text-right">
               <p className="text-amber-600 text-xs font-semibold uppercase tracking-wider mb-2">
                 Food Bundles & Meals
               </p>
@@ -210,7 +211,7 @@ export function FoodCategories() {
                 </Link>
               </div>
             </div>
-          </div>
+          </FadeUp>
         </div>
       </div>
     </section>

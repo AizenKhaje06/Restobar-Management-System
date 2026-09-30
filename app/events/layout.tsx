@@ -12,7 +12,7 @@ export default function EventsLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col light">
       <PromoBanner />
       <EventsNavbar />
       <main className="flex-1">{children}</main>

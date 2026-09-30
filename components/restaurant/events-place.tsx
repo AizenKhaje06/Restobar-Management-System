@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, MapPin, Users, Calendar, Star, Clock } from 
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
+import { SlideLeft, SlideRight } from '@/components/ui/scroll-animations'
 
 interface EventSpace {
   id: string
@@ -103,7 +104,8 @@ export function EventsPlace() {
       <div className="relative z-10 container mx-auto px-4 lg:px-16 max-w-[1600px]">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
           {/* Left Side - Image Carousel with Overlay Details */}
-          <div className="relative order-2 lg:order-1">
+          <SlideRight className="order-2 lg:order-1">
+          <div className="relative">
             <div className="relative aspect-[4/3] rounded-3xl overflow-hidden shadow-2xl">
               {/* Main Image */}
               <img 
@@ -185,10 +187,11 @@ export function EventsPlace() {
               ))}
             </div>
           </div>
+          </SlideRight>
 
           {/* Right Side - About Our Venue Only */}
-          <div className="order-1 lg:order-2">
-            <div className="space-y-4">
+          <SlideLeft className="order-1 lg:order-2">
+          <div className="space-y-4 text-right">
               <p className="text-amber-400 text-xs font-semibold uppercase tracking-wider">
                 About Our Venue
               </p>
@@ -203,17 +206,19 @@ export function EventsPlace() {
               <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
                 Our elegant venue combines comfort, style, and top-notch service to make your event truly memorable. With customizable packages and dedicated event coordination, we ensure every detail is perfect.
               </p>
-              <Link href="/events/venues">
-                <Button 
-                  size="lg"
-                  className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 shadow-lg"
-                >
-                  Explore Our Venues
-                  <ChevronRight className="size-4 ml-1" />
-                </Button>
-              </Link>
+              <div className="flex justify-end">
+                <Link href="/events/venues">
+                  <Button 
+                    size="lg"
+                    className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 shadow-lg"
+                  >
+                    Explore Our Venues
+                    <ChevronRight className="size-4 ml-1" />
+                  </Button>
+                </Link>
+              </div>
             </div>
-          </div>
+          </SlideLeft>
         </div>
       </div>
     </section>

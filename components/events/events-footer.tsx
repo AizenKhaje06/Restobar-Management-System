@@ -3,7 +3,7 @@ import { Mail, MapPin, Phone, Utensils } from "lucide-react"
 
 export function EventsFooter() {
   return (
-    <footer className="border-t bg-slate-900 text-slate-300">
+    <footer id="contact" className="border-t bg-slate-900 text-slate-300">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           

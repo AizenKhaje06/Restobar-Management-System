@@ -86,13 +86,21 @@ export function EventsNavbar() {
     router.refresh()
   }
 
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId)
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      setMobileMenuOpen(false)
+    }
+  }
+
   const navLinks = [
-    { href: "/events", label: "Home", icon: Home },
-    { href: "/events/venues", label: "Venues", icon: Building2 },
-    { href: "/events/packages", label: "Packages", icon: Package },
-    { href: "/events/menu", label: "Menu", icon: UtensilsCrossed },
-    { href: "/events/gallery", label: "Gallery", icon: ImageIcon },
-    { href: "/events/contact", label: "Contact", icon: Phone },
+    { href: "/events", label: "Home", icon: Home, isScroll: false },
+    { href: "#venues", label: "Venues", icon: Building2, isScroll: true, sectionId: "venues" },
+    { href: "#packages", label: "Packages", icon: Package, isScroll: true, sectionId: "packages" },
+    { href: "#menu", label: "Menu", icon: UtensilsCrossed, isScroll: true, sectionId: "menu" },
+    { href: "#gallery", label: "Gallery", icon: ImageIcon, isScroll: true, sectionId: "gallery" },
+    { href: "#contact", label: "Contact", icon: Phone, isScroll: true, sectionId: "contact" },
   ]
 
   return (
@@ -112,19 +120,29 @@ export function EventsNavbar() {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
             {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {link.label}
-              </Link>
+              link.isScroll ? (
+                <button
+                  key={link.href}
+                  onClick={() => scrollToSection(link.sectionId!)}
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                >
+                  {link.label}
+                </button>
+              ) : (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {link.label}
+                </Link>
+              )
             ))}
           </div>
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-3">
-            <ThemeToggle />
+            {/* <ThemeToggle /> - Hidden for events landing page */}
             {!loading && (
               <>
                 {user ? (
@@ -194,7 +212,7 @@ export function EventsNavbar() {
 
           {/* Mobile Menu Button */}
           <div className="flex items-center gap-2 md:hidden">
-            <ThemeToggle />
+            {/* <ThemeToggle /> - Hidden for events landing page */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 hover:bg-muted rounded-lg transition-colors"
@@ -209,6 +227,16 @@ export function EventsNavbar() {
         {mobileMenuOpen && (
           <div className="md:hidden py-4 space-y-2 border-t animate-in slide-in-from-top-5">
             {navLinks.map((link) => (
+              link.isScroll ? (
+                <button
+                  key={link.href}
+                  onClick={() => scrollToSection(link.sectionId!)}
+                  className="w-full flex items-center gap-2 px-4 py-2 hover:bg-muted rounded-lg transition-colors text-left"
+                >
+                  <link.icon className="size-4 text-muted-foreground" />
+                  <span className="font-medium">{link.label}</span>
+                </button>
+              ) : (
               <Link
                 key={link.href}
                 href={link.href}
@@ -218,6 +246,7 @@ export function EventsNavbar() {
                 <link.icon className="size-4 text-muted-foreground" />
                 <span className="font-medium">{link.label}</span>
               </Link>
+              )
             ))}
             <div className="px-4 py-2 flex flex-col gap-2 border-t pt-4">
               {!loading && (

@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button'
+import { SlideLeft, SlideRight } from '@/components/ui/scroll-animations'
 
 export function OurStory() {
   return (
@@ -19,7 +20,8 @@ export function OurStory() {
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           
           {/* Left Side - Content */}
-          <div className="space-y-6 order-2 lg:order-1">
+          <SlideLeft className="order-2 lg:order-1">
+          <div className="space-y-6">
             <div>
               <p className="text-amber-400 text-xs font-semibold uppercase tracking-wider mb-2">
                 Our Story
@@ -65,9 +67,11 @@ export function OurStory() {
               </Button>
             </div>
           </div>
+          </SlideLeft>
 
           {/* Right Side - Image */}
-          <div className="relative aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden group bg-emerald-800 order-1 lg:order-2">
+          <SlideRight className="order-1 lg:order-2">
+          <div className="relative aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden group bg-emerald-800">
             {/* Portrait Image */}
             <img 
               src="/lydia-portrait.png" 
@@ -78,6 +82,7 @@ export function OurStory() {
             {/* Subtle Overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
           </div>
+          </SlideRight>
         </div>
       </div>
     </section>
