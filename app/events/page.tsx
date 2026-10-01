@@ -308,14 +308,26 @@ export default async function EventsLandingPage() {
             Book your table now and enjoy a memorable meal at Lumière Restaurant
           </p>
 
-          <Link href="/order">
-            <Button 
-              size="lg"
-              className="bg-gradient-to-r from-amber-600 to-orange-600 px-6 sm:px-8 py-5 sm:py-6 text-base sm:text-lg font-semibold shadow-2xl shadow-amber-500/25 hover:shadow-amber-500/40 hover:scale-105 transition-all"
-            >
-              Book A Table
-            </Button>
-          </Link>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link href="/order">
+              <Button 
+                size="lg"
+                className="bg-gradient-to-r from-amber-600 to-orange-600 px-8 py-6 text-lg font-semibold shadow-2xl shadow-amber-500/25 hover:shadow-amber-500/40 hover:scale-105 transition-all"
+              >
+                Book A Table
+              </Button>
+            </Link>
+            
+            <Link href="/events/venues">
+              <Button 
+                size="lg"
+                variant="outline"
+                className="border-2 border-amber-400/50 bg-amber-400/20 backdrop-blur-sm hover:bg-amber-400 hover:border-amber-400 text-amber-100 hover:text-slate-900 px-8 py-6 text-lg font-semibold transition-all shadow-lg shadow-amber-500/20"
+              >
+                Book A Venue
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
       </FadeUp>

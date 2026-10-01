@@ -1,43 +1,27 @@
 'use client'
 
-import { useState } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { ScrollReveal } from '@/components/ui/scroll-reveal'
 
 const moments = [
-  { id: 1, image: "/api/placeholder/400/400", alt: "Delicious pasta" },
-  { id: 2, image: "/api/placeholder/400/400", alt: "Fine dining" },
-  { id: 3, image: "/api/placeholder/400/400", alt: "Grilled steak" },
-  { id: 4, image: "/api/placeholder/400/400", alt: "Restaurant ambiance" },
-  { id: 5, image: "/api/placeholder/400/400", alt: "Happy customers" },
-  { id: 6, image: "/api/placeholder/400/400", alt: "Fresh ingredients" },
-  { id: 7, image: "/api/placeholder/400/400", alt: "Signature dishes" },
-  { id: 8, image: "/api/placeholder/400/400", alt: "Cozy atmosphere" },
-  { id: 9, image: "/api/placeholder/400/400", alt: "Chef's special" },
-  { id: 10, image: "/api/placeholder/400/400", alt: "Dessert selection" }
+  { id: 1, image: "/C1.jpg", alt: "Delicious pasta" },
+  { id: 2, image: "/C2.jpg", alt: "Fine dining" },
+  { id: 3, image: "/C3.jpg", alt: "Grilled steak" },
+  { id: 4, image: "/C4.jpg", alt: "Restaurant ambiance" },
+  { id: 5, image: "/C5.jpg", alt: "Happy customers" },
+  { id: 6, image: "/C6.jpg", alt: "Fresh ingredients" },
+  { id: 7, image: "/C7.jpg", alt: "Signature dishes" },
+  { id: 8, image: "/C8.jpg", alt: "Cozy atmosphere" },
+  { id: 9, image: "/C9.jpg", alt: "Chef's special" },
+  { id: 10, image: "/C10.jpg", alt: "Dessert selection" }
 ]
 
 export function MomentsGallery() {
-  const [currentIndex, setCurrentIndex] = useState(0)
-  
-  // Show 5 cards at a time
-  const visibleCards = 5
-  const maxIndex = moments.length - visibleCards
-
-  const nextSlide = () => {
-    setCurrentIndex((prev) => (prev >= maxIndex ? 0 : prev + 1))
-  }
-
-  const prevSlide = () => {
-    setCurrentIndex((prev) => (prev <= 0 ? maxIndex : prev - 1))
-  }
-
-  // Get the 5 visible moments
-  const visibleMoments = moments.slice(currentIndex, currentIndex + visibleCards)
+  // Duplicate array for seamless infinite loop
+  const duplicatedMoments = [...moments, ...moments]
 
   return (
     <ScrollReveal>
-      <section className="py-16 sm:py-20 bg-slate-50 dark:bg-slate-900">
+      <section className="py-16 sm:py-20 bg-slate-50 dark:bg-slate-900 overflow-hidden">
       <div className="container mx-auto px-4 max-w-[1600px]">
         {/* Header - Compact */}
         <div className="mb-10">
@@ -52,62 +36,80 @@ export function MomentsGallery() {
           </p>
         </div>
 
-        {/* Gallery Container with Navigation */}
+        {/* Scrolling Gallery Container */}
         <div className="relative">
-          {/* Navigation Arrows */}
-          <button
-            onClick={prevSlide}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/90 dark:bg-slate-800/90 shadow-lg flex items-center justify-center hover:bg-white dark:hover:bg-slate-800 transition-colors"
-          >
-            <ChevronLeft className="size-5 text-slate-900 dark:text-white" />
-          </button>
-          <button
-            onClick={nextSlide}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/90 dark:bg-slate-800/90 shadow-lg flex items-center justify-center hover:bg-white dark:hover:bg-slate-800 transition-colors"
-          >
-            <ChevronRight className="size-5 text-slate-900 dark:text-white" />
-          </button>
+          {/* Gradient Fade - Left */}
+          <div className="absolute left-0 top-0 bottom-0 w-20 sm:w-32 bg-gradient-to-r from-slate-50 dark:from-slate-900 to-transparent z-10 pointer-events-none"></div>
+          
+          {/* Gradient Fade - Right */}
+          <div className="absolute right-0 top-0 bottom-0 w-20 sm:w-32 bg-gradient-to-l from-slate-50 dark:from-slate-900 to-transparent z-10 pointer-events-none"></div>
 
-          {/* Gallery Grid - 5 columns in 1 row */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6 px-12">
-            {visibleMoments.map((moment, index) => (
-              <div
-                key={moment.id}
-                className="bg-white dark:bg-slate-800 rounded-lg p-3 pb-6 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 hover:rotate-1"
-              >
-                <div className="relative aspect-square overflow-hidden group cursor-pointer">
-                  {/* Image Placeholder */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-600" />
-                  
-                  {/* Hover Overlay with Gradient */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20" />
-                  
-                  {/* Zoom Effect */}
-                  <div className="absolute inset-0 transform group-hover:scale-110 transition-transform duration-500" />
-                </div>
+          {/* Scrolling Track */}
+          <div className="overflow-hidden py-4">
+            <div className="flex animate-scroll-gallery hover:pause-scroll gap-6">
+              {duplicatedMoments.map((moment, index) => {
+                // Alternate between large and normal: even = large, odd = normal
+                const isLarge = index % 2 === 0
                 
-                {/* Photo Caption/Label at bottom */}
-                <div className="mt-3 text-center">
-                  <p className="text-slate-700 dark:text-slate-300 text-xs font-handwriting italic">{moment.alt}</p>
-                </div>
-              </div>
-            ))}
+                return (
+                  <div
+                    key={`${moment.id}-${index}`}
+                    className={`flex-shrink-0 transition-all duration-500 ${
+                      isLarge 
+                        ? 'w-[280px] sm:w-[340px] scale-110' 
+                        : 'w-[240px] sm:w-[280px]'
+                    }`}
+                  >
+                    <div className="bg-white dark:bg-slate-800 rounded-lg p-3 pb-6 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 hover:rotate-1">
+                      <div className="relative aspect-square overflow-hidden group cursor-pointer rounded-lg">
+                        {/* Actual Image */}
+                        <img 
+                          src={moment.image} 
+                          alt={moment.alt}
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                        
+                        {/* Hover Overlay with Gradient */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20" />
+                        
+                        {/* Zoom Effect */}
+                        <div className="absolute inset-0 transform group-hover:scale-110 transition-transform duration-500" />
+                      </div>
+                      
+                      {/* Photo Caption/Label at bottom */}
+                      <div className="mt-3 text-center">
+                        <p className="text-slate-700 dark:text-slate-300 text-xs font-handwriting italic">{moment.alt}</p>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
-
-        {/* Pagination Dots - Compact */}
-        <div className="flex justify-center gap-2 mt-6">
-          {Array.from({ length: maxIndex + 1 }).map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentIndex(index)}
-              className={`h-2 rounded-full transition-all ${
-                currentIndex === index ? 'bg-amber-600 w-6' : 'bg-slate-300 dark:bg-slate-700 w-2'
-              }`}
-            />
-          ))}
-        </div>
       </div>
+
+      {/* CSS Animation */}
+      <style jsx>{`
+        @keyframes scroll-gallery {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(-50%);
+          }
+        }
+
+        .animate-scroll-gallery {
+          display: flex;
+          animation: scroll-gallery 40s linear infinite;
+          width: max-content;
+        }
+
+        .pause-scroll:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
     </section>
     </ScrollReveal>
   )
